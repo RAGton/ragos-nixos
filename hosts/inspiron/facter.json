@@ -1,0 +1,309 @@
+{
+  "disks": {
+    "nvme0n1": {
+      "model": "SM2P41C3 NVMe ADATA 512GB",
+      "serial": "DM382UX7D58F",
+      "size": "476.94 GiB",
+      "size_bytes": 512110190592,
+      "type": "ssd",
+      "wwn": "eui.0000000000000000707c180d380207d5"
+    },
+    "sda": {
+      "model": "KINGSTON SA400S3",
+      "serial": "50026B7785682AEA",
+      "size": "223.57 GiB",
+      "size_bytes": 240057409536,
+      "type": "ssd",
+      "vendor": "ATA",
+      "wwn": "0x50026b7785682aea"
+    }
+  },
+  "dmi": {
+    "bios": {
+      "release_date": "04/10/2024",
+      "vendor": "Dell Inc.",
+      "version": "1.30.0"
+    },
+    "board": {
+      "manufacturer": "Dell Inc.",
+      "product": "0NN4D6",
+      "serial_number": "/BLL5LB3/BRFCB0011B00O1/"
+    },
+    "chassis": {
+      "type": "Notebook"
+    },
+    "manufacturer": "Dell Inc.",
+    "product": {
+      "name": "Inspiron 3583",
+      "serial_number": "BLL5LB3",
+      "uuid": "4c4c4544-004c-4c10-8035-c2c04f4c4233"
+    }
+  },
+  "facterversion": "4.10.0",
+  "filesystems": "btrfs,vfat",
+  "fips_enabled": false,
+  "identity": {
+    "gid": 0,
+    "group": "root",
+    "privileged": true,
+    "uid": 0,
+    "user": "root"
+  },
+  "is_virtual": false,
+  "kernel": "Linux",
+  "kernelmajversion": "6.18",
+  "kernelrelease": "6.18.2-zen2",
+  "kernelversion": "6.18.2",
+  "load_averages": {
+    "15m": 0.77,
+    "1m": 0.96,
+    "5m": 0.97
+  },
+  "memory": {
+    "swap": {
+      "available": "16.99 GiB",
+      "available_bytes": 18239246336,
+      "capacity": "0.14%",
+      "total": "17.01 GiB",
+      "total_bytes": 18265022464,
+      "used": "24.58 MiB",
+      "used_bytes": 25776128
+    },
+    "system": {
+      "available": "9.98 GiB",
+      "available_bytes": 10718482432,
+      "capacity": "35.45%",
+      "total": "15.46 GiB",
+      "total_bytes": 16604303360,
+      "used": "5.48 GiB",
+      "used_bytes": 5885820928
+    }
+  },
+  "mountpoints": {
+  },
+  "networking": {
+    "fqdn": "inspiron",
+    "hostname": "inspiron",
+    "interfaces": {
+      "enp2s0": {
+        "duplex": "unknown",
+        "mac": "d0:94:66:ca:24:1e",
+        "mtu": 1500,
+        "operational_state": "down",
+        "physical": true,
+        "speed": -1
+      },
+      "lo": {
+        "bindings": [
+          {
+            "address": "127.0.0.1",
+            "netmask": "255.0.0.0",
+            "network": "127.0.0.0"
+          }
+        ],
+        "bindings6": [
+          {
+            "address": "::1",
+            "netmask": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+            "network": "::1",
+            "scope6": "host",
+            "flags": [
+              "permanent"
+            ]
+          }
+        ],
+        "ip": "127.0.0.1",
+        "ip6": "::1",
+        "mtu": 65536,
+        "netmask": "255.0.0.0",
+        "netmask6": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+        "network": "127.0.0.0",
+        "network6": "::1",
+        "operational_state": "unknown",
+        "physical": false,
+        "scope6": "host"
+      },
+      "wlo1": {
+        "bindings": [
+          {
+            "address": "192.168.1.27",
+            "netmask": "255.255.255.0",
+            "network": "192.168.1.0"
+          }
+        ],
+        "bindings6": [
+          {
+            "address": "2804:2f3c:2000:301:265:c19b:64e5:1674",
+            "netmask": "ffff:ffff:ffff:ffff::",
+            "network": "2804:2f3c:2000:301::",
+            "scope6": "global",
+            "flags": [
+              "temporary"
+            ]
+          },
+          {
+            "address": "2804:2f3c:2000:301:31e3:53fa:415f:bc3b",
+            "netmask": "ffff:ffff:ffff:ffff::",
+            "network": "2804:2f3c:2000:301::",
+            "scope6": "global",
+            "flags": [
+
+            ]
+          },
+          {
+            "address": "2804:2f3c:2000:311:caa0:7438:7223:5489",
+            "netmask": "ffff:ffff:ffff:ffff::",
+            "network": "2804:2f3c:2000:311::",
+            "scope6": "global",
+            "flags": [
+              "temporary"
+            ]
+          },
+          {
+            "address": "2804:2f3c:2000:311:52a8:d737:a1d2:b307",
+            "netmask": "ffff:ffff:ffff:ffff::",
+            "network": "2804:2f3c:2000:311::",
+            "scope6": "global",
+            "flags": [
+
+            ]
+          },
+          {
+            "address": "fe80::9afd:ff72:c337:caa0",
+            "netmask": "ffff:ffff:ffff:ffff::",
+            "network": "fe80::",
+            "scope6": "link",
+            "flags": [
+              "permanent"
+            ]
+          }
+        ],
+        "ip": "192.168.1.27",
+        "ip6": "2804:2f3c:2000:301:265:c19b:64e5:1674",
+        "mac": "5c:cd:5b:be:f7:fd",
+        "mtu": 1500,
+        "netmask": "255.255.255.0",
+        "netmask6": "ffff:ffff:ffff:ffff::",
+        "network": "192.168.1.0",
+        "network6": "2804:2f3c:2000:301::",
+        "operational_state": "up",
+        "physical": true,
+        "scope6": "global"
+      }
+    },
+    "ip": "192.168.1.27",
+    "ip6": "2804:2f3c:2000:301:265:c19b:64e5:1674",
+    "mac": "5c:cd:5b:be:f7:fd",
+    "mtu": 1500,
+    "netmask": "255.255.255.0",
+    "netmask6": "ffff:ffff:ffff:ffff::",
+    "network": "192.168.1.0",
+    "network6": "2804:2f3c:2000:301::",
+    "primary": "wlo1",
+    "scope6": "global"
+  },
+  "os": {
+    "architecture": "x86_64",
+    "family": "",
+    "hardware": "x86_64",
+    "name": "NixOS",
+    "release": {
+      "full": "26.05",
+      "major": "26.05"
+    },
+    "selinux": {
+      "enabled": false
+    }
+  },
+  "partitions": {
+    "/dev/nvme0n1p1": {
+      "filesystem": "vfat",
+      "parttype": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b",
+      "partuuid": "2f67b591-fcea-4d91-b8d0-43b0d89b21a9",
+      "size": "1.00 GiB",
+      "size_bytes": 1074790400,
+      "uuid": "954A-B524"
+    },
+    "/dev/nvme0n1p2": {
+      "filesystem": "btrfs",
+      "label": "RAIZ-NIXOS",
+      "parttype": "0fc63daf-8483-4772-8e79-3d69d8477de4",
+      "partuuid": "f9e4136b-775e-42c4-be06-dc2dd18a34f2",
+      "size": "458.93 GiB",
+      "size_bytes": 492769290752,
+      "uuid": "a551eedc-61b1-458b-8d4d-99e7ddcc0b1a"
+    },
+    "/dev/nvme0n1p3": {
+      "filesystem": "swap",
+      "label": "SWAP-NIXOS",
+      "parttype": "0657fd6d-a4ab-43c4-84e5-0933c84b4f4f",
+      "partuuid": "d76b68ad-573b-4413-803c-909c9c7fa778",
+      "size": "17.01 GiB",
+      "size_bytes": 18265027072,
+      "uuid": "6e5e19fc-82c8-4436-89c3-da8ed8cfb12b"
+    },
+    "/dev/sda1": {
+      "filesystem": "btrfs",
+      "label": "NIXOS-DATA",
+      "partlabel": "home",
+      "parttype": "0fc63daf-8483-4772-8e79-3d69d8477de4",
+      "partuuid": "a65bb820-258c-4fe5-9459-4f41613b28bc",
+      "size": "223.57 GiB",
+      "size_bytes": 240055746560,
+      "uuid": "06b5fe17-f758-4172-98e7-04287590a710"
+    }
+  },
+  "path": "/nix/store/xxjsf80jb1pwcyy9ds3bp1yxmj6f1gl4-facter-4.10.0/lib/ruby/gems/3.3.0/bin:/nix/store/imad8dvhp77h0pjbckp6wvmnyhp8dpgg-coreutils-9.8/bin:/nix/store/x3zjxxz8m4ki88axp0gn8q8m6bldybba-gnugrep-3.12/bin:/nix/store/mgjbs3kpwif9c0914d9k73k2py70g8an-net-tools-2.10/bin:/nix/store/5z6c8xqc8xsmvv9kkfvsbm9qzl25gc7z-pciutils-3.14.0/bin:/nix/store/v5lx2zmgp754ci64ln3m9f4j8bhvbgps-procps-4.0.4/bin:/nix/store/3c6r8gh8zrqw8xmncmlj9vivz9rz6r30-util-linux-2.41.2-bin/bin:/nix/store/n7d8036ip83f67v990f174f63xf1d5l6-iproute2-6.17.0/bin:/nix/store/9389mvzjfcryh8ygpwi15nw47bi9cjmx-virt-what-1.27/bin:/nix/store/p8lkny75ikvpxl3vpqfhp2vnlb4gms4k-zfs-user-2.3.5/bin:/home/rag/.config/Code/User/globalStorage/github.copilot-chat/debugCommand:/home/rag/.config/Code/User/globalStorage/github.copilot-chat/copilotCli:/nix/store/6mhypw5m1hbqn2glq4lhrlhbgdczdka5-glib-2.86.1-bin/bin:/home/rag/.krew/bin:/home/rag/go/bin:/home/rag/.local/bin:/run/wrappers/bin:/home/rag/.local/share/flatpak/exports/bin:/var/lib/flatpak/exports/bin:/home/rag/.nix-profile/bin:/nix/profile/bin:/home/rag/.local/state/nix/profile/bin:/etc/profiles/per-user/rag/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin:/home/rag/.zsh/plugins/powerlevel10k:/home/rag/.zsh/plugins/zsh-syntax-highlighting:/home/rag/.zsh/plugins/zsh-autosuggestions",
+  "processors": {
+    "cores": 4,
+    "count": 8,
+    "extensions": [
+      "unknown"
+    ],
+    "isa": "unknown",
+    "models": [
+      "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz",
+      "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz",
+      "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz",
+      "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz",
+      "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz",
+      "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz",
+      "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz",
+      "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz"
+    ],
+    "physicalcount": 1,
+    "speed": "2.73 GHz",
+    "threads": 2
+  },
+  "ruby": {
+    "platform": "x86_64-linux",
+    "sitedir": "/nix/store/l4ksh9h3278v5grh0vc9b1h7jc29p4rv-ruby-3.3.10/lib/ruby/site_ruby/3.3.0",
+    "version": "3.3.10"
+  },
+  "ssh": {
+    "ed25519": {
+      "fingerprints": {
+        "sha1": "SSHFP 4 1 a943c77711812ad6865fcb64228a4b60c0de993e",
+        "sha256": "SSHFP 4 2 d9c8f58fce235c95a8a6102a127f57d67217065850add62bab446730de63bbe6"
+      },
+      "key": "AAAAC3NzaC1lZDI1NTE5AAAAILx46WA6LBrqqilRce/k+ni2g5AITuQD8DHT5IEPIgu0",
+      "type": "ssh-ed25519"
+    },
+    "rsa": {
+      "fingerprints": {
+        "sha1": "SSHFP 1 1 5d18b70b63cdeffc5aa71cc7e820b6d4d4992762",
+        "sha256": "SSHFP 1 2 40ab933b766681670bd5e3c51ed70af659bfefa2afb12eae590a6486bf42549a"
+      },
+      "key": "AAAAB3NzaC1yc2EAAAADAQABAAACAQCF95TTq+9MVwGQNCwu18FAB6b7HY8QhxVNKvOvZrL7aDg5gtCaTXAzKObmnbobfG76D+C1xC//2f5f9hACnoLSXlN5q70wbWvuc0zNcznZPLh8+B2EMjMKmRxRhHyVpQVWcv9CTc+1RZYANvtc7RcWePudpA086EjdfQwLvsVWq1PMf8wOxj0pZqRqnBx1c18DC1yaN2sWeTLUBiKguNEPoeeTQfZ+5Fa09uBAwMzFtnFHkjCqLwe1yG55Qo8J2FI9yVSg2IRnY28KJS5OJQVbmxi12pyiLB9FbiwffJ+ztj7wc/plubEdH38VyJAuNUORFTJEPbAVKXNJaE92xlzZEXb7OrL7HpvQPMD2fCOLTLoqYyEauwjkdhJ5Di0EoU/y/pdb7Qz0V1JJ3gipccrRNTrO/NZOYZutoGvd6OWc72GhMw+HbkR4hkBxqclqqoXfdY5LQ0ZeIK74PTpvV4YeTWmSzxIM9tLsE08B08XheJ3Df3WputjTA1lekJeqbb1nb9OddPnbeVGZLeYGoptazQSRQ/v7MUGf+jAFWm/kk0yu5/5U4FXWQ2Ye44FwAo0K+SHsOSY7efDbZysGrZzMw1U4MII5ihUr6/2+ThD9r+olbsOpbXXNKMwTsmyMMKTjNzmUwnHCEcPp52xKWi1dQqIPK1R2ieWM3fYw7cxwQw==",
+      "type": "ssh-rsa"
+    }
+  },
+  "system_uptime": {
+    "days": 2,
+    "hours": 55,
+    "seconds": 199380,
+    "uptime": "2 days"
+  },
+  "timezone": "-04",
+  "virtual": "physical"
+}
