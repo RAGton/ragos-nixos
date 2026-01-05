@@ -1,0 +1,103 @@
+{
+  outputs,
+  userConfig,
+  pkgs,
+  ...
+}:
+{
+  imports = [
+    ../programs/aerospace
+    ../programs/warp-terminal
+    ../programs/albert
+    ../programs/atuin
+    ../programs/bat
+    ../programs/zen-browser
+    ../programs/btop
+    ../programs/fastfetch
+    ../programs/fzf
+    ../programs/git
+    ../programs/go
+    ../programs/gpg
+    ../programs/k9s
+    ../programs/krew
+    ../programs/lazygit
+    ../programs/neovim
+    ../programs/obs-studio
+    ../programs/saml2aws
+    ../programs/starship
+    ../programs/telegram
+    ../programs/zellij
+    ../programs/zsh
+    ../scripts
+  ];
+
+  # Nixpkgs configuration
+  nixpkgs = {
+    overlays = [
+      outputs.overlays.stable-packages
+    ];
+
+    config = {
+      allowUnfree = true;
+    };
+  };
+
+  # Nicely reload system units when changing configs
+  systemd.user.startServices = "sd-switch";
+
+  # Home-Manager configuration for the user's home environment
+  home = {
+    username = "${userConfig.name}";
+    homeDirectory =
+      if pkgs.stdenv.isDarwin then "/Users/${userConfig.name}" else "/home/${userConfig.name}";
+  };
+
+  # Ajustes de sessão (principalmente Electron/VS Code em Wayland)
+  home.sessionVariables = {
+    NIXOS_OZONE_WL = "1";
+    ELECTRON_OZONE_PLATFORM_HINT = "auto";
+    GTK_USE_PORTAL = "1";
+  };
+
+  # Ensure common packages are installed
+  home.packages =
+    with pkgs;
+    [
+      awscli2
+      dig
+      dust
+      eza
+      fd
+      jq
+      kubectl
+      nh
+      openconnect
+      pipenv
+      podman-compose
+      podman-tui
+      python3
+      ripgrep
+      terraform
+      vscode	
+    ]
+    ++ lib.optionals stdenv.isDarwin [
+      anki-bin
+      colima
+      hidden-bar
+      mos
+      podman
+      raycast
+    ]
+    ++ lib.optionals (!stdenv.isDarwin) [
+      anki
+      tesseract
+      unzip
+      wl-clipboard
+    ];
+
+  # Catpuccin flavor and accent
+  catppuccin = {
+    flavor = "macchiato";
+    accent = "lavender";
+  };
+}

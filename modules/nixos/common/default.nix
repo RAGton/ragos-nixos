@@ -1,0 +1,242 @@
+{
+  inputs,
+  outputs,
+  lib,
+  config,
+  userConfig,
+  pkgs,
+  ...
+}:
+{
+  imports = [
+    inputs.nix-flatpak.nixosModules.nix-flatpak
+    ../programs/steam
+    ../programs/gaming
+    ../services/tlp
+    ../services/snapper
+  ];
+  # Nixpkgs configuration
+  nixpkgs = {
+    overlays = [
+      outputs.overlays.stable-packages
+      outputs.overlays.openrgb-git
+    ];
+
+    config = {
+      allowUnfree = true;
+    };
+  };
+
+  # Register flake inputs for nix commands
+  nix.registry = lib.mapAttrs (_: flake: { inherit flake; }) (
+    lib.filterAttrs (_: lib.isType "flake") inputs
+  );
+
+  # Add inputs to legacy channels
+  nix.nixPath = [ "/etc/nix/path" ];
+  environment.etc = lib.mapAttrs' (name: value: {
+    name = "nix/path/${name}";
+    value.source = value.flake;
+  }) config.nix.registry;
+
+  # Nix settings
+  nix.settings = {
+    experimental-features = "nix-command flakes";
+    auto-optimise-store = true;
+  };
+
+  # Boot settings
+  boot = {
+    consoleLogLevel = 0;
+    initrd.verbose = false;
+    kernelParams = [
+      "quiet"
+      "splash"
+      "rd.udev.log_level=3"
+    ];
+    loader.efi.canTouchEfiVariables = true;
+    loader.systemd-boot.enable = true;
+    loader.timeout = 0;
+    plymouth.enable = true;
+
+    # v4l (virtual camera) module settings
+    kernelModules = [ "v4l2loopback" ];
+    extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+    extraModprobeConfig = ''
+      options v4l2loopback exclusive_caps=1 card_label="Virtual Camera"
+    '';
+  };
+
+  # Mitigação prática contra travamentos por pressão de memória.
+  # Swap já existe no host, mas zram tende a melhorar muito a responsividade.
+  zramSwap = {
+    enable = lib.mkDefault true;
+    algorithm = lib.mkDefault "zstd";
+    # Em máquinas com ~16GB RAM, 100% resulta em ~16GB de zram.
+    memoryPercent = lib.mkDefault 100;
+  };
+
+  # Networking
+  networking.networkmanager.enable = true;
+
+  # Disable systemd services that are affecting the boot time
+  systemd.services = {
+    NetworkManager-wait-online.enable = false;
+    plymouth-quit-wait.enable = false;
+  };
+
+  # Timezone
+  time.timeZone = "America/Cuiaba";
+
+  # Internationalization
+  i18n.defaultLocale = "pt_BR.UTF-8";
+  i18n.extraLocaleSettings = {
+    LC_ADDRESS = "pt_BR.UTF-8";
+    LC_IDENTIFICATION = "pt_BR.UTF-8";
+    LC_MEASUREMENT = "pt_BR.UTF-8";
+    LC_MONETARY = "pt_BR.UTF-8";
+    LC_NAME = "pt_BR.UTF-8";
+    LC_NUMERIC = "pt_BR.UTF-8";
+    LC_PAPER = "pt_BR.UTF-8";
+    LC_TELEPHONE = "pt_BR.UTF-8";
+    LC_TIME = "pt_BR.UTF-8";
+  };
+
+  # Enables support for Bluetooth
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
+
+  # Input settings
+  services.libinput.enable = true;
+
+  # xserver settings
+  services.xserver = {
+    xkb.layout = "br";
+    xkb.variant = "abnt2";
+    excludePackages = with pkgs; [ xterm ];
+  };
+
+  # Enable Wayland support in Chromium and Electron based applications
+  # Remove decorations for QT apps
+  # Set cursor size
+  environment.sessionVariables = {
+    NIXOS_OZONE_WL = "1";
+    XCURSOR_SIZE = "24";
+  };
+
+  # PATH configuration
+  environment.localBinInPath = true;
+
+  # Disable CUPS printing
+  services.printing.enable = false;
+
+  # devmon depende de udevil, que frequentemente quebra build em toolchains novos.
+  # Em desktops (ex.: KDE), o fluxo recomendado para dispositivos removíveis é via udisks2.
+  services.devmon.enable = false;
+
+  # Enable PipeWire for sound
+  services.pulseaudio.enable = false;
+  security.rtkit.enable = true;
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    jack.enable = true;
+  };
+
+  # Flatpak (sistema) + gerenciamento declarativo via nix-flatpak
+  services.flatpak = {
+    enable = true;
+
+    packages = [
+      "app.zen_browser.zen"
+      "io.github.shiftey.Desktop"
+      "io.github.shonebinu.Brief"
+      "com.anydesk.Anydesk"
+      "com.rustdesk.RustDesk"
+      "com.ranfdev.DistroShelf"
+      "com.github.tchx84.Flatseal"
+      "io.github.flattool.Warehouse"
+      "org.kde.filelight"
+      "com.rtosta.zapzap"
+      "org.libreoffice.LibreOffice"
+      "org.gimp.GIMP"
+    ];
+
+    uninstallUnmanaged = true;
+    update.auto.enable = true;
+  };
+
+  # User configuration
+  users.users.${userConfig.name} = {
+    description = userConfig.fullName;
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+    ];
+    isNormalUser = true;
+    shell = pkgs.zsh;
+  };
+
+  # Set User's avatar
+  system.activationScripts.script.text = ''
+    mkdir -p /var/lib/AccountsService/{icons,users}
+    cp ${userConfig.avatar} /var/lib/AccountsService/icons/${userConfig.name}
+
+    touch /var/lib/AccountsService/users/${userConfig.name}
+
+    if ! grep -q "^Icon=" /var/lib/AccountsService/users/${userConfig.name}; then
+      if ! grep -q "^\[User\]" /var/lib/AccountsService/users/${userConfig.name}; then
+        echo "[User]" >> /var/lib/AccountsService/users/${userConfig.name}
+      fi
+      echo "Icon=/var/lib/AccountsService/icons/${userConfig.name}" >> /var/lib/AccountsService/users/${userConfig.name}
+    fi
+  '';
+
+  # Passwordless sudo
+  security.sudo.wheelNeedsPassword = false;
+
+  # System packages
+  environment.systemPackages = with pkgs; [
+    gcc
+    glib
+    gnumake
+    killall
+    mesa
+    openrgb-git
+  ];
+
+  # Regras udev para permitir acesso do OpenRGB aos dispositivos.
+  services.udev.packages = with pkgs; [ openrgb-git ];
+
+  # Common container config
+  virtualisation = {
+    containers.enable = true;
+    podman = {
+      enable = true;
+      defaultNetwork.settings.dns_enabled = true;
+    };
+  };
+
+  # Enable xwayland
+  programs.xwayland.enable = true;
+
+  # Zsh configuration
+  programs.zsh.enable = true;
+
+  # Fonts configuration
+  fonts.packages = with pkgs; [
+    nerd-fonts.jetbrains-mono
+    nerd-fonts.meslo-lg
+    roboto
+  ];
+
+  # Additional services
+  services.locate.enable = true;
+
+  # OpenSSH daemon
+  services.openssh.enable = true;
+}
