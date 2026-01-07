@@ -60,13 +60,155 @@ home-manager switch --flake .#rag@inspiron
 
 ### Atalhos via Makefile
 
-O [Makefile](Makefile) oferece alvos prontos (assume que o hostname local bate com o output da flake):
+O [Makefile](Makefile) oferece alvos prontos.
+
+- Por padrão, ele assume que o hostname local bate com o output da flake (ex.: `Glacier` → `.#Glacier`).
+- Você pode sobrescrever as variáveis na linha de comando para apontar para outro host/usuário.
+
+Listar alvos disponíveis:
+
+```sh
+make help
+```
+
+Exemplos mais comuns:
 
 ```sh
 make nixos-rebuild
 make home-manager-switch
 make flake-check
 make flake-update
+```
+
+#### Como funciona (variáveis)
+
+- `HOSTNAME`: usado para montar o target padrão. Default: `$(hostname)`.
+- `FLAKE`: target do sistema. Default: `.#$(HOSTNAME)`.
+- `HOME_TARGET`: target do Home Manager. Default: igual a `$(FLAKE)` (você quase sempre vai querer setar algo como `.#rag@Glacier`).
+- `EXPERIMENTAL`: flags do `nix` para habilitar flakes quando necessário.
+
+Exemplos de override:
+
+```sh
+# Aplicar NixOS em um host específico (sem depender do hostname local)
+make nixos-rebuild FLAKE=.#Glacier
+
+# Aplicar Home Manager no formato user@host
+make home-manager-switch HOME_TARGET=.#rag@Glacier
+
+# Atualizar inputs
+make flake-update
+```
+
+> Observação: em NixOS, o `nixos-rebuild` roda com `sudo`. Já o `home-manager switch` roda como usuário.
+
+## Git: SSH (auth) vs `gitKey` (assinatura)
+
+Este repo usa duas coisas diferentes que costumam ser confundidas:
+
+1) **Chave SSH (autenticação no GitHub/GitLab)**
+
+- Serve para `git clone/pull/push` sem ficar digitando senha/token.
+- Fica em `~/.ssh/` (ex.: `id_ed25519` e `id_ed25519.pub`).
+- Você cadastra **a chave pública** (`.pub`) no GitHub/GitLab.
+
+1) **`gitKey` (assinatura de commits, via Home Manager)**
+
+- No seu flake, o campo `gitKey` em `users.<nome>` é usado pelo módulo do Git em [modules/home-manager/programs/git/default.nix](modules/home-manager/programs/git/default.nix).
+- Ele alimenta `programs.git.signing.key` (assinatura de commit). Isso normalmente é um **Key ID do GPG** (OpenPGP).
+- Se você deixar `gitKey = "";`, a assinatura **não** é habilitada (mais simples para bootstrap).
+
+### Criar e cadastrar uma chave SSH (auth)
+
+```sh
+ls ~/.ssh
+ssh-keygen -t ed25519 -C "seu-email@dominio.com"
+cat ~/.ssh/id_ed25519.pub
+```
+
+Depois, cadastre a chave pública no GitHub: **Settings → SSH and GPG keys → New SSH key**.
+
+### Configurar assinatura de commits (GPG)
+
+Se você quer commits assinados, crie/importe uma chave GPG, descubra o Key ID e preencha `gitKey` com esse valor.
+
+```sh
+gpg --list-secret-keys --keyid-format=long
+```
+
+> Importante: nunca versionar chave privada no repo/Nix store. O `gitKey` aqui é só um identificador para o Git.
+
+## Instalação (somente LiveCD / ISO) — NixOS
+
+Guia para instalar a máquina do zero usando apenas o ISO do NixOS + este repositório (flake).
+
+> Dica: no ISO, facilita virar root com `sudo -i` antes de particionar/montar.
+
+### 1) Boot + rede
+
+- Inicie pelo ISO do NixOS.
+- Conecte à internet (Ethernet ou `nmtui`).
+
+### 2) Particionamento e montagem (Btrfs + subvolumes)
+
+Exemplo de layout sem criptografia: uma partição EFI (`/boot`) e uma partição Btrfs.
+
+> Dica: o arquivo [hosts/Glacier/disks.nix](hosts/Glacier/disks.nix) documenta o layout esperado do host `Glacier`.
+
+Monte em `/mnt` usando subvolumes (ajuste `DISK`, `ESP` e `ROOT`):
+
+```sh
+# exemplo (NÃO copie sem ajustar):
+# DISK=/dev/nvme0n1
+# ESP=${DISK}p1
+# ROOT=${DISK}p3
+
+mkfs.vfat -n BOOT-NIXOS "$ESP"
+mkfs.btrfs -f "$ROOT"
+
+mount "$ROOT" /mnt
+btrfs subvolume create /mnt/@
+btrfs subvolume create /mnt/@home
+
+# opcional, recomendado com snapper
+btrfs subvolume create /mnt/@snapshots
+
+umount /mnt
+
+mount -o subvol=@,compress=zstd,noatime "$ROOT" /mnt
+mkdir -p /mnt/{home,.snapshots,boot}
+mount -o subvol=@home,compress=zstd,noatime "$ROOT" /mnt/home
+mount -o subvol=@snapshots,compress=zstd,noatime "$ROOT" /mnt/.snapshots
+mount "$ESP" /mnt/boot
+```
+
+### 3) Clonar o repo e instalar com flake
+
+No LiveCD, clone este repo para dentro do sistema alvo e rode o install apontando para o host:
+
+```sh
+mkdir -p /mnt/etc
+git clone https://github.com/RAGton/dotfiles-NixOs /mnt/etc/nixos
+
+# substitua pelo seu host (ex.: Glacier / inspiron)
+nixos-install --flake /mnt/etc/nixos#Glacier
+```
+
+Se você estiver instalando em um hardware diferente do que já está versionado em `hosts/<host>/hardware-configuration.nix`, gere e ajuste esse arquivo antes do `nixos-install`.
+
+### 4) Pós-instalação
+
+Reinicie e aplique o Home Manager do seu usuário:
+
+```sh
+home-manager switch --flake /etc/nixos#rag@Glacier
+```
+
+Se o `home-manager` ainda não estiver disponível no PATH no primeiro login, rode:
+
+```sh
+nix-shell -p home-manager
+home-manager switch --flake /etc/nixos#rag@Glacier
 ```
 
 ### Adicionando uma nova máquina com um novo usuário

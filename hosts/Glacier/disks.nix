@@ -1,17 +1,19 @@
-# Layout de disco para o host "inspiron" (modo documentação/disko)
-#
-# Este arquivo NÃO é importado pelo NixOS em runtime. Ele serve para:
-# - Documentar o particionamento atual
-# - Ser usado como base para dizo/disko em reinstalações futuras
-#
-# Baseado em:
-#   nvme0n1p1  -> /boot (vfat, UUID 954A-B524)
-#   nvme0n1p2  -> btrfs RAIZ-NIXOS (UUID a551eedc-61b1-458b-8d4d-99e7ddcc0b1a)
-#                  subvol=@ (/)  subvol=@home (/home)
-#   nvme0n1p3  -> swap (UUID 6e5e19fc-82c8-4436-89c3-da8ed8cfb12b)
-#   sda1       -> btrfs NIXOS-DATA (UUID 06b5fe17-f758-4172-98e7-04287590a710)
-#
-# Exemplo de configuração no estilo disko (ajuste /dev/disk/by-id conforme sua máquina):
+### Layout de disco para o host "Glacier" (modo documentação/disko)
+###
+### Este arquivo NÃO é importado pelo NixOS em runtime. Ele serve para:
+### - Documentar o particionamento atual
+### - Ser usado como base para disko em reinstalações futuras
+###
+### Estado atual (05/01/2026):
+###   nvme0n1p1  -> /boot (vfat, LABEL BOOT-NIXOS, UUID A0E7-AB3A)
+###   nvme0n1p3  -> btrfs (UUID 3c142e78-a12a-4c84-82c5-a2e1ecac74d3)
+###                subvol=@ (/)  subvol=@home (/home)
+###   swap: não configurado (swapDevices = [ ])
+###
+### Observação: em runtime, `/nix/store` pode aparecer como um mount separado,
+### mas ele está dentro do subvolume `@`.
+###
+### Exemplo de configuração no estilo disko (ajuste /dev/disk/by-id conforme sua máquina):
 
 { lib, ... }:
 {
@@ -27,7 +29,8 @@
         type = "gpt";
         partitions = {
           ESP = {
-            size = "512M";
+            # lsblk mostra ~2G (aprox.). Ajuste conforme seu particionamento.
+            size = "2G";
             type = "ef00"; # EFI System
             content = {
               type = "filesystem";
@@ -41,61 +44,23 @@
             type = "8300"; # Linux filesystem
             content = {
               type = "btrfs";
-               extraArgs = [ "-L" "RAIZ-NIXOS" ]; # opcional
+              # extraArgs = [ "-L" "RAIZ-NIXOS" ]; # opcional
               subvolumes = {
                 "@" = {
                   mountpoint = "/";
-                  mountOptions = [ "subvol=@" "compress=zstd" "noatime" ];
+                  mountOptions = [ "subvol=@" "compress=zstd:3" "noatime" "ssd" "discard=async" "space_cache=v2" ];
                 };
 
                 "@home" = {
                   mountpoint = "/home";
-                  mountOptions = [ "subvol=@home" "compress=zstd" "autodefrag" "noatime" ];
+                  mountOptions = [ "subvol=@home" "compress=zstd:3" "noatime" "ssd" "discard=async" "space_cache=v2" ];
                 };
 
                 # Subvolume dedicado para snapshots manuais/snapper, se quiser
                 "@snapshots" = {
                   mountpoint = "/.snapshots";
-                  mountOptions = [ "subvol=@snapshots" "compress=zstd" "noatime" ];
+                  mountOptions = [ "subvol=@snapshots" "compress=zstd:3" "noatime" "ssd" "discard=async" "space_cache=v2" ];
                 };
-              };
-            };
-          };
-
-          swap = {
-            # Em instalações novas dá pra trocar para tamanho fixo (ex: "8G");
-            # aqui deixamos como comentário porque o swap atual já existe.
-            # size = "8G";
-            type = "8200"; # Linux swap
-            content = {
-              type = "swap";
-            };
-          };
-        };
-      };
-    };
-
-    # Disco de dados (NIXOS-DATA) opcional, bom para backups/jogos pesados
-    disk."sda" = {
-      type = "disk";
-      device = "/dev/sda";
-      content = {
-        type = "gpt";
-        partitions.data = {
-          size = "100%";
-          type = "8300";
-          content = {
-            type = "btrfs";
-             extraArgs = [ "-L" "NIXOS-DATA" ];
-            subvolumes = {
-              "@data" = {
-                mountpoint = "/mnt/data";
-                mountOptions = [ "subvol=@data" "compress=zstd" "noatime" ];
-              };
-
-              "@games" = {
-                mountpoint = "/mnt/games";
-                mountOptions = [ "subvol=@games" "compress=zstd" "noatime" ];
               };
             };
           };

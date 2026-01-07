@@ -1,16 +1,40 @@
-{ userConfig, ... }:
+{ lib, userConfig, ... }:
 {
+  home.file =
+    let
+      hasGitKey = userConfig.gitKey != "";
+      isSshSigningKey = hasGitKey && lib.hasPrefix "ssh-" userConfig.gitKey;
+    in
+    lib.mkIf isSshSigningKey {
+      ".config/git/allowed_signers".text = "${userConfig.email} ${userConfig.gitKey}\n";
+    };
+
   # Instala o git via módulo do Home Manager
   programs.git = {
     enable = true;
-    settings = {
-      user = {
-        email = userConfig.email;
-        name = userConfig.fullName;
-      };
-      pull.rebase = "true";
-    };
-    signing = {
+    settings =
+      let
+        hasGitKey = userConfig.gitKey != "";
+        isSshSigningKey = hasGitKey && lib.hasPrefix "ssh-" userConfig.gitKey;
+      in
+      lib.mkMerge [
+        {
+          user = {
+            email = userConfig.email;
+            name = userConfig.fullName;
+          };
+          pull.rebase = "true";
+        }
+        (lib.mkIf isSshSigningKey {
+          gpg = {
+            format = "ssh";
+            ssh.allowedSignersFile = "~/.config/git/allowed_signers";
+          };
+        })
+      ];
+
+    # Só habilita assinatura se a chave estiver definida.
+    signing = lib.mkIf (userConfig.gitKey != "") {
       key = userConfig.gitKey;
       signByDefault = true;
     };

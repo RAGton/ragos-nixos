@@ -53,7 +53,7 @@
           avatar = ./files/avatar/face;
           email = "g.rocha@estudante.ifmt.edu.br";
           fullName = "Gabriel Aguiar Rocha";
-          gitKey = "";
+          gitKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINAFi1/wOXb839pka/DhBlk0FfJWDy2M6r1ho7ejkNuu gabriel.rag@proton.me";
           name = "rag";
         };
       };
@@ -102,10 +102,12 @@
     {
       nixosConfigurations = {
         inspiron = mkNixosConfiguration "inspiron" "rag";
+        Glacier = mkNixosConfiguration "Glacier" "rag";
       };
 
       homeConfigurations = {
         "rag@inspiron" = mkHomeConfiguration "x86_64-linux" "rag" "inspiron";
+        "rag@Glacier" = mkHomeConfiguration "x86_64-linux" "rag" "Glacier";
       };
 
       overlays = import ./overlays { inherit inputs; };
