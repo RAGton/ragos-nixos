@@ -49,6 +49,14 @@ sudo nixos-rebuild switch --flake .#inspiron
 home-manager switch --flake .#rag@inspiron
 ```
 
+To read Home Manager news while using flakes:
+
+```sh
+home-manager news --flake .#rag@inspiron
+```
+
+> If you run `home-manager news` without `--flake`, it will try the default config at `~/.config/home-manager/home.nix`.
+
 ### Makefile shortcuts
 
 The [Makefile](Makefile) provides common targets.

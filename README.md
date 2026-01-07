@@ -58,6 +58,14 @@ sudo nixos-rebuild switch --flake .#inspiron
 home-manager switch --flake .#rag@inspiron
 ```
 
+Para ler as novidades do Home Manager (news) usando flakes, rode:
+
+```sh
+home-manager news --flake .#rag@inspiron
+```
+
+> Se você rodar `home-manager news` sem `--flake`, ele tenta usar a config padrão em `~/.config/home-manager/home.nix`.
+
 ### Atalhos via Makefile
 
 O [Makefile](Makefile) oferece alvos prontos.
