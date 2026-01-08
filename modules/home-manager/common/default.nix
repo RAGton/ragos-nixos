@@ -4,6 +4,45 @@
   pkgs,
   ...
 }:
+
+let
+  isDarwin = pkgs.stdenv.isDarwin;
+
+  commonPackages = with pkgs; [
+    awscli2
+    dig
+    dust
+    eza
+    fd
+    jq
+    kubectl
+    nh
+    openconnect
+    pipenv
+    podman-compose
+    podman-tui
+    python3
+    ripgrep
+    terraform
+    vscode
+  ];
+
+  darwinPackages = with pkgs; [
+    anki-bin
+    colima
+    hidden-bar
+    mos
+    podman
+    raycast
+  ];
+
+  linuxPackages = with pkgs; [
+    anki
+    tesseract
+    unzip
+    wl-clipboard
+  ];
+in
 {
   imports = [
     ../programs/aerospace
@@ -61,39 +100,9 @@
 
   # Garante que os pacotes comuns estejam instalados
   home.packages =
-    with pkgs;
-    [
-      awscli2
-      dig
-      dust
-      eza
-      fd
-      jq
-      kubectl
-      nh
-      openconnect
-      pipenv
-      podman-compose
-      podman-tui
-      python3
-      ripgrep
-      terraform
-      vscode	
-    ]
-    ++ lib.optionals stdenv.isDarwin [
-      anki-bin
-      colima
-      hidden-bar
-      mos
-      podman
-      raycast
-    ]
-    ++ lib.optionals (!stdenv.isDarwin) [
-      anki
-      tesseract
-      unzip
-      wl-clipboard
-    ];
+    commonPackages
+    ++ lib.optionals isDarwin darwinPackages
+    ++ lib.optionals (!isDarwin) linuxPackages;
 
   # Flavor e accent do Catppuccin
   catppuccin = {
