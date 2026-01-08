@@ -89,7 +89,7 @@ in
   home = {
     username = "${userConfig.name}";
     homeDirectory =
-      if pkgs.stdenv.isDarwin then "/Users/${userConfig.name}" else "/home/${userConfig.name}";
+      if isDarwin then "/Users/${userConfig.name}" else "/home/${userConfig.name}";
   };
 
   # Ajustes de sessão (principalmente Electron/VS Code em Wayland)
