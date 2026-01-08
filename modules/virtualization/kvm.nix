@@ -1,10 +1,10 @@
 /*
  Autor: RAGton
  Descrição: Módulo NixOS para habilitar virtualização KVM/QEMU/libvirt
-            com IOMMU, virt-manager e boas práticas.
-*/
+             com IOMMU, virt-manager e boas práticas.
+ */
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, userConfig, ... }:
 
 {
   ############################
@@ -39,9 +39,7 @@
   ############################
   # Usuário e permissões
   ############################
-  users.groups.libvirtd.members = [
-    "rag"   # 🔴 ajuste para seu usuário real
-  ];
+  users.groups.libvirtd.members = lib.mkDefault [ userConfig.name ];
 
   ############################
   # Polkit (virt-manager sem sudo)
