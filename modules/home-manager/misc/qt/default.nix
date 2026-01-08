@@ -23,7 +23,9 @@ in
   home.packages = [
     catppuccin-kvantum-pkg
     pkgs.libsForQt5.qtstyleplugin-kvantum
+    pkgs.qt6Packages.qtstyleplugin-kvantum
     pkgs.libsForQt5.qt5ct
+    pkgs.qt6Packages.qt6ct
   ];
 
   qt = {
