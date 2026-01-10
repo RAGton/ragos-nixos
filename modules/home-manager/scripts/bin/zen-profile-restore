@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Restaura um backup do perfil do Zen Browser (Flatpak).
+# Uso: zen-profile-restore /caminho/para/zen-profile-YYYYmmdd-HHMMSS.tgz
+
+if [[ $# -ne 1 ]]; then
+  echo "Uso: $(basename "$0") /caminho/para/zen-profile-*.tgz" >&2
+  exit 2
+fi
+
+archive="$1"
+if [[ ! -f "$archive" ]]; then
+  echo "Erro: arquivo não encontrado: $archive" >&2
+  exit 1
+fi
+
+if command -v pgrep >/dev/null 2>&1 && pgrep -f "app.zen_browser.zen" >/dev/null 2>&1; then
+  echo "Erro: feche o Zen Browser antes de restaurar." >&2
+  exit 1
+fi
+
+var_app="$HOME/.var/app"
+dest="$var_app/app.zen_browser.zen"
+
+mkdir -p "$var_app"
+
+# Faz backup do estado atual antes de sobrescrever
+if [[ -d "$dest" ]]; then
+  ts="$(date +%Y%m%d-%H%M%S)"
+  mv "$dest" "$dest.bak.$ts"
+  echo "Backup do estado atual: $dest.bak.$ts"
+fi
+
+# Extrai somente o app dir esperado
+# O tar foi criado com base em ~/.var/app, então a extração ocorre dentro de ~/.var/app
+
+tar -C "$var_app" -xzf "$archive"
+
+if [[ ! -d "$dest" ]]; then
+  echo "Erro: restauração não gerou $dest (backup inválido?)" >&2
+  exit 1
+fi
+
+echo "OK: perfil restaurado em: $dest"
+echo "Abra o Zen. Se o Flatpak pedir permissões novamente, aceite."

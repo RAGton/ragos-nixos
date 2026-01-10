@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+# Sai se nenhum número de desktop for fornecido como argumento.
+if [ -z "$1" ]; then
+	echo "Erro: nenhum número de desktop informado."
+	echo "Uso: $0 <numero_do_desktop>"
+	exit 1
+fi
+
+TARGET_DESKTOP=$1
+
+# Obtém o ID da janela ativa no momento.
+ACTIVE_WINDOW_ID=$(kdotool getactivewindow)
+
+# Move a janela ativa para o desktop alvo.
+kdotool set_desktop_for_window "$ACTIVE_WINDOW_ID" "$TARGET_DESKTOP"
+
+# Troca para o desktop alvo.
+kdotool set_desktop "$TARGET_DESKTOP"

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Garante que os comandos necessários existam
+if ! command -v hyprctl &>/dev/null || ! command -v jq &>/dev/null; then
+	# Usa notify-send para mostrar o erro
+	notify-send "Erro" "'hyprctl' e 'jq' são necessários para este script."
+	exit 1
+fi
+
+# Encontra o monitor em foco que seja DisplayPort.
+ACTIVE_DP_MONITOR=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true and (.name | startswith("DP-"))) | .name' | head -n 1)
+
+# Verifica se encontrou um DP ativo
+if [[ -z "$ACTIVE_DP_MONITOR" ]]; then
+	notify-send "Info" "Nenhum monitor DisplayPort ativo encontrado."
+	exit 1
+fi
+
+# Aplica o modo de maior taxa de atualização
+hyprctl keyword monitor "$ACTIVE_DP_MONITOR,highrr,auto,1"
+
+# Notificação de confirmação
+notify-send "Display" "Alterado $ACTIVE_DP_MONITOR para o modo de alta taxa de atualização."

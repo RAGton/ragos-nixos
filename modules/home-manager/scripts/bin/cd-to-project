@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+selected=$(find ~/Documents/repositories -mindepth 1 -maxdepth 2 -type d -not -iwholename '*.git*' | fzf)
+if [ -n "$selected" ]; then
+	# Abre o warp-terminal (wrapper) iniciando o zellij no diretório selecionado
+	warp-terminal start --cwd "$selected" -- zellij || exit
+fi

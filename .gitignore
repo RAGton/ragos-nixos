@@ -1,5 +1,7 @@
 files/configs/nvim/lazy-lock.json
 files/configs/nvim/lazyvim.json
 .DS_Store
+
+# outputs/symlinks de builds Nix
 result
 result-*

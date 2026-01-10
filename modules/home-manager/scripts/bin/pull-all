@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Atualiza repositórios Git em lote.
+
+Este script automatiza o processo de atualizar repositórios Git dentro de um diretório.
+Ele percorre a árvore de diretórios, identifica repositórios Git, determina o branch principal
+e executa um `git pull` para atualizar cada repositório.
+
+Recursos:
+- Identificação de repositórios: detecta diretórios que contêm `.git`.
+- Detecção de branch principal: identifica dinamicamente o branch ativo.
+- Pull automatizado: executa `git pull origin <branch>`.
+- Exclusão de diretórios: ignora pastas de Terraform/Terragrunt para evitar processamento desnecessário.
+
+Dependências:
+- Git
+- Python 3 (bibliotecas padrão: `os`, `subprocess`)
+
+Uso:
+Execute como script Python. Por padrão ele procura repositórios em `~/Documents/repositories`.
+"""
+
+__author__ = "Alexander Nabokikh"
+__license__ = "GPL-2.0 license"
+
+
+import os
+import subprocess
+
+repo_directory = os.path.expanduser("~/Documents/repositories")
+
+
+def is_git_directory(directory):
+    """
+    Verifica se um diretório é um repositório Git procurando pelo subdiretório `.git`.
+    """
+    return os.path.isdir(os.path.join(directory, ".git"))
+
+
+def get_git_main_branch(directory):
+    """
+    Determina o nome do branch principal do repositório Git em `directory`.
+    """
+    os.chdir(directory)
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], check=True, capture_output=True, text=True
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        print(f"Falha ao determinar o branch principal de {directory}. Erro: {str(e)}")
+        return None
+
+
+def git_pull(directory):
+    """
+    Executa um `git pull` no diretório informado.
+    """
+    os.chdir(directory)  # Navega até o diretório
+    main_branch = get_git_main_branch(directory)
+
+    if main_branch is None:
+        print(f"Pulando atualização para {directory}.")
+        return
+
+    try:
+        # Executa git pull no branch detectado
+        subprocess.run(["git", "pull", "origin", main_branch], check=True, capture_output=True, text=True)
+        print(f"Atualizado com sucesso: {directory} (branch '{main_branch}').")
+    except subprocess.CalledProcessError as e:
+        print(f"Falha ao atualizar {directory} (branch '{main_branch}'). Erro: {str(e)}")
+
+
+def main():
+    if os.path.exists(repo_directory):
+        for root, dirs, _ in os.walk(repo_directory):
+            for dir in dirs:
+                full_dir_path = os.path.join(root, dir)
+
+                # Ignora se estiver dentro de `.terraform` ou `.terragrunt-cache`
+                if ".terraform" in full_dir_path.split("/") or ".terragrunt-cache" in full_dir_path.split("/"):
+                    continue
+
+                if is_git_directory(full_dir_path):
+                    git_pull(full_dir_path)
+    else:
+        print(f"O diretório {repo_directory} não existe.")
+
+
+if __name__ == "__main__":
+    main()

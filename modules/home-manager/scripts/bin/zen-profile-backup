@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Backup do perfil do Zen Browser (Flatpak).
+# ATENÇÃO: isso inclui cookies/tokens/sessões (contas logadas). NÃO coloque o arquivo gerado no git.
+
+src="$HOME/.var/app/app.zen_browser.zen"
+if [[ ! -d "$src" ]]; then
+  echo "Erro: diretório do Zen não encontrado em: $src" >&2
+  echo "O Zen parece não estar instalado/rodado via Flatpak neste usuário." >&2
+  exit 1
+fi
+
+if command -v pgrep >/dev/null 2>&1 && pgrep -f "app.zen_browser.zen" >/dev/null 2>&1; then
+  echo "Erro: feche o Zen Browser antes de fazer backup." >&2
+  exit 1
+fi
+
+out_dir="$HOME/Backups/zen-browser"
+mkdir -p "$out_dir"
+
+ts="$(date +%Y%m%d-%H%M%S)"
+out_file="$out_dir/zen-profile-$ts.tgz"
+
+# Backup do app dir inteiro do Flatpak (mais confiável pra manter contas conectadas)
+# Inclui: config, cache e data.
+# Se quiser menor: edite para excluir cache.
+
+tar -C "$HOME/.var/app" -czf "$out_file" "app.zen_browser.zen"
+
+echo "OK: backup criado em: $out_file"
+echo "Dica: guarde isso em local seguro (idealmente criptografado)."

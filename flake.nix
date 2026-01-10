@@ -47,17 +47,6 @@
     let
       inherit (self) outputs;
 
-      # Tema global (fonte única de verdade). Consumido por módulos NixOS e Home Manager.
-      themeConfig = {
-        kde = {
-          # Valores atuais (espelhados do KDE em execução)
-          lookAndFeelPackage = "Edna";
-          colorScheme = "Edna";
-          cursorTheme = "Nordzy-cursors";
-          iconTheme = "kora";
-        };
-      };
-
       # Definição de usuários
       users = {
         rag = {
@@ -74,7 +63,7 @@
         hostname: username:
         nixpkgs.lib.nixosSystem {
           specialArgs = {
-            inherit inputs outputs hostname themeConfig;
+            inherit inputs outputs hostname;
             userConfig = users.${username};
             nixosModules = "${self}/modules/nixos";
           };
@@ -100,7 +89,7 @@
         home-manager.lib.homeManagerConfiguration {
           pkgs = import nixpkgs { inherit system; };
           extraSpecialArgs = {
-            inherit inputs outputs themeConfig;
+            inherit inputs outputs;
             userConfig = users.${username};
             nhModules = "${self}/modules/home-manager";
           };
