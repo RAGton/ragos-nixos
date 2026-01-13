@@ -8,7 +8,7 @@
   home.file.".config/zsh/.p10k.zsh" = {
     # Fonte global compartilhada entre hosts.
     # Importante: este arquivo precisa estar rastreado no Git para flakes enxergarem.
-    source = ../../../../.p10k.zsh;
+    source = ./.p10k.zsh;
     force = true;
   };
 
