@@ -4,7 +4,7 @@
             com IOMMU, virt-manager e boas práticas.
 */
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, userConfig, ... }:
 
 {
   ############################
@@ -40,7 +40,7 @@
   # Usuário e permissões
   ############################
   users.groups.libvirtd.members = [
-    "rag"   # 🔴 ajuste para seu usuário real
+    userConfig.name
   ];
 
   ############################

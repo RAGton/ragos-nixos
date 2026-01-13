@@ -93,6 +93,9 @@
   kernelZen = {
     enable = true;
 
+    kernel = "xanmod";
+    forceLocalBuild = true;
+
     # ⚠️ só recomendo isso se for desktop single-user
     disableMitigations = lib.mkDefault true;
 
