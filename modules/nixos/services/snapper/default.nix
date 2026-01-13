@@ -18,6 +18,7 @@
     # mesmo quando não há subvolume/mount dedicado para snapshots.
     systemd.tmpfiles.rules = [
       "d /.snapshots 0755 root root -"
+      "d /home/.snapshots 0755 root root -"
     ];
 
     # O snapper exige que `/.snapshots` seja um *subvolume* Btrfs.
@@ -45,6 +46,23 @@
 
             rm -rf /.snapshots
             ${pkgs.btrfs-progs}/bin/btrfs subvolume create /.snapshots >/dev/null
+          fi
+
+          # Para o config "home" (SUBVOLUME=/home), o snapper usa /home/.snapshots por padrão.
+          if ! ${pkgs.btrfs-progs}/bin/btrfs subvolume show /home/.snapshots >/dev/null 2>&1; then
+            if [ -e /home/.snapshots ] && [ ! -d /home/.snapshots ]; then
+              echo "snapper: /home/.snapshots existe mas não é diretório; não é possível criar subvolume." >&2
+              exit 1
+            fi
+
+            if [ -d /home/.snapshots ] && [ -n "$(ls -A /home/.snapshots 2>/dev/null)" ]; then
+              echo "snapper: /home/.snapshots é um diretório não-vazio e não é subvolume; recuso substituir automaticamente." >&2
+              echo "snapper: mova/remova o conteúdo de /home/.snapshots e rode nixos-rebuild novamente." >&2
+              exit 1
+            fi
+
+            rm -rf /home/.snapshots
+            ${pkgs.btrfs-progs}/bin/btrfs subvolume create /home/.snapshots >/dev/null
           fi
         fi
       '';

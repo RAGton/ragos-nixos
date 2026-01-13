@@ -191,7 +191,7 @@
 
     kwin = {
       nightLight = {
-        enable = true;
+        enable = false;
         location.latitude = "52.23";
         location.longitude = "21.01";
         mode = "location";
@@ -206,42 +206,74 @@
 
     overrideConfig = true;
 
-    # Layout mais estável: painel superior de monitores + barra de tarefas embaixo.
-    # Ajuste via Nix para não "resetar" após rebuild (overrideConfig = true).
+    # Uma única barra inteira no topo:
+    # - sem Task Manager
+    # - Pager no meio (mostra número do desktop e ícones das janelas)
+    # - espaçadores para organizar
+    # - seletor de usuário
+    # - monitores em linha (rede + RAM)
     panels = [
-      # Painel superior: monitores (CPU e Memória)
       {
-        alignment = "center";
-        height = 36;
-        floating = true;
-        lengthMode = "fit";
         location = "top";
+        # Menor = ícones menores (inclui system tray)
+        height = 36;
+        floating = false;
         opacity = "translucent";
         widgets = [
+          # Logo do NixOS (sem launcher/menu)
           {
-            name = "org.kde.plasma.systemmonitor.cpucore";
+            name = "org.kde.plasma.icon";
+            config = {
+              General = {
+                icon = "nixos";
+              };
+            };
+          }
+
+          # Seletor de usuário (igual ao appletsrc)
+          {
+            name = "org.kde.plasma.userswitcher";
+            config = {
+              General = {
+                showFace = true;
+                showFullName = false;
+                showName = false;
+              };
+            };
+          }
+
+          # Espaçador + Pager central
+          { name = "org.kde.plasma.panelspacer"; }
+          {
+            name = "org.kde.plasma.pager";
+            config = {
+              General = {
+                # Mostra número do desktop e ícones das janelas
+                displayedText = "Number";
+                showWindowIcons = true;
+              };
+            };
+          }
+          { name = "org.kde.plasma.panelspacer"; }
+
+          # Monitores em linha (rede + RAM)
+          {
+            name = "org.kde.plasma.systemmonitor.net";
             config = {
               CurrentPreset = "org.kde.plasma.systemmonitor";
-              popupHeight = 400;
-              popupWidth = 560;
               Appearance = {
-                chartFace = "org.kde.ksysguard.barchart";
-                title = "Uso individual do núcleo";
+                chartFace = "org.kde.ksysguard.linechart";
+                title = "Rede";
               };
               SensorColors = {
-                "cpu/cpu.*/usage" = "183,189,248";
-                "cpu/cpu0/usage" = "183,189,248";
-                "cpu/cpu1/usage" = "226,183,248";
-                "cpu/cpu2/usage" = "248,183,222";
-                "cpu/cpu3/usage" = "248,193,183";
-                "cpu/cpu4/usage" = "248,242,183";
-                "cpu/cpu5/usage" = "205,248,183";
-                "cpu/cpu6/usage" = "183,248,209";
-                "cpu/cpu7/usage" = "183,238,248";
+                "network/all/download" = "52,152,219";
+                "network/all/upload" = "219,119,52";
               };
               Sensors = {
-                highPrioritySensorIds = [ "cpu/cpu.*/usage" ];
-                totalSensors = [ "cpu/all/usage" ];
+                highPrioritySensorIds = [
+                  "network/all/download"
+                  "network/all/upload"
+                ];
               };
             };
           }
@@ -249,14 +281,12 @@
             name = "org.kde.plasma.systemmonitor.memory";
             config = {
               CurrentPreset = "org.kde.plasma.systemmonitor";
-              popupHeight = 400;
-              popupWidth = 560;
               Appearance = {
-                chartFace = "org.kde.ksysguard.piechart";
-                title = "Uso da memória";
+                chartFace = "org.kde.ksysguard.linechart";
+                title = "RAM";
               };
               SensorColors = {
-                "memory/physical/used" = "183,189,248";
+                "memory/physical/used" = "52,152,219";
               };
               Sensors = {
                 highPrioritySensorIds = [ "memory/physical/used" ];
@@ -265,59 +295,16 @@
               };
             };
           }
-        ];
-      }
 
-      # Barra de tarefas: menu + tarefas + tray + relógio
-      {
-        location = "bottom";
-        height = 44;
-        floating = false;
-        opacity = "translucent";
-        widgets = [
-          {
-            name = "org.kde.plasma.kickoff";
-          }
-          {
-            name = "org.kde.plasma.icontasks";
-            config = {
-              General = {
-                # comportamento mais previsível e compatível
-                separateLaunchers = true;
-                showOnlyCurrentScreen = true;
-                showOnlyCurrentDesktop = false;
-                groupMode = 0;
-              };
-            };
-          }
-          {
-            name = "org.kde.plasma.panelspacer";
-          }
           {
             systemTray = {
               icons.scaleToFit = true;
               items = {
-                showAll = false;
-                shown = [
-                  "org.kde.plasma.keyboardlayout"
-                  "org.kde.plasma.networkmanagement"
-                  "org.kde.plasma.volume"
-                ];
-                hidden = [
-                  "org.kde.plasma.battery"
-                  "org.kde.plasma.brightness"
-                  "org.kde.plasma.clipboard"
-                  "org.kde.plasma.devicenotifier"
-                  "org.kde.plasma.mediacontroller"
-                  "plasmashell_microphone"
-                  "xdg-desktop-portal-kde"
-                  "zoom"
-                ];
+                # Tudo sempre visível (como você pediu)
+                showAll = true;
                 configs = {
                   "org.kde.plasma.notifications".config = {
-                    Shortcuts = {
-                      global = "Meta+N";
-                    };
+                    Shortcuts.global = "Meta+N";
                   };
                 };
               };
@@ -389,6 +376,7 @@
         "Switch to Desktop 5" = "Meta+5";
         "Switch to Desktop 6" = "Meta+6";
         "Switch to Desktop 7" = "Meta+7";
+        "Switch to Desktop 8" = "Meta+8";
         "Window Close" = "Meta+Q";
         "Window Fullscreen" = "Meta+M";
         "Window Move Center" = "Ctrl+Alt+C";
@@ -398,7 +386,7 @@
         "show-on-mouse-pos" = "";
       };
 
-      "services/org.kde.dolphin.desktop"."_launch" = "Meta+Shift+F";
+      "services/org.kde.dolphin.desktop"."_launch" = "Meta+e";
     };
 
     spectacle = {
@@ -569,7 +557,8 @@
           Theme = "kora";
         };
         KDE = {
-          AnimationDurationFactor = 0;
+          # Reabilita animações (0 desliga geral)
+          AnimationDurationFactor = 1;
         };
           Theme = {
             AutomaticDarkTheme = true;
@@ -583,10 +572,18 @@
       kwinrc = {
         Effect-overview.BorderActivate = 9;
         Plugins = {
-          blurEnabled = false;        # Edna é clean
+          # Transparência/efeitos
+          blurEnabled = true;
           dimscreenEnabled = false;
           krohnkiteEnabled = false;
           screenedgeEnabled = false;
+
+          # Animações/efeitos (o que você descreveu como "ir para trás" e "folha")
+          # Nomes podem variar por versão, mas essas flags são seguras de manter.
+          magiclampEnabled = true;
+          slidebackEnabled = true;
+          wobblywindowsEnabled = true;
+          translucencyEnabled = true;
         };
         "Round-Corners" = {
           ActiveOutlineAlpha = 255;
