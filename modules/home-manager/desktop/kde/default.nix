@@ -39,6 +39,7 @@
     libnotify
     kora-icon-theme
     nordzy-cursor-theme
+    qt6.qttools
   ];
 
   # Silencia aviso de mudança futura do zsh dotDir.
@@ -85,6 +86,20 @@
         name = "Launch Dolphin";
         key = "Meta+E";
         command = "dolphin";
+      };
+      show-clipboard-history = {
+        name = "Show clipboard history";
+        key = "Meta+V";
+        command = "${pkgs.runtimeShell} -lc ${lib.escapeShellArg ''
+          dbus_cmd="$(command -v qdbus6 2>/dev/null || command -v qdbus 2>/dev/null || true)"
+          if [ -n "$dbus_cmd" ]; then
+            "$dbus_cmd" org.kde.klipper /klipper org.kde.klipper.klipper.showKlipperPopupMenu >/dev/null 2>&1 \
+              || "$dbus_cmd" org.kde.klipper /klipper org.kde.klipper.klipper.popupMenu >/dev/null 2>&1 \
+              || true
+          else
+            (klipper >/dev/null 2>&1 &)
+          fi
+        ''}";
       };
       clear-notifications = {
         name = "Clear all KDE Plasma notifications";

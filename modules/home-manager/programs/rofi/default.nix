@@ -17,6 +17,8 @@
   programs.rofi = {
     enable = true;
     package = pkgs.rofi;
-    theme = ./theme.rasi;
+    # Tema do nixpkgs (vem junto com o rofi):
+    #   ${pkgs.rofi-unwrapped}/share/rofi/themes/material.rasi
+    theme = "${pkgs.rofi-unwrapped}/share/rofi/themes/material.rasi";
   };
 }

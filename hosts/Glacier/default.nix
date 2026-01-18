@@ -45,6 +45,12 @@
 
   networking.hostName = hostname;
 
+  # Wake-on-LAN: permite acordar/ligar via "magic packet" (ex.: Alexa/bridge WOL).
+  # Requisitos fora do Nix:
+  # - BIOS/UEFI: WOL habilitado
+  # - Placa/driver suportar WOL no estado S5 (varia por hardware)
+  networking.interfaces.enp6s0.wakeOnLan.enable = true;
+
   system.stateVersion = "25.11";
 
   # =========================

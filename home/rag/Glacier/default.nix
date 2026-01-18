@@ -5,6 +5,21 @@
     "${nhModules}/desktop/kde"
   ];
 
+  # Autostart (KDE): inicia o OpenRGB sozinho e já minimizado na bandeja.
+  xdg.configFile."autostart/openrgb.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Name=OpenRGB
+    Comment=OpenRGB (start minimized)
+    Exec=openrgb --startminimized
+    Icon=openrgb
+    Terminal=false
+    StartupNotify=false
+    X-KDE-autostart-after=panel
+    X-KDE-StartupNotify=false
+    X-GNOME-Autostart-enabled=true
+  '';
+
   # Habilita home-manager
   programs.home-manager.enable = true;
 

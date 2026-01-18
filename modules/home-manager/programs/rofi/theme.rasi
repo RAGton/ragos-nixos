@@ -1,11 +1,105 @@
 /*
-  Tema mínimo do Rofi.
+  Tema Rofi (estilo Material)
 
-  - Este arquivo existe para tornar o tema declarativo (via Home Manager).
-  - Você pode substituir por um tema completo (.rasi) quando quiser.
+  Objetivo:
+  - Visual parecido com "material" (fundo escuro + seleção azul), como no screenshot.
+  - Sem depender de coleções externas de temas.
 */
 
 configuration {
   show-icons: true;
   drun-display-format: "{name}";
+  sidebar-mode: false;
+}
+
+* {
+  font: "Roboto 12";
+
+  bg:           #1f222a;
+  bg-alt:       #262a34;
+  fg:           #e6e6e6;
+  fg-alt:       #b8bcc6;
+
+  accent:       #3b82f6; /* azul (seleção) */
+  urgent:       #ef4444;
+
+  border-color: #2f3441;
+  radius:       10px;
+}
+
+window {
+  background-color: @bg;
+  border: 2px;
+  border-color: @border-color;
+  border-radius: @radius;
+  padding: 10px;
+  width: 520px;
+}
+
+mainbox {
+  background-color: transparent;
+  children: [ inputbar, listview ];
+  spacing: 10px;
+}
+
+inputbar {
+  background-color: @bg-alt;
+  border-radius: @radius;
+  padding: 10px;
+  children: [ prompt, entry ];
+  spacing: 8px;
+}
+
+prompt {
+  text-color: @fg-alt;
+}
+
+entry {
+  text-color: @fg;
+  placeholder: "Pesquisar…";
+  placeholder-color: @fg-alt;
+}
+
+listview {
+  background-color: transparent;
+  lines: 10;
+  columns: 1;
+  fixed-height: false;
+  spacing: 6px;
+  scrollbar: true;
+}
+
+element {
+  background-color: transparent;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+element normal.normal {
+  text-color: @fg;
+}
+
+element selected.normal {
+  background-color: @accent;
+  text-color: #0b1220;
+}
+
+element urgent.normal {
+  text-color: @urgent;
+}
+
+element-icon {
+  size: 22px;
+  margin: 0px 10px 0px 0px;
+}
+
+element-text {
+  text-color: inherit;
+}
+
+scrollbar {
+  background-color: transparent;
+  handle-color: @border-color;
+  handle-width: 8px;
+  padding: 0px;
 }
