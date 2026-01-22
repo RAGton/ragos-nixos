@@ -420,7 +420,7 @@ nix flake update
 
 ### Módulos de sistema (em `modules/nixos/`)
 
-- **`common`**: configurações comuns (bootloader, rede, PipeWire, fontes e usuário).
+- **`common`**: configurações comuns (bootloader, rede, PipeWire, fontes e usuário). Inclui Plymouth (tema `nixos-bgrt`) e splash do systemd-boot gerado a partir de `files/wallpaper/wallpaper.png`.
 - **`desktop/hyprland`**: Hyprland com GDM/Bluetooth e pacotes de suporte.
 - **`desktop/kde`**: KDE Plasma com SDDM.
 - **`programs/steam`**: Steam no nível do sistema.

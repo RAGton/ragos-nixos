@@ -28,24 +28,13 @@
 {
   imports = [
     inputs.nix-flatpak.nixosModules.nix-flatpak
+    ../../shared/nixpkgs
     ../programs/steam
     ../programs/gaming
     ../programs/wallpaper-engine-kde
     ../services/tlp
     ../services/snapper
   ];
-  # nixpkgs: overlays e allowUnfree no nível do sistema.
-  nixpkgs = {
-    overlays = [
-      outputs.overlays.stable-packages
-      outputs.overlays.openrgb-git
-      outputs.overlays.drkonqi-ignore-missing-buildid
-    ];
-
-    config = {
-      allowUnfree = true;
-    };
-  };
 
   # Registra inputs da flake no registry (melhora UX com comandos `nix ...`).
   nix.registry = lib.mapAttrs (_: flake: { inherit flake; }) (
@@ -60,6 +49,7 @@
   }) config.nix.registry;
 
   # Nix: ajustes globais.
+  nix.package = pkgs.nixVersions.latest;
   nix.settings = {
     experimental-features = "nix-command flakes";
     auto-optimise-store = true;
@@ -78,8 +68,27 @@
     ];
     loader.efi.canTouchEfiVariables = true;
     loader.systemd-boot.enable = true;
+    loader.systemd-boot.extraFiles =
+      let
+        splashSrc = ../../../files/wallpaper/wallpaper.png;
+        splashBmp = pkgs.runCommand "systemd-boot-splash.bmp" { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
+          convert "${splashSrc}" \
+            -alpha off \
+            -resize 1920x1080^ \
+            -gravity center \
+            -extent 1920x1080 \
+            BMP3:"$out"
+        '';
+      in
+      {
+        "loader/splash.bmp" = splashBmp;
+      };
     loader.timeout = 0;
-    plymouth.enable = true;
+    plymouth = {
+      enable = true;
+      theme = "nixos-bgrt";
+      themePackages = [ pkgs.nixos-bgrt-plymouth ];
+    };
 
     # Ajustes do módulo v4l (câmera virtual)
     kernelModules = [ "v4l2loopback" ];

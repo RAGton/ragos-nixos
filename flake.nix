@@ -78,6 +78,7 @@
         nixpkgs.lib.nixosSystem {
           specialArgs = {
             inherit inputs outputs hostname;
+            isDarwin = false;
             userConfig = users.${username};
             nixosModules = "${self}/modules/nixos";
           };
@@ -91,6 +92,7 @@
           system = "aarch64-darwin";
           specialArgs = {
             inherit inputs outputs hostname;
+            isDarwin = true;
             userConfig = users.${username};
             darwinModules = "${self}/modules/darwin";
           };
@@ -101,7 +103,11 @@
       mkHomeConfiguration =
         system: username: hostname:
         home-manager.lib.homeManagerConfiguration {
-          pkgs = import nixpkgs { inherit system; };
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ outputs.overlays.stable-packages ];
+            config.allowUnfree = true;
+          };
           extraSpecialArgs = {
             inherit inputs outputs;
             userConfig = users.${username};

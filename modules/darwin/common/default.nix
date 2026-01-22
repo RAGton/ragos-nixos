@@ -1,20 +1,14 @@
 {
   outputs,
+  lib,
   pkgs,
   userConfig,
   ...
 }:
 {
-  # Configuração do nixpkgs
-  nixpkgs = {
-    overlays = [
-      outputs.overlays.stable-packages
-    ];
-
-    config = {
-      allowUnfree = true;
-    };
-  };
+  imports = [
+    ../../shared/nixpkgs
+  ];
 
   # Configurações do Nix
   nix = {
@@ -22,7 +16,7 @@
       experimental-features = "nix-command flakes";
     };
     optimise.automatic = true;
-    package = pkgs.nix;
+    package = pkgs.nixVersions.latest;
   };
 
   # Configuração do usuário

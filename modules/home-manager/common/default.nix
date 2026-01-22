@@ -16,9 +16,9 @@
 # Riscos
 # - Variáveis de sessão podem afetar apps Electron/Qt; mudanças devem ser testadas em Wayland/X11.
 {
-  outputs,
   userConfig,
   pkgs,
+  lib,
   ...
 }:
 {
@@ -48,17 +48,6 @@
     ../programs/zsh
     ../scripts
   ];
-
-  # Nixpkgs (Home Manager): overlays e allowUnfree no escopo do usuário.
-  nixpkgs = {
-    overlays = [
-      outputs.overlays.stable-packages
-    ];
-
-    config = {
-      allowUnfree = true;
-    };
-  };
 
   # Recarrega unidades do systemd de forma suave ao mudar configs.
   systemd.user.startServices = "sd-switch";
@@ -104,9 +93,9 @@
       python3
       ripgrep
       terraform
-      vscode	
+      vscode
     ]
-    ++ lib.optionals stdenv.isDarwin [
+    ++ lib.optionals pkgs.stdenv.isDarwin [
       anki-bin
       colima
       hidden-bar
@@ -114,7 +103,7 @@
       podman
       raycast
     ]
-    ++ lib.optionals (!stdenv.isDarwin) [
+    ++ lib.optionals (!pkgs.stdenv.isDarwin) [
       anki
       helvum
       postman
