@@ -15,6 +15,7 @@
     overlays =
       [
         outputs.overlays.stable-packages
+        outputs.overlays.warp-terminal-latest
       ]
       ++ lib.optionals (!isDarwin) [
         outputs.overlays.openrgb-git

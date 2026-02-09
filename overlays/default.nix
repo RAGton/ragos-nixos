@@ -119,4 +119,44 @@ PY
       });
     });
   };
+
+  # Warp Terminal: força uma versão mais nova do upstream.
+  #
+  # Por quê
+  # - O pacote no nixpkgs às vezes fica alguns dias/semanas atrás do release upstream.
+  # - Este override mantém o Warp atualizado sem precisar esperar o bump no nixpkgs.
+  #
+  # Como
+  # - Sobrescreve `version` e `src` do derivation, usando os URLs oficiais do Warp.
+  # - Hashes foram obtidos via `nix store prefetch-file --json <url>`.
+  warp-terminal-latest = final: prev: {
+    warp-terminal = prev.warp-terminal.overrideAttrs (old: let
+      version = "0.2026.02.04.08.20.stable_03";
+      isDarwin = prev.stdenv.hostPlatform.isDarwin;
+      system = prev.stdenv.hostPlatform.system;
+      linuxArch = if system == "x86_64-linux" then "x86_64" else "aarch64";
+
+      url =
+        if isDarwin then
+          "https://releases.warp.dev/stable/v${version}/Warp.dmg"
+        else
+          "https://releases.warp.dev/stable/v${version}/warp-terminal-v${version}-1-${linuxArch}.pkg.tar.zst";
+
+      hash =
+        if isDarwin then
+          "sha256-eWzWTGxjmJqjI09/rGYYwTIuvIKa86f+H53sQWDGbzs="
+        else if system == "x86_64-linux" then
+          "sha256-q2nrl4bI4R2T0ulKcv1HmQjYgu31tbmL22TgA/+J5XM="
+        else
+          "sha256-Er14isGBRRejSsW13IJe+GLXNPpl3z1AWzGgJ3B03Js=";
+    in {
+      inherit version;
+      src = prev.fetchurl { inherit url hash; };
+
+      # O binário recente do Warp passou a depender de `liblzma.so.5`.
+      # `xz` fornece essa lib e permite o auto-patchelf satisfazer a dependência.
+      buildInputs = (old.buildInputs or [ ]) ++ [ prev.xz ];
+      runtimeDependencies = (old.runtimeDependencies or [ ]) ++ [ prev.xz ];
+    });
+  };
 }

@@ -105,7 +105,10 @@
         home-manager.lib.homeManagerConfiguration {
           pkgs = import nixpkgs {
             inherit system;
-            overlays = [ outputs.overlays.stable-packages ];
+            overlays = [
+              outputs.overlays.stable-packages
+              outputs.overlays.warp-terminal-latest
+            ];
             config.allowUnfree = true;
           };
           extraSpecialArgs = {
