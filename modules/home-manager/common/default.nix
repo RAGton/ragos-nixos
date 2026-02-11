@@ -92,6 +92,5 @@
       podman-tui
       python3
       ripgrep
-      vscode-fhs
     ]
 }

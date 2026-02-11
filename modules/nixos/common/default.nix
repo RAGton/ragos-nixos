@@ -272,6 +272,10 @@
     openrgb-git
     podman
     distrobox
+    jetbrains.idea-oss
+    jetbrains.pycharm-oss
+    jetbrains.rust-rover
+    
   ];
 
   # Regras udev para permitir acesso do OpenRGB aos dispositivos.
