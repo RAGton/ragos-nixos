@@ -44,10 +44,10 @@
   networking.hostName = hostname;
 
   # UniFi Network Application (Controller).
-  services.unifi = {
-    enable = true;
-    openFirewall = true;
-  };
+ # services.unifi = {
+  #  enable = true;
+  #  openFirewall = true;
+  #};
 
   system.stateVersion = "25.11";
 
@@ -56,7 +56,15 @@
   # =========================
   boot = {
     loader = {
-      systemd-boot.enable = true;
+      systemd-boot.enable = false;
+
+      grub = {
+	enable = true;
+	efiSupport = true;
+	device = "nodev";
+	useOSProber = true;
+      };
+
       efi = {
         canTouchEfiVariables = true;
         efiSysMountPoint = "/boot";
@@ -80,7 +88,7 @@
 
     kernel = "zen";
     forceLocalBuild = true;
-    useLLVMStdenv = false;
+    useLLVMStdenv = true;
     extraMakeFlags = [
       "KCFLAGS=-march=native"
       "KCPPFLAGS=-march=native"
@@ -92,21 +100,6 @@
     extraKernelParams = [
       "sched_latency_ns=4000000"
       "sched_min_granularity_ns=500000"
-    ];
-  };
-
-  # =========================
-  # Filesystem (Btrfs)
-  # =========================
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/a551eedc-61b1-458b-8d4d-99e7ddcc0b1a";
-    fsType = "btrfs";
-    options = [
-      "subvol=@"
-      "compress=zstd"
-      "noatime"
-      "ssd"
-      "space_cache=v2"
     ];
   };
 

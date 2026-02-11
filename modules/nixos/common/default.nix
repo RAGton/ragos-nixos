@@ -67,28 +67,28 @@
       "rd.udev.log_level=3"
     ];
     loader.efi.canTouchEfiVariables = true;
-    loader.systemd-boot.enable = true;
-    loader.systemd-boot.extraFiles =
-      let
-        splashSrc = ../../../files/wallpaper/wallpaper.png;
-        splashBmp = pkgs.runCommand "systemd-boot-splash.bmp" { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
-          convert "${splashSrc}" \
-            -alpha off \
-            -resize 1920x1080^ \
-            -gravity center \
-            -extent 1920x1080 \
-            BMP3:"$out"
-        '';
-      in
-      {
-        "loader/splash.bmp" = splashBmp;
-      };
-    loader.timeout = 0;
-    plymouth = {
-      enable = true;
-      theme = "nixos-bgrt";
-      themePackages = [ pkgs.nixos-bgrt-plymouth ];
-    };
+   # loader.systemd-boot.enable = false;
+#    loader.systemd-boot.extraFiles =
+ #     let
+  #      splashSrc = ../../../files/wallpaper/wallpaper.png;
+   #     splashBmp = pkgs.runCommand "systemd-boot-splash.bmp" { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
+    #      convert "${splashSrc}" \
+     #       -alpha off \
+      #      -resize 1920x1080^ \
+       #     -gravity center \
+        #    -extent 1920x1080 \
+         #   BMP3:"$out"
+       # '';
+      #in
+     # {
+     #   "loader/splash.bmp" = splashBmp;
+     # };
+    #loader.timeout = 0;
+   # plymouth = {
+   #   enable = true;
+   #   theme = "nixos-bgrt";
+   #   themePackages = [ pkgs.nixos-bgrt-plymouth ];
+   # };
 
     # Ajustes do módulo v4l (câmera virtual)
     kernelModules = [ "v4l2loopback" ];
@@ -175,7 +175,7 @@
   environment.localBinInPath = true;
 
   # Desabilita impressão via CUPS
-  services.printing.enable = false;
+  services.printing.enable = true;
 
   # devmon depende de udevil, que frequentemente quebra build em toolchains novos.
   # Em desktops (ex.: KDE), o fluxo recomendado para dispositivos removíveis é via udisks2.

@@ -92,25 +92,6 @@
       podman-tui
       python3
       ripgrep
-      terraform
-      vscode
+      vscode-fhs
     ]
-    ++ lib.optionals pkgs.stdenv.isDarwin [
-      anki-bin
-      colima
-      hidden-bar
-      mos
-      podman
-      raycast
-    ]
-    ++ lib.optionals (!pkgs.stdenv.isDarwin) [
-      anki
-      helvum
-      postman
-      pavucontrol
-      qpwgraph
-      tesseract
-      unzip
-      wl-clipboard
-    ];
 }
