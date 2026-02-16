@@ -60,7 +60,10 @@
       # =========================
       # Startup (interativo)
       # =========================
-      if [[ -o interactive ]] && [[ -t 1 ]] && [[ -z "''${RAG_ZSH_STARTUP_BANNER_DONE-}" ]]; then
+      # Nota: fastfetch pode travar/demorAR dependendo de rede (ex.: publicip).
+      # Então o banner agora é OPT-IN.
+      # Para reativar: export RAG_ZSH_STARTUP_BANNER=1
+      if [[ -o interactive ]] && [[ -t 1 ]] && [[ -n "''${RAG_ZSH_STARTUP_BANNER-}" ]] && [[ -z "''${RAG_ZSH_STARTUP_BANNER_DONE-}" ]]; then
         export RAG_ZSH_STARTUP_BANNER_DONE=1
         clear
         fastfetch || true

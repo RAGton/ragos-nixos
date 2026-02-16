@@ -39,6 +39,7 @@
     ../programs/wallpaper-engine-kde
     ../services/tlp
     ../services/snapper
+    ../services/tailscale
   ];
 
   # Registra inputs da flake no registry (melhora UX com comandos `nix ...`).
@@ -242,7 +243,7 @@
   services.flatpak = {
     enable = true;
 
-    packages = [
+    packages = lib.mkDefault [
       "app.zen_browser.zen"
       "com.heroicgameslauncher.hgl"
       "io.github.shiftey.Desktop"
@@ -256,12 +257,6 @@
       "com.rtosta.zapzap"
       "org.libreoffice.LibreOffice"
       "org.gimp.GIMP"
-
-      # NVIDIA (Glacier): sem essas extensões, Flatpaks Electron/GUI acabam
-      # usando Mesa sem driver para a GPU e falham com erros tipo:
-      # "egl: failed to create dri2 screen".
-      "org.freedesktop.Platform.GL.nvidia-580-119-02"
-      "org.freedesktop.Platform.GL32.nvidia-580-119-02"
     ];
 
     uninstallUnmanaged = true;
@@ -309,6 +304,17 @@
     podman
     distrobox
 
+    # =========================
+    # Python (global)
+    # =========================
+    # PyCharm/IntelliJ (GUI) frequentemente não herda PATH do Home Manager.
+    # Expor o interpretador via systemPackages garante:
+    # - /run/current-system/sw/bin/python3
+    # - criação de venv por projeto via `python3 -m venv .venv`
+    python3
+    python3Packages.pip
+    python3Packages.virtualenv
+
     # Rust (global): `rustup` gerencia toolchains; `cargo`/`rustc` úteis para uso imediato.
     rustup
     cargo
@@ -318,6 +324,32 @@
     jetbrains.pycharm-oss
     jetbrains.rust-rover
   ];
+
+   # Rustup: evita o estado "rustup instalado, mas sem toolchain default".
+  # Faz bootstrap no primeiro rebuild (e mantém idempotente).
+  system.activationScripts.rustupBootstrap = {
+    text = ''
+      USER=${lib.escapeShellArg userConfig.name}
+      HOME_DIR=${lib.escapeShellArg (config.users.users.${userConfig.name}.home or "/home/${userConfig.name}")}
+
+      if [ -d "$HOME_DIR" ]; then
+        # Só roda se rustup existir no sistema
+        if command -v rustup >/dev/null 2>&1; then
+          # Rodamos como o usuário pra evitar permissões erradas em ~/.rustup e ~/.cargo
+          ${pkgs.su}/bin/su - ${userConfig.name} -c ${lib.escapeShellArg ''
+            set -euo pipefail
+            export HOME="$HOME_DIR"
+
+            # Se não existe toolchain default, instala/define stable.
+            if ! rustup show active-toolchain >/dev/null 2>&1; then
+              rustup toolchain install stable
+              rustup default stable
+            fi
+          ''}
+        fi
+      fi
+    '';
+  };
 
   # Regras udev para permitir acesso do OpenRGB aos dispositivos.
   services.udev.packages = with pkgs; [ openrgb-git ];

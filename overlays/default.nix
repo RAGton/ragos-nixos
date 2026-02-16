@@ -159,4 +159,23 @@ PY
       runtimeDependencies = (old.runtimeDependencies or [ ]) ++ [ prev.xz ];
     });
   };
+
+  # xeus-cling: workaround
+  #
+  # Por quê
+  # - No nixpkgs unstable atual, o xeus-cling 0.15.3 está falhando no check/installCheck
+  #   ao executar notebook via papermill (kernel morre com SIGSEGV).
+  # - Isso quebra `home-manager switch` mesmo quando o kernel C++ é opcional.
+  #
+  # Como
+  # - Desativa checks do derivation. O runtime ainda pode ser usado interativamente.
+  #
+  # Riscos
+  # - Mascara regressões do upstream. Remover quando nixpkgs corrigir.
+  xeus-cling-no-checks = _final: prev: {
+    xeus-cling = prev.xeus-cling.overrideAttrs (_old: {
+      doCheck = false;
+      doInstallCheck = false;
+    });
+  };
 }

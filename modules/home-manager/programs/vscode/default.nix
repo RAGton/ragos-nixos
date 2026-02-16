@@ -23,9 +23,10 @@ let
   cfg = config.rag.vscode;
 
   # Pkgs estável (pinado em `inputs.nixpkgs-stable`).
+  # Mantém overlays do flake para não divergir de patches/overlays comuns.
   pkgsStable = import inputs.nixpkgs-stable {
     inherit (pkgs) system;
-    overlays = pkgs.overlays or [ ];
+    overlays = (pkgs.overlays or [ ]) ++ [ ];
     config = {
       allowUnfree = true;
       allowUnfreePredicate = pkg:
@@ -43,7 +44,9 @@ let
       selectPkgs.vscodium
     else
       # VSCode oficial (Microsoft)
-      (selectPkgs.vscode.overrideAttrs (old: old));
+      selectPkgs.vscode;
+
+  waylandFlags = builtins.readFile ./wayland-flags.conf;
 
 in
 {
@@ -75,6 +78,12 @@ in
     };
 
     home.packages = [ package ];
+
+    # VSCode (Electron): flags por arquivo (lido pelo wrapper do nixpkgs).
+    # Isso evita exportar variáveis globais e reduz warnings.
+    xdg.configFile."code-flags.conf" = lib.mkIf (!pkgs.stdenv.isDarwin) {
+      text = waylandFlags;
+    };
   };
 }
 

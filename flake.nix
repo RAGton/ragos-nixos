@@ -22,7 +22,7 @@
   inputs = {
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
 
     # Home Manager
     home-manager = {
@@ -53,6 +53,14 @@
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Tema (Plasma/GTK/Icons): Edna
+    # Repo: https://gitlab.com/jomada/edna
+    # Obs.: usamos flake=false porque é um repositório de assets, não um flake Nix.
+    edna-theme = {
+      url = "git+https://gitlab.com/jomada/edna";
+      flake = false;
     };
   };
 
@@ -114,6 +122,9 @@
             overlays = [
               outputs.overlays.stable-packages
               outputs.overlays.warp-terminal-latest
+              # Workaround: nixpkgs unstable sometimes fails building xeus-cling due to
+              # notebook-based install checks (papermill). Disable checks so HM can switch.
+              outputs.overlays.xeus-cling-no-checks
             ];
             config.allowUnfree = true;
           };

@@ -41,6 +41,9 @@
     heroic
     gamemode
     atlauncher
+
+    # Streaming de jogos (Sunshine/GameStream)
+    moonlight-qt
   ];
 
   # (sem opção extra de backup aqui; mantenha o controle via `home.file`)
@@ -49,5 +52,5 @@
   # modules/home-manager/programs/zsh.
 
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
-  home.stateVersion = "25.11";
+  home.stateVersion = "26.05";
 }

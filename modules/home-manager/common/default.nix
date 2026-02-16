@@ -47,10 +47,16 @@
     ../programs/telegram
     ../programs/vscode
     ../programs/virt-manager
+    ../programs/jupyter
     ../programs/zellij
     ../programs/zsh
     ../scripts
   ];
+
+  # Habilita Jupyter via módulo declarativo.
+  # IMPORTANTE: manter opt-in por host/usuário, porque Jupyter/kernels podem quebrar builds
+  # (ex.: xeus-cling e dependências python binárias). Habilite em `home/<user>/<host>/default.nix`.
+  # programs.jupyter.enable = true;
 
   # Recarrega unidades do systemd de forma suave ao mudar configs.
   systemd.user.startServices = "sd-switch";
@@ -65,7 +71,6 @@
   # Ajustes de sessão (principalmente Electron/VS Code em Wayland).
   home.sessionVariables = {
     NIXOS_OZONE_WL = "1";
-    ELECTRON_OZONE_PLATFORM_HINT = "auto";
     GTK_USE_PORTAL = "1";
 
     # Qt Quick Controls: evitar estilos QML incompatíveis.

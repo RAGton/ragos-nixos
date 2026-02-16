@@ -34,7 +34,8 @@ Idioma: PT-BR (este arquivo) | [English](README-en.md)
 ### Principais inputs
 
 - **nixpkgs**: aponta para `nixos-unstable` (pacotes mais novos).
-- **nixpkgs-stable**: aponta para `nixos-25.11` (base estável).
+- 
+- **nixpkgs-stable**: aponta para `nixos-24.11` (base estável).
 - **home-manager**: gerencia a configuração do usuário.
 - **darwin**: habilita nix-darwin no macOS.
 - **hardware**: módulos de hardware do nixos-hardware.

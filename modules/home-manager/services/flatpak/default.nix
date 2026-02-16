@@ -30,7 +30,7 @@
   config = lib.mkIf (!pkgs.stdenv.isDarwin) {
     services.flatpak = {
       enable = true;
-      packages = [ 
+      packages = [
         "app.zen_browser.zen"
         "io.github.shiftey.Desktop"
         "io.github.shonebinu.Brief"

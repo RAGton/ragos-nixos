@@ -16,10 +16,6 @@
 
       qemu = {
         package = pkgs.qemu_kvm;
-
-        # Virt-manager costuma usar `qemu:///system`.
-        # Para isso funcionar sem fricção (e sem depender de qemu:///session),
-        # mantemos o modelo padrão do system libvirt.
         runAsRoot = true;
 
         # TPM virtual (Windows 11, Linux moderno)
@@ -66,6 +62,13 @@
     spice-gtk
     virtio-win
     win-spice
+
+    # Úteis para debug/CLI
+    libvirt
+    qemu
+
+    # UEFI/OVMF images (quando precisar boot UEFI em VMs)
+    OVMF
   ];
 
   ############################
@@ -78,4 +81,7 @@
   ############################
   # Evita forçar módulos de CPU errados; cada host define o seu (Intel/AMD).
   boot.kernelModules = lib.mkDefault [ "kvm" ];
+
+  # Apps GUI às vezes não herdam env do shell/Home Manager. Isso padroniza o URI.
+  environment.sessionVariables.LIBVIRT_DEFAULT_URI = lib.mkDefault "qemu:///system";
 }

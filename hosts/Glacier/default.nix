@@ -51,7 +51,7 @@
   # - Placa/driver suportar WOL no estado S5 (varia por hardware)
   networking.interfaces.enp6s0.wakeOnLan.enable = true;
 
-  system.stateVersion = "25.11";
+  system.stateVersion = "26.05";
 
   # =========================
   # Boot / Kernel
@@ -140,12 +140,9 @@
     enable = true;
 
     kernel = "zen";
-    forceLocalBuild = true;
+    forceLocalBuild = false;
     useLLVMStdenv = false;
-    extraMakeFlags = [
-      "KCFLAGS=-march=native"
-      "KCPPFLAGS=-march=native"
-    ];
+    extraMakeFlags = [ ];
 
     # ⚠️ só recomendo isso se for desktop single-user
     disableMitigations = lib.mkDefault true;
@@ -174,4 +171,13 @@
     ACTION=="add", SUBSYSTEM=="block", KERNEL=="nvme*", ATTR{queue/scheduler}="none"
   '';
 
+  services.flatpak.packages = lib.mkAfter [
+    "org.freedesktop.Platform.GL.nvidia-580-119-02"
+    "org.freedesktop.Platform.GL32.nvidia-580-119-02"
+  ];
+
+  # =========================
+  # Tailscale VPN
+  # =========================
+  services.rag.tailscale.enable = true;
 }

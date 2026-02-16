@@ -61,6 +61,9 @@ in
     inputs.plasma-manager.homeModules.plasma-manager
     "${nhModules}/misc/wallpaper"
     "${nhModules}/programs/rofi"
+
+    # Temas
+    "${nhModules}/desktop/themes/edna"
   ];
 
   home.packages = with pkgs; [
@@ -577,7 +580,7 @@ in
       }
     ];
 
-    # Tema visual: Kvantum Edna, colorScheme, cursor, etc
+    # Tema visual: Edna (dark)
     workspace = {
       enableMiddleClickPaste = false;
       clickItemTo = "select";
@@ -599,26 +602,17 @@ in
 
     # Configurações extras: kwinrc, etc
     configFile = {
-      baloofilerc."Basic Settings"."Indexing-Enabled" = false;
-      gwenviewrc.ThumbnailView.AutoplayVideos = true;
-        kdeglobals = {
-        General = {
-            BrowserApplication = "app.zen_browser.zen.desktop";
+      # Performance: desabilita indexação do Baloo (reduz IO/CPU em laptops)
+      baloofilerc = {
+        "Basic Settings" = {
+          "Indexing-Enabled" = false;
         };
-        Icons = {
-          Theme = "kora";
-        };
-        KDE = {
-          # Reabilita animações (0 desliga geral)
-          AnimationDurationFactor = 1;
-        };
-          Theme = {
-            AutomaticDarkTheme = true;
-            # Optionally set day/night theme identifiers (adjust if different):
-            # DayTheme = "org.kde.edna-light.desktop";
-            # NightTheme = "org.kde.edna.desktop";
-          };
       };
+
+      # Desabilita o File Search/KRunner via Baloo para evitar wakeups
+      krunnerrc.Plugins.baloosearchEnabled = false;
+
+      # Reduz ruído de telemetria/feedback
       klaunchrc.FeedbackStyle.BusyCursor = false;
       klipperrc.General.MaxClipItems = 1000;
       kwinrc = {
@@ -673,6 +667,21 @@ in
           DelayFocusInterval = 0;
           FocusPolicy = "FocusFollowsMouse";
           BorderlessMaximizedWindows = true;
+        };
+
+        # KWin: ajustes leves para ficar mais ágil/estável (laptop)
+        Compositing = {
+          # Mantém política de latência equilibrada.
+          LatencyPolicy = 1;
+
+          # Em Wayland, evita forçar OpenGL antigo.
+          # (não setamos Backend explicitamente pra não travar em setups diferentes)
+        };
+
+        # Suaviza overhead de efeitos pesados mantendo UX.
+        Effects = {
+          # Evita alguns efeitos que podem causar stutter em iGPU.
+          Blur = false;
         };
       };
       plasmanotifyrc = {
@@ -741,4 +750,8 @@ in
       IOSchedulingPriority = 7;
     };
   };
+
+  # Nota: o repo já desabilita autostarts do Discover notifier no nível do sistema
+  # (`modules/nixos/desktop/kde/default.nix`). Mantemos isso centralizado no NixOS
+  # para evitar conflito/typos com a API do Home Manager.
 }
