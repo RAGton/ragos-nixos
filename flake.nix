@@ -82,7 +82,7 @@
       users = {
         rag = {
           avatar = ./files/avatar/ragton.jpeg;
-          email = "g.rocha@estudante.ifmt.edu.br";
+          email = "gabriel.rag@proton.me";
           fullName = "Gabriel Aguiar Rocha";
           gitKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFLt1vJ3bluf8Df37jUUktr1MwMzQctci8wi3z4O9AGP gabriel.rag@proton.me";
           name = "rag";
