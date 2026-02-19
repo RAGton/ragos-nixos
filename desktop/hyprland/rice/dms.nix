@@ -5,7 +5,7 @@
 # O que é:
 # - Rice completa baseada em Material Design para Hyprland
 # - Integração com DankMaterialShell (https://github.com/AvengeMedia/DankMaterialShell)
-# - Inclui Waybar, Rofi, Hyprland config customizado
+# - Baseado em QuickShell (QML)
 #
 # Por quê:
 # - Interface moderna e bonita para Hyprland
@@ -28,6 +28,7 @@ let
 
   # Source do DMS (flake input)
   dmsSource = inputs.dms;
+  dmsQuickshellDir = "${dmsSource}/quickshell";
 
 in
 {
@@ -53,106 +54,68 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # Validação: DMS só funciona com Hyprland
-    assertions = [
-      {
-        assertion = config.wayland.windowManager.hyprland.enable or false;
-        message = ''
-          DMS (DankMaterialShell) requer Hyprland habilitado.
-
-          Habilite Hyprland no sistema (desktop/hyprland/system.nix)
-          E no Home Manager: wayland.windowManager.hyprland.enable = true
-        '';
-      }
-    ];
-
     # =========================
     # Hyprland Config
     # =========================
-    wayland.windowManager.hyprland = {
-      # Links do config do DMS
-      # NOTA: Ajustar paths conforme estrutura real do repo DMS
-      extraConfig = ''
-        # DankMaterialShell configuration
-        # Source: https://github.com/AvengeMedia/DankMaterialShell
-
-        # TODO: Verificar estrutura exata do repo DMS e ajustar paths
-        # source = ${dmsSource}/hypr/hyprland.conf
-      '';
-    };
+    # DMS não fornece um hyprland.conf no upstream (neste momento).
+    # Mantemos este hook para o futuro, caso upstream adicione snippets.
+    wayland.windowManager.hyprland.extraConfig = lib.mkDefault "";
 
     # =========================
     # XDG Config Files (DMS)
     # =========================
-    # NOTA: Ajustar conforme estrutura real do DMS
+    # DMS upstream é baseado em QuickShell (QML). Linkamos a árvore inteira.
     xdg.configFile = {
-      # Waybar (barra de status)
-      # "waybar/config".source = "${dmsSource}/waybar/config";
-      # "waybar/style.css".source = "${dmsSource}/waybar/style.css";
-
-      # Rofi (launcher)
-      # "rofi/config.rasi".source = "${dmsSource}/rofi/config.rasi";
-      # "rofi/theme.rasi".source = "${dmsSource}/rofi/theme.rasi";
-
-      # Hyprland (compositor)
-      # "hypr/hyprland.conf".source = "${dmsSource}/hypr/hyprland.conf";
-
-      # Wallpaper (se customizado)
-      # "hypr/wallpaper.png".source =
-      #   if cfg.wallpaper != null
-      #   then cfg.wallpaper
-      #   else "${dmsSource}/wallpapers/default.png";
+      "quickshell" = {
+        source = dmsQuickshellDir;
+        recursive = true;
+      };
     };
 
     # =========================
     # Pacotes Necessários
     # =========================
     home.packages = with pkgs; [
-      # Waybar dependencies
-      waybar
-
-      # Rofi (launcher)
-      rofi-wayland
-
-      # Notificações
-      dunst
+      # Dependências Wayland utils comuns
       libnotify
-
-      # Widgets e utilitários
-      wttrbar  # weather
-      # playerctl  # media control
+      grim
+      slurp
+      wl-clipboard
 
       # Fonts (Material Design icons)
       material-design-icons
       material-symbols
 
-      # Screenshot tools
-      grim
-      slurp
-
-      # Clipboard
-      wl-clipboard
-
       # Systray apps
       networkmanagerapplet
       blueman
       pavucontrol
+
+      # NOTE: O runtime do DMS depende do QuickShell.
+      # Se o pacote existir em nixpkgs, habilite aqui (nome pode variar por canal):
+      # quickshell
     ];
 
     # =========================
-    # Services
+    # Execução / Entrada
     # =========================
-    # Waybar
-    programs.waybar = {
-      enable = true;
-      # Config será linkado do DMS acima
-    };
+    # Wrapper simples para iniciar o shell do DMS (dependendo do binary `quickshell`).
+    home.packages = (config.home.packages or []) ++ [
+      (pkgs.writeShellApplication {
+        name = "dms-shell";
+        runtimeInputs = with pkgs; [ bash ];
+        text = ''
+          set -euo pipefail
 
-    # Dunst (notificações)
-    services.dunst = {
-      enable = true;
-      # Config será linkado do DMS acima
-    };
+          if ! command -v quickshell >/dev/null 2>&1; then
+            echo "quickshell não encontrado no PATH. Instale/adicione o pacote QuickShell no seu setup." >&2
+            exit 1
+          fi
+
+          exec quickshell -c "$HOME/.config/quickshell/DMSShell.qml"
+        '';
+      })
+    ];
 
     # =========================
     # Fonts
@@ -210,9 +173,8 @@ in
         echo "🎨 DankMaterialShell (DMS) está habilitado!"
         echo "Source: ${dmsSource}"
         echo ""
-        echo "⚠️  NOTA: Config do DMS será linkado automaticamente."
-        echo ""
-        echo "TODO: Ajustar paths no módulo rice/dms após inspecionar estrutura do repo."
+        echo "✅ Config do DMS (quickshell/) foi linkada para ~/.config/quickshell"
+        echo "➡️  Para iniciar: rode 'dms-shell' (requer o binário quickshell no PATH)"
       '
     '';
   };

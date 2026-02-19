@@ -13,6 +13,7 @@
 {
   imports = [
     ./desktop.nix
+    ./laptop.nix
+    ./vm.nix
   ];
 }
-

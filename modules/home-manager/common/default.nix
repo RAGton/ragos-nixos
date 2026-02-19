@@ -51,6 +51,9 @@
     ../programs/zellij
     ../programs/zsh
     ../scripts
+
+    # Rices / desktops (opt-in por opção)
+    ../../../desktop/hyprland/rice/dms-upstream.nix
   ];
 
   # Habilita Jupyter via módulo declarativo.

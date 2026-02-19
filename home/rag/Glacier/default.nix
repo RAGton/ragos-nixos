@@ -3,8 +3,11 @@
   imports = [
     ../../../modules/home-manager/common
     # Desktop user config (v2 migration: moved to desktop/)
-    ../../../desktop/kde/user.nix
+    ../../../desktop/hyprland/user.nix
   ];
+
+  # Ativa DankMaterialShell via módulo upstream
+  rag.rice.dmsUpstream.enable = true;
 
   # Autostart (KDE): inicia o OpenRGB sozinho e já minimizado na bandeja.
   xdg.configFile."autostart/openrgb.desktop".text = ''

@@ -24,7 +24,7 @@ Fase 3: Desktop Manager        ████████████████�
 Fase 4: Hyprland Moderno       ████████████████████ 100% (3/3) ✅
 Fase 5: DMS Integration        ████████░░░░░░░░░░░░  40% (2/5) 🔄
 Fase 6: Features Modulares     ████████████████████ 100% (3/3) ✅
-Fase 7: Profiles               ░░░░░░░░░░░░░░░░░░░░   0% (0/3)
+Fase 7: Profiles               ████████████████████ 100% (3/3) ✅
 
 TOTAL:                         ██████████████████░░  86% (18/21)
 ```
@@ -101,11 +101,11 @@ Integrar DankMaterialShell como rice do Hyprland.
 
 - [x] **5.1** Adicionar `inputs.dms` no flake.nix
 - [x] **5.2** Criar `desktop/hyprland/rice/dms.nix` (módulo base)
-- [ ] **5.3** Inspecionar repo DMS e ajustar paths
+- [x] **5.3** Inspecionar repo DMS e ajustar paths
 - [ ] **5.4** Link Waybar configs
 - [ ] **5.5** Testar em host
 
-**Status**: 🔄 EM PROGRESSO (2/5 completo - fundação implementada, aguardando inspeção do repo DMS)
+**Status**: 🔄 EM PROGRESSO (3/5 completo)
 
 ---
 
@@ -132,29 +132,33 @@ Criar profiles composáveis (desktop, laptop, vm).
 ### Etapas
 
 - [x] **7.1** Criar `profiles/desktop.nix`
-- [ ] **7.2** Criar `profiles/laptop.nix`
-- [ ] **7.3** Criar `profiles/vm.nix`
+- [x] **7.2** Criar `profiles/laptop.nix`
+- [x] **7.3** Criar `profiles/vm.nix`
 
-**Status**: 🔄 EM PROGRESSO (1/3 completo)
+**Status**: ✅ CONCLUÍDA (3/3 completo)
 
 ---
 
 ## 🔥 Etapa Atual
 
-**Fase 7, Etapa 7.1**: Criar `profiles/desktop.nix` (preset de features)
+✅ Fase 7 concluída. Próximo foco recomendado: Fase 5 (DMS) Step 5.3.
 
 **Próximos comandos**:
 ```bash
-# Validar avaliação
-nix eval .#nixosConfigurations.inspiron.config.rag.profiles.desktop.enable
-
 # Check geral
 nix flake check
+
+# Dry build do host principal
+nixos-rebuild dry-build --flake .#inspiron
 ```
 
 ---
 
 ## 📝 Notas de Migração
+
+### Atualizações recentes
+- ✅ inspiron: migrou para `rag.profiles.laptop.enable = true` (host mais fino)
+- ✅ inspiron: desabilitado OpenRGB via `rag.hardware.openrgb.enable = false`
 
 ### Fase 1 (Concluída - 2026-02-18) ✅
 - ✅ Criado sistema de opções `rag.*`

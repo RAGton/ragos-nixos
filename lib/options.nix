@@ -51,6 +51,19 @@
     };
 
     # =========================
+    # Hardware / Drivers (host-toggles)
+    # =========================
+    hardware = {
+      openrgb = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Enable OpenRGB (packages + udev rules) from common module";
+        };
+      };
+    };
+
+    # =========================
     # Features (Opt-in)
     # =========================
     # NOTA: As opções de features são declaradas nos próprios módulos de features
@@ -108,4 +121,3 @@
         '';
   };
 }
-

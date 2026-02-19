@@ -332,7 +332,7 @@
     nodejs_20
     killall
     mesa
-    openrgb-git
+    (lib.mkIf config.rag.hardware.openrgb.enable openrgb-git)
     podman
     distrobox
 
@@ -391,7 +391,7 @@
   };
 
   # Regras udev para permitir acesso do OpenRGB aos dispositivos.
-  services.udev.packages = with pkgs; [ openrgb-git ];
+  services.udev.packages = lib.optionals config.rag.hardware.openrgb.enable (with pkgs; [ openrgb-git ]);
 
   # Configuração comum de containers
   # Nota: não habilitamos `podman.dockerCompat` por padrão porque conflita com
