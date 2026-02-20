@@ -47,7 +47,7 @@
   # =========================
 
   # Desktop
-  rag.desktop.environment = "hyprland";
+  rag.desktop.environment = "kde";
 
   # Features
   rag.features = {

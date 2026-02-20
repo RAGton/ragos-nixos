@@ -3,7 +3,7 @@
   imports = [
     ../../../modules/home-manager/common
     # Desktop user config (v2 migration: moved to desktop/)
-    ../../../desktop/hyprland/user.nix
+    ../../../desktop/kde/user.nix
   ];
 
   # Ativa DankMaterialShell via módulo upstream

@@ -64,6 +64,15 @@
     };
 
     # =========================
+    # Services (host-toggles)
+    # =========================
+    services = {
+      greetdDms = {
+        enable = lib.mkEnableOption "Enable greetd wired to DankMaterialShell greeter";
+      };
+    };
+
+    # =========================
     # Features (Opt-in)
     # =========================
     # NOTA: As opções de features são declaradas nos próprios módulos de features

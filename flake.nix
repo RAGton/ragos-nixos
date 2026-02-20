@@ -101,6 +101,14 @@
           gitKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFLt1vJ3bluf8Df37jUUktr1MwMzQctci8wi3z4O9AGP gabriel.rag@proton.me";
           name = "rag";
         };
+
+        # Usuário adicional (ex.: para separar perfil pessoal/trabalho ou testar configs)
+        rocha = {
+          avatar = ./files/avatar/ragton.jpeg;
+          email = "gabriel.rag@proton.me";
+          fullName = "Rocha";
+          name = "rocha";
+        };
       };
 
       # Função para configuração de sistema (NixOS)
@@ -163,7 +171,7 @@
     in
     {
       nixosConfigurations = {
-        inspiron = mkNixosConfiguration "inspiron" "rag";
+        inspiron = mkNixosConfiguration "inspiron" "rocha";
         Glacier = mkNixosConfiguration "Glacier" "rag";
 
         # Live ISO instaladora (multi-host)
@@ -183,6 +191,8 @@
       homeConfigurations = {
         "rag@inspiron" = mkHomeConfiguration "x86_64-linux" "rag" "inspiron";
         "rag@Glacier" = mkHomeConfiguration "x86_64-linux" "rag" "Glacier";
+
+        "rocha@inspiron" = mkHomeConfiguration "x86_64-linux" "rocha" "inspiron";
       };
 
       overlays = import ./overlays { inherit inputs; };

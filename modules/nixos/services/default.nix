@@ -1,0 +1,9 @@
+{
+  # ...existing code...
+  imports = [
+    # ...existing imports...
+    ./greetd-dms
+    # ...existing imports...
+  ];
+}
+

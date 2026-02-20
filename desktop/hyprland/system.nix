@@ -32,8 +32,10 @@ in
 {
   # Só habilita se Hyprland ou DMS foi escolhido
   config = lib.mkIf isHyprland {
-    # Display manager.
-    services.displayManager.gdm.enable = true;
+    # Display manager (Wayland-friendly).
+    # Preferimos greetd para Hyprland/DMS; evita dependência de GNOME/GDM.
+    services.greetd.enable = true;
+    services.displayManager.gdm.enable = lib.mkForce false;
 
     # Mantém variáveis do ambiente exportadas para a sessão via DBus.
     services.xserver.updateDbusEnvironment = true;
@@ -54,7 +56,6 @@ in
     security.polkit.enable = true;
     security.pam.services = {
       hyprlock = { };
-      gdm.enableGnomeKeyring = true;
     };
 
     # Pacotes auxiliares do stack Hyprland.
@@ -86,4 +87,3 @@ in
     ];
   };
 }
-

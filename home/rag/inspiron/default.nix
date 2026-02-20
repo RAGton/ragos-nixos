@@ -3,10 +3,24 @@
   imports = [
     ../../../modules/home-manager/common
     # Desktop user config (v2 migration: moved to desktop/)
-    ../../../desktop/kde/user.nix
-    # Bart theme (KDE-specific)
-    ../../../desktop/kde/themes/bart
+    ../../../desktop/hyprland/user.nix
   ];
+
+  # ==============================
+  # Rice/Bar: DankMaterialShell (DMS)
+  # ==============================
+  # Opção 2 (recomendada): usar os módulos Nix upstream do projeto DMS.
+  # - Fonte dos módulos: `${inputs.dms}/distro/nix/home.nix` (importado pelo wrapper)
+  # - Pacotes (dms-shell, quickshell, etc.): `inputs.dms-flake.packages.${system}`
+  #
+  # Vantagens:
+  # - Menos código nosso pra manter
+  # - Upgrades do DMS via `nix flake update`
+  #
+  # Observação:
+  # - As configs do DMS são gerenciadas via Home Manager (xdg.configFile/xdg.stateFile)
+  #   pelo módulo upstream; evite mexer manualmente em ~/.config/DankMaterialShell.
+  rag.rice.dmsUpstream.enable = true;
 
   # Habilita home-manager
   programs.home-manager.enable = true;
@@ -49,9 +63,8 @@
     plasmaLookAndFeel = "Bart";
   };
 
-  # Nota: GameMode é instalado aqui como pacote; ativar serviços de sistema
-  # (daemons) deve ser feito na configuração do host (NixOS).
-  # (daemons) deve ser feito na configuração do host (NixOS).
+  # Nota: GameMode está instalado aqui como pacote (uso no modo usuário).
+  # Ativar serviços/daemons no nível do sistema deve ser feito na config do host (NixOS).
 
   # Pacotes de jogos (ambiente do usuário). Drivers e ajustes de kernel/performance
   # no nível do sistema são responsabilidade da configuração do host (NixOS).
