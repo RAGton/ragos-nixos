@@ -58,6 +58,27 @@ in
       };
     };
 
+    # ✅ SOLUÇÃO: Configurar PAM para criar sessão Wayland válida com seat
+    # greetd cria uma sessão de login que inicia o compositor.
+    # pam_systemd.so precisa saber:
+    # - type=wayland: esta é uma sessão Wayland
+    # - class=user: cria sessão com seat (não "manager" sem seat)
+    security.pam.services.greetd = {
+      allowNullPassword = false;
+      unixAuth = true;
+      text = lib.mkForce ''
+        auth     required pam_unix.so nullok try_first_pass
+        account  required pam_unix.so
+        password required pam_unix.so nullok yescrypt
+        session  required pam_unix.so
+        session  required pam_env.so conffile=/etc/pam/environment
+        session  optional pam_keyinit.so revoke
+        session  required pam_limits.so
+        session  required pam_systemd.so class=user type=wayland
+        session  optional pam_permit.so
+      '';
+    };
+
     environment.systemPackages = [ pkgs.greetd.tuigreet ];
 
     assertions = [
