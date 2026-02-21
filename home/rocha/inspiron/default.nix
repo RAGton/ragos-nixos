@@ -34,16 +34,6 @@
     flavor = "vscode";
   };
 
-  rag.theme.bart = {
-    enable = true;
-    name = "Bart";
-    gtkName = "Bart";
-    iconName = "Bart";
-    kvantumTheme = "Bart";
-    auroraeTheme = "__aurorae__svg__Bart";
-    plasmaLookAndFeel = "Bart";
-  };
-
   home.packages = with pkgs; [
     steam
     gamemode

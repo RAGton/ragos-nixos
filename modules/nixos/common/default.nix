@@ -35,7 +35,6 @@
     ../branding/ragos
 
     ../programs/steam
-    ../programs/gaming
     ../programs/wallpaper-engine-kde
     ../services/tlp
     ../services/snapper
