@@ -142,16 +142,6 @@ in
     };
 
     # ==========================================================================
-    # Variáveis de ambiente para sessão Wayland
-    # ==========================================================================
-    environment.sessionVariables = {
-      # Garante que apps Electron/Chromium usem Wayland
-      NIXOS_OZONE_WL = "1";
-      # XDG runtime dir (normalmente já definido, mas garantimos)
-      XDG_RUNTIME_DIR = "/run/user/$UID";
-    };
-
-    # ==========================================================================
     # Pacotes necessários
     # ==========================================================================
     environment.systemPackages = with pkgs; [
@@ -160,18 +150,10 @@ in
     ];
 
     # ==========================================================================
-    # Garantir que logind está configurado corretamente
+    # Garantir que logind não mata processos do usuário no logout
+    # Isso é importante para sessões Wayland que podem ter processos em background
     # ==========================================================================
-    services.logind = {
-      # Não mata sessões de usuário no logout (permite processos em background)
-      killUserProcesses = false;
-      # Extrai session slice para isolamento
-      extraConfig = ''
-        HandlePowerKey=suspend
-        HandleLidSwitch=suspend
-        HandleLidSwitchExternalPower=ignore
-      '';
-    };
+    services.logind.killUserProcesses = lib.mkDefault false;
   };
 }
 
