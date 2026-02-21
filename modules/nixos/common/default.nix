@@ -35,11 +35,11 @@
     ../branding/ragos
 
     ../programs/steam
-    ../programs/gaming
     ../programs/wallpaper-engine-kde
     ../services/tlp
     ../services/snapper
     ../services/tailscale
+    ../services/greetd-dms
   ];
 
   # Registra inputs da flake no registry (melhora UX com comandos `nix ...`).

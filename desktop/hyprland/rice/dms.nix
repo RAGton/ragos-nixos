@@ -94,16 +94,11 @@ in
       # NOTE: O runtime do DMS depende do QuickShell.
       # Se o pacote existir em nixpkgs, habilite aqui (nome pode variar por canal):
       # quickshell
-    ];
 
-    # =========================
-    # Execução / Entrada
-    # =========================
-    # Wrapper simples para iniciar o shell do DMS (dependendo do binary `quickshell`).
-    home.packages = (config.home.packages or []) ++ [
+      # Wrapper para iniciar o shell do DMS (dependendo do binary `quickshell`).
       (pkgs.writeShellApplication {
         name = "dms-shell";
-        runtimeInputs = with pkgs; [ bash ];
+        runtimeInputs = [ pkgs.bash ];
         text = ''
           set -euo pipefail
 

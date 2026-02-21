@@ -51,21 +51,6 @@
     flavor = "vscode";
   };
 
-  # Tema: Bart (Plasma + GTK + ícones + Kvantum + Aurorae)
-  rag.theme.bart = {
-    enable = true;
-    # Configuração completa do tema Bart
-    name = "Bart";
-    gtkName = "Bart";
-    iconName = "Bart";
-    kvantumTheme = "Bart";
-    auroraeTheme = "__aurorae__svg__Bart";
-    plasmaLookAndFeel = "Bart";
-  };
-
-  # Nota: GameMode está instalado aqui como pacote (uso no modo usuário).
-  # Ativar serviços/daemons no nível do sistema deve ser feito na config do host (NixOS).
-
   # Pacotes de jogos (ambiente do usuário). Drivers e ajustes de kernel/performance
   # no nível do sistema são responsabilidade da configuração do host (NixOS).
   home.packages = with pkgs; [

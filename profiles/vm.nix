@@ -25,13 +25,13 @@ let
 in
 {
   options.rag.profiles.vm = {
-    enable = lib.mkEnableOption "VM profile (small footprint defaults)";
+    enable = lib.mkEnableOption "Perfil VM (defaults com footprint reduzido)";
 
     development = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable development feature as part of VM profile";
+        description = "Habilita a feature desenvolvimento como parte do perfil VM";
       };
     };
 
@@ -39,14 +39,14 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable container virtualization (Docker/Podman) in VM profile";
+        description = "Habilita virtualização de containers (Docker/Podman) no perfil VM";
       };
 
       docker = {
         enable = lib.mkOption {
           type = lib.types.bool;
           default = true;
-          description = "Enable Docker when virtualization is enabled";
+          description = "Habilita Docker quando a virtualização está ativada";
         };
       };
 
@@ -55,7 +55,7 @@ in
         enable = lib.mkOption {
           type = lib.types.bool;
           default = false;
-          description = "Enable KVM/libvirt in VM profile (nested virtualization)";
+          description = "Habilita KVM/libvirt no perfil VM (virtualização aninhada)";
         };
       };
     };
@@ -64,7 +64,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable gaming in VM profile (off by default)";
+        description = "Habilita gaming no perfil VM (desligado por padrão)";
       };
     };
   };

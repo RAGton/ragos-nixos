@@ -25,20 +25,20 @@ let
 in
 {
   options.rag.profiles.laptop = {
-    enable = lib.mkEnableOption "Laptop profile (dev + virtualization defaults; no gaming by default)";
+    enable = lib.mkEnableOption "Perfil laptop (dev + virtualização padrão; sem gaming por padrão)";
 
     virtualization = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable virtualization feature as part of the laptop profile";
+        description = "Habilita a feature virtualização como parte do perfil laptop";
       };
 
       docker = {
         enable = lib.mkOption {
           type = lib.types.bool;
           default = true;
-          description = "Enable Docker when virtualization is enabled";
+          description = "Habilita Docker quando a virtualização está ativada";
         };
       };
 
@@ -46,7 +46,7 @@ in
         enable = lib.mkOption {
           type = lib.types.bool;
           default = false;
-          description = "Enable libvirt/KVM on laptops (off by default to save resources)";
+          description = "Habilita libvirt/KVM em laptops (desligado por padrão para economizar recursos)";
         };
       };
     };
@@ -55,7 +55,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable development feature as part of the laptop profile";
+        description = "Habilita a feature desenvolvimento como parte do perfil laptop";
       };
     };
 
@@ -63,7 +63,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable gaming feature as part of the laptop profile (off by default)";
+        description = "Habilita a feature gaming como parte do perfil laptop (desligado por padrão)";
       };
     };
   };

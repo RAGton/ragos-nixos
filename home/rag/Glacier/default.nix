@@ -6,9 +6,6 @@
     ../../../desktop/kde/user.nix
   ];
 
-  # Ativa DankMaterialShell via módulo upstream
-  rag.rice.dmsUpstream.enable = true;
-
   # Autostart (KDE): inicia o OpenRGB sozinho e já minimizado na bandeja.
   xdg.configFile."autostart/openrgb.desktop".text = ''
     [Desktop Entry]

@@ -25,13 +25,13 @@ let
 in
 {
   options.rag.profiles.desktop = {
-    enable = lib.mkEnableOption "Desktop profile (virtualization + development + optional gaming)";
+    enable = lib.mkEnableOption "Perfil desktop (virtualização + desenvolvimento + gaming opcional)";
 
     gaming = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable gaming feature as part of the desktop profile";
+        description = "Habilita a feature gaming como parte do perfil desktop";
       };
     };
   };
