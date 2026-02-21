@@ -1,6 +1,6 @@
 # ✅ SOLUÇÃO DEFINITIVA: greetd com Sessão Wayland Funcional
 
-**Data**: 2026-02-21  
+**Data**: 2026-02-21 (atualizado)
 **Status**: ✅ Implementada e Documentada  
 **Autor**: RAGton
 
@@ -8,15 +8,15 @@
 
 ## 🎯 Objetivo
 
-Garantir que o greetd funcione **perfeitamente** como display manager para Hyprland/DMS, criando sessões Wayland válidas com seat attachment, permitindo que o compositor inicie corretamente após o login.
+Garantir que o greetd funcione **perfeitamente** como display manager para Hyprland/DMS, criando sessões Wayland válidas com seat attachment, permitindo que o compositor inicie corretamente após o login via UWSM.
 
 ---
 
-## 🚨 Problema Identificado
+## 🚨 Problema Identificado: Login Loop
 
 ### Sintoma
 - Usuário faz login via greetd + tuigreet
-- Hyprland/DMS **não iniciam**
+- Hyprland/DMS **não iniciam** (login loop)
 - Sistema volta para TTY ou tela preta
 
 ### Raiz do Problema
@@ -50,31 +50,47 @@ security.pam.services.greetd = {
 ### Arquivo Modificado
 `modules/nixos/services/greetd-dms/default.nix`
 
-### Mudança Aplicada
+### Características da Solução
+
+1. **Configuração explícita do VT** - greetd executa no VT1 por padrão
+2. **tuigreet otimizado** - com `--remember`, `--remember-user-session` e `--asterisks`
+3. **PAM configurado para Wayland** - `class=user type=wayland` em pam_systemd.so
+4. **logind configurado corretamente** - não mata processos no logout
+5. **UWSM como comando padrão** - `uwsm start hyprland-uwsm.desktop`
+
+### Configuração PAM Completa
 
 ```nix
 security.pam.services.greetd = {
   allowNullPassword = lib.mkForce false;
   unixAuth = true;
   text = lib.mkForce ''
+    # PAM para greetd - Sessão Wayland funcional
+    
     # Autenticação
     auth     required pam_unix.so nullok try_first_pass
     auth     optional pam_gnome_keyring.so
-    
+
     # Verificação de conta
     account  required pam_unix.so
-    
-    # Senha
+
+    # Senha (para troca de senha)
     password required pam_unix.so nullok yescrypt
     password optional pam_gnome_keyring.so use_authtok
-    
-    # Sessão
+
+    # Sessão - ORDEM IMPORTA
     session  required pam_unix.so
     session  required pam_env.so conffile=/etc/pam/environment readenv=0
-    session  optional pam_keyinit.so revoke
+    session  optional pam_keyinit.so force revoke
     session  required pam_limits.so
-    session  required pam_systemd.so class=user type=wayland  # ← CRÍTICO
+
+    # CRÍTICO: class=user type=wayland para sessão Wayland válida
+    session  required pam_systemd.so class=user type=wayland
+
+    # Gnome Keyring (desbloqueio automático)
     session  optional pam_gnome_keyring.so auto_start
+
+    # Fallback para módulos opcionais
     session  optional pam_permit.so
   '';
 };
@@ -86,6 +102,9 @@ security.pam.services.greetd = {
 |-----------|---------|
 | `class=user` | Instrui logind a criar sessão de classe "user" (com seat) em vez de "manager" |
 | `type=wayland` | Marca a sessão como Wayland, fazendo logind alocar VT e definir `XDG_SESSION_TYPE=wayland` |
+| `vt = 1` | Define explicitamente o VT onde greetd executa |
+| `--remember` | tuigreet lembra o último usuário logado |
+| `force revoke` | pam_keyinit revoga keys antigas forçadamente |
 
 ---
 
