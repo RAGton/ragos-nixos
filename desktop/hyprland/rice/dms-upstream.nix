@@ -36,26 +36,26 @@ in
   ];
 
   options.rag.rice.dmsUpstream = {
-    enable = lib.mkEnableOption "Enable DankMaterialShell using upstream Nix modules";
+    enable = lib.mkEnableOption "Habilita DankMaterialShell usando módulos Nix upstream";
   };
 
   config = lib.mkIf cfg.enable {
     assertions = [
       {
         assertion = inputs ? dms-flake;
-        message = "dms-upstream: missing flake input 'dms-flake'";
+        message = "dms-upstream: input de flake 'dms-flake' ausente";
       }
       {
         assertion = inputs ? dms;
-        message = "dms-upstream: missing flake input 'dms' (needed to import upstream HM module at distro/nix/home.nix)";
+        message = "dms-upstream: input de flake 'dms' ausente (necessário para importar módulo HM upstream em distro/nix/home.nix)";
       }
       {
         assertion = dmsPkgs ? dms-shell;
-        message = "dms-upstream: upstream does not export packages.${system}.dms-shell";
+        message = "dms-upstream: o upstream não exporta packages.${system}.dms-shell";
       }
       {
         assertion = dmsPkgs ? quickshell;
-        message = "dms-upstream: upstream does not export packages.${system}.quickshell";
+        message = "dms-upstream: o upstream não exporta packages.${system}.quickshell";
       }
     ];
 

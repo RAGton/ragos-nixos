@@ -28,47 +28,47 @@ let
 in
 {
   options.rag.features.development = {
-    enable = lib.mkEnableOption "Development environment";
+    enable = lib.mkEnableOption "Ambiente de desenvolvimento";
 
     git = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable Git and related tools";
+        description = "Habilita Git e ferramentas relacionadas";
       };
     };
 
     languages = {
       rust = {
-        enable = lib.mkEnableOption "Rust development environment";
+        enable = lib.mkEnableOption "Ambiente de desenvolvimento Rust";
       };
 
       python = {
-        enable = lib.mkEnableOption "Python development environment";
+        enable = lib.mkEnableOption "Ambiente de desenvolvimento Python";
       };
 
       javascript = {
-        enable = lib.mkEnableOption "JavaScript/TypeScript development";
+        enable = lib.mkEnableOption "Desenvolvimento JavaScript/TypeScript";
       };
 
       go = {
-        enable = lib.mkEnableOption "Go development environment";
+        enable = lib.mkEnableOption "Ambiente de desenvolvimento Go";
       };
 
       nix = {
         enable = lib.mkOption {
           type = lib.types.bool;
           default = true;
-          description = "Nix development tools (always useful on NixOS)";
+          description = "Ferramentas de desenvolvimento Nix (sempre útil no NixOS)";
         };
       };
 
       c = {
-        enable = lib.mkEnableOption "C/C++ development environment";
+        enable = lib.mkEnableOption "Ambiente de desenvolvimento C/C++";
       };
 
       java = {
-        enable = lib.mkEnableOption "Java development environment";
+        enable = lib.mkEnableOption "Ambiente de desenvolvimento Java";
       };
     };
 
@@ -81,7 +81,7 @@ in
         enable = lib.mkOption {
           type = lib.types.bool;
           default = true;
-          description = "Neovim editor";
+          description = "Editor Neovim";
         };
       };
     };
@@ -91,20 +91,20 @@ in
         enable = lib.mkOption {
           type = lib.types.bool;
           default = true;
-          description = "Enable direnv (per-directory environments)";
+          description = "Habilita direnv (ambientes por diretório)";
         };
       };
 
       kubernetes = {
-        enable = lib.mkEnableOption "Kubernetes tools (kubectl, k9s, helm)";
+        enable = lib.mkEnableOption "Ferramentas Kubernetes (kubectl, k9s, helm)";
       };
 
       terraform = {
-        enable = lib.mkEnableOption "Terraform and related tools";
+        enable = lib.mkEnableOption "Terraform e ferramentas relacionadas";
       };
 
       ansible = {
-        enable = lib.mkEnableOption "Ansible configuration management";
+        enable = lib.mkEnableOption "Gerenciamento de configuração com Ansible";
       };
     };
   };

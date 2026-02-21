@@ -26,13 +26,13 @@ let
 in
 {
   options.rag.features.virtualization = {
-    enable = lib.mkEnableOption "Virtualization stack";
+    enable = lib.mkEnableOption "Stack de virtualização";
 
     kvm = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable KVM/QEMU virtualization";
+        description = "Habilita virtualização KVM/QEMU";
       };
     };
 
@@ -40,7 +40,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable libvirt (virt-manager, virsh)";
+        description = "Habilita libvirt (virt-manager, virsh)";
       };
     };
 
@@ -48,13 +48,13 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable Docker";
+        description = "Habilita Docker";
       };
 
       rootless = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Run Docker in rootless mode";
+        description = "Executa Docker em modo rootless";
       };
     };
 
@@ -62,13 +62,13 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable Podman (Docker alternative)";
+        description = "Habilita Podman (alternativa ao Docker)";
       };
 
       dockerCompat = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable Docker compatibility (podman-docker)";
+        description = "Habilita compatibilidade com Docker (podman-docker)";
       };
     };
 
@@ -76,7 +76,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable LXC containers";
+        description = "Habilita containers LXC";
       };
     };
 
@@ -84,7 +84,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable VirtualBox (may conflict with KVM)";
+        description = "Habilita VirtualBox (pode conflitar com KVM)";
       };
     };
   };
@@ -261,20 +261,20 @@ in
       {
         assertion = !(cfg.docker.enable && cfg.docker.rootless && cfg.podman.enable && cfg.podman.dockerCompat);
         message = ''
-          Cannot enable both Docker rootless and Podman with Docker compatibility.
-          Choose one or the other.
+          Não é possível habilitar Docker rootless e Podman com compatibilidade Docker ao mesmo tempo.
+          Escolha apenas um dos dois.
         '';
       }
       {
         assertion = !(cfg.kvm.enable && cfg.virtualbox.enable);
         message = ''
-          KVM and VirtualBox can conflict. It's recommended to use only one.
-          If you need both, ensure they don't run simultaneously.
+          KVM e VirtualBox podem conflitar. Recomenda-se usar apenas um.
+          Se precisar de ambos, certifique-se de que não rodam simultaneamente.
         '';
       }
       {
         assertion = cfg.libvirt.enable -> cfg.kvm.enable;
-        message = "libvirt requires KVM to be enabled";
+        message = "libvirt requer que o KVM esteja habilitado";
       }
     ];
 
@@ -283,10 +283,10 @@ in
     # =========================
     warnings = lib.flatten [
       (lib.optional (cfg.kvm.enable && cfg.virtualbox.enable)
-        "Both KVM and VirtualBox are enabled. They may conflict if used simultaneously.")
+        "KVM e VirtualBox estão ambos habilitados. Podem conflitar se usados simultaneamente.")
 
       (lib.optional (cfg.docker.enable && cfg.podman.enable)
-        "Both Docker and Podman are enabled. Consider using only one to save resources.")
+        "Docker e Podman estão ambos habilitados. Considere usar apenas um para economizar recursos.")
     ];
   };
 }

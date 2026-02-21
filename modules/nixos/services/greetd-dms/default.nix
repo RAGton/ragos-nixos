@@ -24,19 +24,19 @@ let
 in
 {
   options.rag.services.greetdDms = {
-    enable = lib.mkEnableOption "greetd with tuigreet (Wayland-friendly login manager)";
+    enable = lib.mkEnableOption "greetd com tuigreet (gerenciador de login Wayland-friendly)";
 
     user = lib.mkOption {
       type = lib.types.str;
       default = userConfig.name;
       defaultText = lib.literalExpression "userConfig.name";
-      description = "User that runs the greetd greeter process (must exist in users.users).";
+      description = "Usuário que executa o processo greeter do greetd (deve existir em users.users).";
     };
 
     command = lib.mkOption {
       type = lib.types.str;
       default = "Hyprland";
-      description = "Session command launched after login (e.g. 'Hyprland', 'sway').";
+      description = "Comando da sessão lançado após o login (ex.: 'Hyprland', 'sway').";
     };
   };
 

@@ -26,19 +26,19 @@ let
 in
 {
   options.rag.features.gaming = {
-    enable = lib.mkEnableOption "Gaming stack (Steam, Lutris, GameMode, etc)";
+    enable = lib.mkEnableOption "Stack de gaming (Steam, Lutris, GameMode, etc)";
 
     steam = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable Steam";
+        description = "Habilita Steam";
       };
 
       gamescope = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable GameScope (micro-compositor for games)";
+        description = "Habilita GameScope (micro-compositor para jogos)";
       };
     };
 
@@ -46,7 +46,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable Lutris";
+        description = "Habilita Lutris";
       };
     };
 
@@ -54,7 +54,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable Heroic Games Launcher (Epic/GOG)";
+        description = "Habilita Heroic Games Launcher (Epic/GOG)";
       };
     };
 
@@ -62,7 +62,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable GameMode (performance optimizations)";
+        description = "Habilita GameMode (otimizações de performance)";
       };
     };
 
@@ -70,7 +70,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Enable MangoHud (FPS overlay)";
+        description = "Habilita MangoHud (overlay de FPS)";
       };
     };
 
@@ -78,14 +78,14 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable Sunshine (game streaming server)";
+        description = "Habilita Sunshine (servidor de game streaming)";
       };
     };
 
     performanceGovernor = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Set CPU governor to performance mode when gaming";
+      description = "Define o governor de CPU como performance durante jogos";
     };
   };
 
@@ -233,7 +233,7 @@ in
     assertions = [
       {
         assertion = cfg.steam.gamescope -> cfg.steam.enable;
-        message = "GameScope requires Steam to be enabled";
+        message = "GameScope requer que o Steam esteja habilitado";
       }
     ];
   };

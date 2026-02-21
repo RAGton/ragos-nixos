@@ -124,82 +124,82 @@ in
 
     hotkeys.commands = {
       launch-dolphin = {
-        name = "Launch Dolphin";
+        name = "Abrir Dolphin";
         key = "Meta+E";
         command = "dolphin";
       };
       show-clipboard-history = {
-        name = "Show clipboard history";
+        name = "Mostrar histórico da área de transferência";
         key = "Meta+V";
         command = "${kdeShowClipboardHistory}/bin/kde-show-clipboard-history";
       };
       clear-notifications = {
-        name = "Clear all KDE Plasma notifications";
+        name = "Limpar todas as notificações do KDE Plasma";
         key = "Meta+Shift+Backspace";
         command = "clear-kde-notifications";
       };
       launch-terminal = {
-        name = "Launch Terminal";
+        name = "Abrir Terminal";
         key = "Meta+Return";
         command = "warp-terminal";
       };
       launch-brave = {
-        name = "Launch Zen Browser";
+        name = "Abrir Zen Browser";
         key = "Meta+Shift+B";
         command = "app.zen_browser.zen";
       };
       launch-ocr = {
-        name = "Launch OCR";
+        name = "Abrir OCR";
         key = "Alt+@";
         command = "ocr";
       };
       launch-telegram = {
-        name = "Launch Telegram";
+        name = "Abrir Telegram";
         key = "Meta+Shift+T";
         command = "Telegram";
       };
       launch-albert = {
-        name = "Launch albert";
+        name = "Abrir albert";
         key = "Meta+Space";
         command = "albert toggle";
       };
       move-window-and-focus-to-desktop-1 = {
-        name = "Move Window and Focus to Desktop 1";
+        name = "Mover janela e focar na Área de Trabalho 1";
         key = "Meta+!";
         command = "kde_mv_window 1";
       };
       move-window-and-focus-to-desktop-2 = {
-        name = "Move Window and Focus to Desktop 2";
+        name = "Mover janela e focar na Área de Trabalho 2";
         key = "Meta+@";
         command = "kde_mv_window 2";
       };
       move-window-and-focus-to-desktop-3 = {
-        name = "Move Window and Focus to Desktop 3";
+        name = "Mover janela e focar na Área de Trabalho 3";
         key = "Meta+#";
         command = "kde_mv_window 3";
       };
       move-window-and-focus-to-desktop-4 = {
-        name = "Move Window and Focus to Desktop 4";
+        name = "Mover janela e focar na Área de Trabalho 4";
         key = "Meta+$";
         command = "kde_mv_window 4";
       };
       move-window-and-focus-to-desktop-5 = {
-        name = "Move Window and Focus to Desktop 5";
+        name = "Mover janela e focar na Área de Trabalho 5";
         key = "Meta+%";
         command = "kde_mv_window 5";
       };
       screenshot-region = {
-        name = "Capture a rectangular region of the screen";
+        name = "Capturar região retangular da tela";
         key = "Print";
         command = "spectacle --region --nonotify";
       };
       screenshot-screen = {
-        name = "Capture the entire desktop";
+        name = "Capturar área de trabalho inteira";
         key = "Meta+Ctrl+S";
         command = "spectacle --fullscreen --nonotify";
       };
       show-all-applications = {
-        name = "Show all applications (Rofi)";
+        name = "Mostrar todos os aplicativos (Rofi)";
         key = "Meta+A";
         command = "rofi -modi drun,run -show drun";
       };
@@ -468,7 +468,7 @@ in
             apply = "initially";
           };
         };
-        description = "Hide titlebar by default";
+        description = "Ocultar barra de título por padrão";
         match = {
           window-class = {
             value = ".*";
@@ -481,7 +481,7 @@ in
           desktops = "Desktop_1";
           desktopsrule = "3";
         };
-        description = "Assign Zen Browser to Desktop 1";
+        description = "Atribuir Zen Browser à Área de Trabalho 1";
         match = {
           window-class = {
             value = "zen-browser";
@@ -495,7 +495,7 @@ in
           desktops = "Desktop_2";
           desktopsrule = "3";
         };
-        description = "Assign terminal to Desktop 2";
+        description = "Atribuir terminal à Área de Trabalho 2";
         match = {
           window-class = {
             value = "WezTerm";
@@ -509,7 +509,7 @@ in
           desktops = "Desktop_3";
           desktopsrule = "3";
         };
-        description = "Assign Telegram to Desktop 3";
+        description = "Atribuir Telegram à Área de Trabalho 3";
         match = {
           window-class = {
             value = "org.telegram.desktop";
@@ -523,7 +523,7 @@ in
           desktops = "Desktop_4";
           desktopsrule = "3";
         };
-        description = "Assign OBS to Desktop 4";
+        description = "Atribuir OBS à Área de Trabalho 4";
         match = {
           window-class = {
             value = "com.obsproject.Studio";
@@ -540,7 +540,7 @@ in
           fsplevelrule = "2";
           minimizerule = "2";
         };
-        description = "Assign Steam to Desktop 4";
+        description = "Atribuir Steam à Área de Trabalho 4";
         match = {
           window-class = {
             value = "steam";
@@ -557,7 +557,7 @@ in
           fsplevel = "4";
           fsplevelrule = "2";
         };
-        description = "Assign Steam Games to Desktop 5";
+        description = "Atribuir jogos do Steam à Área de Trabalho 5";
         match = {
           window-class = {
             value = "steam_app_";
@@ -574,7 +574,7 @@ in
           fsplevelrule = "2";
           minimizerule = "2";
         };
-        description = "Assign Zoom to Desktop 5";
+        description = "Atribuir Zoom à Área de Trabalho 5";
         match = {
           window-class = {
             value = "zoom";

@@ -29,24 +29,24 @@
         type = lib.types.nullOr (lib.types.enum [ "kde" "hyprland" "gnome" "dms" ]);
         default = null;
         description = ''
-          Desktop environment to use.
+          Ambiente de desktop a usar.
 
-          Options:
+          Opções:
           - "kde": KDE Plasma 6 (SDDM + Wayland)
-          - "hyprland": Hyprland compositor (vanilla)
-          - "dms": DankMaterialShell (Hyprland + Material rice)
-          - "gnome": GNOME (future support)
-          - null: No desktop (headless/server)
+          - "hyprland": compositor Hyprland (vanilla)
+          - "dms": DankMaterialShell (Hyprland + rice Material)
+          - "gnome": GNOME (suporte futuro)
+          - null: sem desktop (headless/servidor)
 
-          Note: Setting this does NOT automatically import the desktop yet.
-          This will be implemented in the next migration step.
+          Nota: definir esta opção NÃO importa o desktop automaticamente ainda.
+          Isso será implementado na próxima etapa de migração.
         '';
       };
 
       wayland = lib.mkOption {
         type = lib.types.bool;
         default = config.rag.desktop.environment != null;
-        description = "Enable Wayland support (auto-enabled with desktop)";
+        description = "Habilita suporte a Wayland (ativado automaticamente com desktop)";
       };
     };
 
@@ -58,7 +58,7 @@
         enable = lib.mkOption {
           type = lib.types.bool;
           default = true;
-          description = "Enable OpenRGB (packages + udev rules) from common module";
+          description = "Habilita OpenRGB (pacotes + regras udev) via módulo common";
         };
       };
     };
@@ -66,7 +66,7 @@
     # =========================
     # Services (host-toggles)
     # =========================
-    # NOTE: rag.services.greetdDms is defined in modules/nixos/services/greetd-dms/default.nix
+    # NOTA: rag.services.greetdDms é definido em modules/nixos/services/greetd-dms/default.nix
     services = { };
 
     # =========================
@@ -83,13 +83,13 @@
       name = lib.mkOption {
         type = lib.types.str;
         default = "RagOS";
-        description = "System branding name (shown in login screen, etc)";
+        description = "Nome do branding do sistema (exibido na tela de login, etc)";
       };
 
       logo = lib.mkOption {
         type = lib.types.nullOr lib.types.path;
         default = null;
-        description = "Path to branding logo";
+        description = "Caminho para o logotipo do branding";
       };
     };
   };
@@ -107,8 +107,8 @@
           (config.services.displayManager.gdm.enable or false) ||
           (config.programs.hyprland.enable or false);
         message = ''
-          Desktop environment requires a display manager to be enabled.
-          If using rag.desktop.environment, ensure the corresponding desktop module is imported.
+          O ambiente de desktop requer um gerenciador de display habilitado.
+          Se estiver usando rag.desktop.environment, verifique se o módulo de desktop correspondente foi importado.
         '';
       }
     ];
@@ -121,9 +121,9 @@
          !(config.services.displayManager.gdm.enable or false) &&
          !(config.programs.hyprland.enable or false))
         ''
-          rag.desktop.environment is set to "${config.rag.desktop.environment}" but the desktop
-          is not being imported yet. This is expected during migration.
-          The desktop/manager.nix will handle auto-import in the next step.
+          rag.desktop.environment está definido como "${config.rag.desktop.environment}", mas o desktop
+          ainda não está sendo importado. Isso é esperado durante a migração.
+          O desktop/manager.nix cuidará do import automático na próxima etapa.
         '';
   };
 }
