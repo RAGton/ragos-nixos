@@ -158,7 +158,12 @@
   systemd.services = {
     NetworkManager-wait-online.enable = false;
     plymouth-quit-wait.enable = false;
+    plymouth-quit.enable = false;
+    plymouth-start.enable = false;
   };
+
+  # Desabilita plymouth completamente (não será usado, evita dependências)
+  boot.plymouth.enable = false;
 
   # Fuso horário
   time.timeZone = "America/Cuiaba";
