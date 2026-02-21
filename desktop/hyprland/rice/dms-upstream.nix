@@ -32,7 +32,11 @@ in
   imports = [
     # Importa o módulo Home Manager oficial do DMS (do repo upstream via inputs.dms)
     # e injeta `dmsPkgs` para o mkPackageOption funcionar.
-    (import (inputs.dms + "/distro/nix/home.nix"))
+    # Guarda o import com builtins.pathExists para evitar falha quando o arquivo
+    # não existe no upstream (ex.: ao usar dms = flake=false em commit sem o módulo).
+    (if builtins.pathExists (inputs.dms + "/distro/nix/home.nix")
+     then (import (inputs.dms + "/distro/nix/home.nix"))
+     else { })
   ];
 
   options.rag.rice.dmsUpstream = {
@@ -48,6 +52,12 @@ in
       {
         assertion = inputs ? dms;
         message = "dms-upstream: input de flake 'dms' ausente (necessário para importar módulo HM upstream em distro/nix/home.nix)";
+      }
+      {
+        # Guarda contra avaliar inputs.dms quando ele não existe (o que causaria erro de eval).
+        # Quando inputs.dms está ausente, a assertion anterior (linha acima) já captura o caso.
+        assertion = !(inputs ? dms) || builtins.pathExists (inputs.dms + "/distro/nix/home.nix");
+        message = "dms-upstream: inputs.dms não contém distro/nix/home.nix. Verifique o commit do flake input 'dms'.";
       }
       {
         assertion = dmsPkgs ? dms-shell;

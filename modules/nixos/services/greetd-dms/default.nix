@@ -15,8 +15,10 @@
 # Notas:
 # - O rice DMS (DankMaterialShell) é carregado pelo usuário via Home Manager.
 #   Aqui só configuramos o display manager (greetd + tuigreet).
+# - O usuário padrão "greeter" é criado automaticamente pelo módulo greetd do NixOS.
+# - Quando programs.hyprland.withUWSM = true, a sessão deve ser iniciada via UWSM.
 # =============================================================================
-{ config, lib, pkgs, userConfig, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   cfg = config.rag.services.greetdDms;
@@ -28,15 +30,22 @@ in
 
     user = lib.mkOption {
       type = lib.types.str;
-      default = userConfig.name;
-      defaultText = lib.literalExpression "userConfig.name";
-      description = "Usuário que executa o processo greeter do greetd (deve existir em users.users).";
+      default = "greeter";
+      description = ''
+        Usuário que executa o processo greeter do greetd.
+        Por padrão usa "greeter", o usuário de sistema criado automaticamente
+        pelo módulo services.greetd do NixOS. Altere apenas se souber o que está fazendo.
+      '';
     };
 
     command = lib.mkOption {
       type = lib.types.str;
-      default = "Hyprland";
-      description = "Comando da sessão lançado após o login (ex.: 'Hyprland', 'sway').";
+      default = "uwsm start hyprland-uwsm.desktop";
+      description = ''
+        Comando da sessão lançado após o login.
+        Padrão: "uwsm start hyprland-uwsm.desktop" (requerido quando programs.hyprland.withUWSM = true).
+        Use "Hyprland" apenas se withUWSM = false.
+      '';
     };
   };
 
