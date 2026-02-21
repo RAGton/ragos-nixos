@@ -64,15 +64,6 @@
     };
 
     # =========================
-    # Services (host-toggles)
-    # =========================
-    services = {
-      greetdDms = {
-        enable = lib.mkEnableOption "Enable greetd wired to DankMaterialShell greeter";
-      };
-    };
-
-    # =========================
     # Features (Opt-in)
     # =========================
     # NOTA: As opções de features são declaradas nos próprios módulos de features
@@ -108,6 +99,7 @@
           config.rag.desktop.environment == null ||
           (config.services.displayManager.sddm.enable or false) ||
           (config.services.displayManager.gdm.enable or false) ||
+          (config.services.greetd.enable or false) ||
           (config.programs.hyprland.enable or false);
         message = ''
           Desktop environment requires a display manager to be enabled.
@@ -122,6 +114,7 @@
         (config.rag.desktop.environment != null &&
          !(config.services.displayManager.sddm.enable or false) &&
          !(config.services.displayManager.gdm.enable or false) &&
+         !(config.services.greetd.enable or false) &&
          !(config.programs.hyprland.enable or false))
         ''
           rag.desktop.environment is set to "${config.rag.desktop.environment}" but the desktop

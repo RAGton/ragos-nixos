@@ -40,6 +40,7 @@
     ../services/tlp
     ../services/snapper
     ../services/tailscale
+    ../services/greetd-dms
   ];
 
   # Registra inputs da flake no registry (melhora UX com comandos `nix ...`).
