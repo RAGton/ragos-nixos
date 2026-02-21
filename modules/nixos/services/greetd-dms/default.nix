@@ -59,11 +59,15 @@ in
     };
 
     # ✅ PAM para greetd: usa opções estruturadas do NixOS para resolução correta dos módulos.
-    # startSession = true habilita pam_systemd.so (necessário para sessões Wayland com seat).
+    # startSession = true  → habilita pam_systemd.so (necessário para sessões Wayland com seat,
+    #                          user runtime dir e dbus session via systemd-logind).
+    # enableGnomeKeyring   → desbloqueia o gnome-keyring no login via greetd
+    #                        (sem isso, secrets/SSH keys ficam inacessíveis na sessão).
     security.pam.services.greetd = {
       allowNullPassword = false;
       unixAuth = true;
       startSession = true;
+      enableGnomeKeyring = true;
     };
 
     environment.systemPackages = [ pkgs.tuigreet ];
