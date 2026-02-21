@@ -186,7 +186,7 @@ in
       # Nix
       (lib.optionals cfg.languages.nix.enable [
         nixd  # LSP
-        nixfmt-rfc-style
+        nixfmt
         nix-tree
         nix-diff
         nix-output-monitor
