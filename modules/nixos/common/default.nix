@@ -300,6 +300,12 @@
   };
 
   # Configuração do usuário
+  users.mutableUsers = true;
+
+  # Emergency initial password for root: empty = passwordless access on first boot.
+  # Override per-host with a proper hashedPassword. Change immediately with passwd after boot.
+  users.users.root.initialHashedPassword = lib.mkDefault "";
+
   users.users.${userConfig.name} = {
     description = userConfig.fullName;
     extraGroups = [
@@ -308,6 +314,9 @@
     ];
     isNormalUser = true;
     shell = pkgs.zsh;
+    # Emergency initial password: empty = passwordless on first boot (new accounts only).
+    # Override per-host or change immediately with passwd after first login.
+    initialHashedPassword = lib.mkDefault "";
   };
 
   # Define o avatar do usuário
