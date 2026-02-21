@@ -74,7 +74,6 @@
     initrd.verbose = false;
     kernelParams = [
       "quiet"
-      "splash"
       "rd.udev.log_level=3"
     ];
     loader.efi.canTouchEfiVariables = true;
