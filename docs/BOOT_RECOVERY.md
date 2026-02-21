@@ -91,51 +91,47 @@ Copie o valor do campo `UUID=`.
 ## PASSO 3 — Patch Aplicado
 
 O arquivo `hosts/inspiron/hardware-configuration.nix` já contém os UUIDs reais
-confirmados pelo `lsblk -f` executado no Live ISO:
+confirmados pelo `lsblk -f` e `btrfs subvolume list` executados no Live ISO:
 
-| Partição | UUID | Ponto de montagem |
-|---|---|---|
-| nvme0n1p1 (EFI) | `4509-A31C` | `/boot` |
-| nvme0n1p3 (btrfs NIXOS-SYSTEM) | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/` (e subvolumes) |
-
-```nix
-# EFI /boot
-fileSystems."/boot" = lib.mkForce
-  { device = "/dev/disk/by-uuid/4509-A31C";
-    fsType = "vfat";
-    options = [ "fmask=0077" "dmask=0077" ];
-  };
-
-# Raiz /
-fileSystems."/" = lib.mkForce
-  { device = "/dev/disk/by-uuid/9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc";
-    fsType = "btrfs";
-    options = [ "subvol=@" "compress=zstd" "noatime" ];
-  };
-```
+| Partição | UUID | Ponto de montagem | Subvolume |
+|---|---|---|---|
+| nvme0n1p1 (EFI vfat) | `4509-A31C` | `/boot` | — |
+| nvme0n1p2 (swap) | `8b6df5d3-9f96-4b48-8877-36bbe2642d21` | swap | — |
+| nvme0n1p3 (btrfs NIXOS-SYSTEM) | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/` | `@` |
+| nvme0n1p3 | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/nix` | `@nix` |
+| nvme0n1p3 | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/var/log` | `@log` |
+| nvme0n1p3 | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/var/cache` | `@cache` |
+| nvme0n1p3 | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/var/lib/containers` | `@containers` |
+| nvme0n1p3 | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/var/lib/libvirt` | `@libvirt` |
+| nvme0n1p3 | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/.snapshots` | `@snapshots` |
+| nvme0n1p3 | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/persist` | `@persist` |
+| nvme0n1p3 | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/tmp` | `@tmp` |
+| nvme0n1p4 (btrfs NIXOS-HOME) | `a8b6794b-b034-44e6-8cd7-ef4013cb7fdd` | `/home` | `@home` |
 
 ---
 
 ## PASSO 4 — Reconstruir e Verificar o Boot (Live ISO)
 
-Execute os passos abaixo **no Live ISO**, após editar o arquivo com o UUID real:
+Execute os passos abaixo **no Live ISO** com o repositório já atualizado:
 
 ```bash
 # 1. Montar a partição raiz (btrfs, subvol @)
-mount -o subvol=@,compress=zstd,noatime /dev/disk/by-uuid/<UUID-de-nvme0n1p3> /mnt
+sudo mount -o subvol=@,compress=zstd,noatime \
+  /dev/disk/by-uuid/9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc /mnt
 
 # 2. Montar as demais partições necessárias para o nixos-enter
-mount -o subvol=@nix,compress=zstd,noatime  /dev/disk/by-uuid/<UUID-de-nvme0n1p3> /mnt/nix
-mount /dev/disk/by-uuid/<UUID-de-nvme0n1p1> /mnt/boot
+sudo mount -o subvol=@nix,compress=zstd,noatime \
+  /dev/disk/by-uuid/9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc /mnt/nix
+sudo mount /dev/disk/by-uuid/4509-A31C /mnt/boot
 
 # 3. Entrar no ambiente do sistema instalado
-nixos-enter --root /mnt
+sudo nixos-enter --root /mnt
 
 # 4. Navegar até o repositório (ajuste o caminho conforme necessário)
 cd /home/rocha/dotfiles-NixOs   # ou onde o repo estiver clonado
 
-# 5. Editar o hardware-configuration.nix com os UUIDs reais (se ainda não feito)
-# nano hosts/inspiron/hardware-configuration.nix
+# 5. Puxar as mudanças mais recentes do repositório
+git pull
 
 # 6. Gerar uma nova entrada de boot SEM ativar imediatamente
 nixos-rebuild boot --flake .#inspiron
@@ -144,8 +140,8 @@ nixos-rebuild boot --flake .#inspiron
 exit
 
 # 8. Desmontar e reiniciar
-umount -R /mnt
-reboot
+sudo umount -R /mnt
+sudo reboot
 ```
 
 > **Por que `nixos-rebuild boot` e não `switch`?**
