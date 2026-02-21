@@ -54,7 +54,7 @@ in
       enable = true;
       settings.default_session = {
         user = greeterUser;
-        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd ${lib.escapeShellArg cfg.command}";
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd ${lib.escapeShellArg cfg.command}";
       };
     };
 
@@ -79,7 +79,7 @@ in
       '';
     };
 
-    environment.systemPackages = [ pkgs.greetd.tuigreet ];
+    environment.systemPackages = [ pkgs.tuigreet ];
 
     assertions = [
       {
