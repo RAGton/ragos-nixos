@@ -182,6 +182,9 @@
     LC_TIME = "pt_BR.UTF-8";
   };
 
+  # Teclado no console virtual (TTY) — layout ABNT2 brasileiro
+  console.keyMap = "br-abnt2";
+
   # Habilita suporte a Bluetooth
   hardware.bluetooth = {
     enable = true;
