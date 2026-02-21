@@ -54,19 +54,6 @@ in
     # Segurança/integração da sessão.
     services.gnome.gnome-keyring.enable = true;
     security.polkit.enable = true;
-    
-    # ✅ PAM para Hyprland + UWSM: garante que a sessão Wayland tenha as variáveis corretas
-    security.pam.services.login.text = lib.mkForce ''
-      auth     substack      system-auth
-      account  required      pam_nologin.so
-      account  substack      system-auth
-      password substack      system-auth
-      session  required      pam_env.so conffile=/etc/pam/environment
-      session  required      pam_limits.so
-      session  required      pam_unix.so
-      session  required      pam_permit.so
-      session  optional      pam_systemd.so class=user type=wayland
-    '';
 
     security.pam.services = {
       hyprlock = { };
