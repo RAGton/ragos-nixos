@@ -58,16 +58,44 @@ in
       };
     };
 
-    # ✅ PAM para greetd: usa opções estruturadas do NixOS para resolução correta dos módulos.
-    # startSession = true  → habilita pam_systemd.so (necessário para sessões Wayland com seat,
-    #                          user runtime dir e dbus session via systemd-logind).
-    # enableGnomeKeyring   → desbloqueia o gnome-keyring no login via greetd
-    #                        (sem isso, secrets/SSH keys ficam inacessíveis na sessão).
+    # ✅ PAM para greetd: configuração explícita para criar sessão Wayland com seat.
+    # 
+    # CRÍTICO: Usa text = lib.mkForce para especificar class=user type=wayland no pam_systemd.so.
+    # Isto é necessário porque:
+    # 
+    # 1. startSession = true (opção estruturada) adiciona pam_systemd.so MAS sem os parâmetros
+    #    class=user e type=wayland, resultando em sessão "manager" sem seat.
+    # 
+    # 2. class=user → logind cria sessão com seat (não "manager")
+    #    type=wayland → logind aloca VT e define XDG_SESSION_TYPE=wayland
+    # 
+    # 3. Sem isso, UWSM herda sessão inválida e Hyprland/DMS não iniciam.
+    # 
+    # Referência: docs/SOLUTION_LOGIND_WAYLAND.md
     security.pam.services.greetd = {
-      allowNullPassword = false;
+      allowNullPassword = lib.mkForce false;
       unixAuth = true;
-      startSession = true;
-      enableGnomeKeyring = true;
+      text = lib.mkForce ''
+        # Autenticação
+        auth     required pam_unix.so nullok try_first_pass
+        auth     optional pam_gnome_keyring.so
+        
+        # Verificação de conta
+        account  required pam_unix.so
+        
+        # Senha
+        password required pam_unix.so nullok yescrypt
+        password optional pam_gnome_keyring.so use_authtok
+        
+        # Sessão
+        session  required pam_unix.so
+        session  required pam_env.so conffile=/etc/pam/environment readenv=0
+        session  optional pam_keyinit.so revoke
+        session  required pam_limits.so
+        session  required pam_systemd.so class=user type=wayland
+        session  optional pam_gnome_keyring.so auto_start
+        session  optional pam_permit.so
+      '';
     };
 
     environment.systemPackages = [ pkgs.tuigreet ];
