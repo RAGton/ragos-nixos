@@ -88,33 +88,31 @@ Copie o valor do campo `UUID=`.
 
 ---
 
-## PASSO 3 — Aplicar o Fix Mínimo
+## PASSO 3 — Patch Aplicado
 
-Edite `hosts/inspiron/hardware-configuration.nix` e substitua os placeholders
-pelos UUIDs reais obtidos no Passo 2:
+O arquivo `hosts/inspiron/hardware-configuration.nix` já contém os UUIDs reais
+confirmados pelo `lsblk -f` executado no Live ISO:
+
+| Partição | UUID | Ponto de montagem |
+|---|---|---|
+| nvme0n1p1 (EFI) | `4509-A31C` | `/boot` |
+| nvme0n1p3 (btrfs NIXOS-SYSTEM) | `9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc` | `/` (e subvolumes) |
 
 ```nix
-# EFI /boot — substitua pelo UUID de /dev/nvme0n1p1
+# EFI /boot
 fileSystems."/boot" = lib.mkForce
-  { device = "/dev/disk/by-uuid/<UUID-de-nvme0n1p1>";
+  { device = "/dev/disk/by-uuid/4509-A31C";
     fsType = "vfat";
     options = [ "fmask=0077" "dmask=0077" ];
   };
 
-# Raiz / — substitua pelo UUID de /dev/nvme0n1p3
+# Raiz /
 fileSystems."/" = lib.mkForce
-  { device = "/dev/disk/by-uuid/<UUID-de-nvme0n1p3>";
+  { device = "/dev/disk/by-uuid/9d31dd94-2893-4c2a-bc47-bb2c4a8d55fc";
     fsType = "btrfs";
     options = [ "subvol=@" "compress=zstd" "noatime" ];
   };
 ```
-
-> **Regras:**
-> - NÃO altere a estrutura do arquivo
-> - NÃO refatore módulos
-> - Substitua APENAS os valores UUID
-> - Use `lib.mkForce` para garantir que o UUID sobrescreve o PARTLABEL gerado
->   pelo disko
 
 ---
 
