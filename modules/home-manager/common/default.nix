@@ -101,6 +101,7 @@
       pipenv
       podman-compose
       podman-tui
+      emacs
 
       # =========================
       # Python (interpretador)

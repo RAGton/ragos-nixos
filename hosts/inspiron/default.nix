@@ -1,23 +1,28 @@
-# Host: inspiron (NixOS)
+# ==============================================================================
+# Módulo: Host Inspiron
 # Autor: rag
 #
-# O que é
-# - Configuração do sistema para a máquina inspiron (imports + ajustes específicos do host).
+# O que é:
+# - Configuração NixOS específica do host `inspiron`.
+# - Declara hardware Intel e ajustes de laptop.
 #
-# Por quê
-# - Mantém o host “fino”: hardware + integrações específicas, reaproveitando módulos do repo.
+# Por quê:
+# - Mantém separação estrita de hardware por host (sem drivers globais).
+# - Facilita manutenção sem impactar outros hosts.
 #
-# Como
-# - Importa nixos-hardware + hardware-configuration.
-# - Importa módulos comuns (common/desktop/kernel/virtualização).
+# Como:
+# - Importa `hardware-configuration.nix` e módulos comuns.
+# - Declara stack gráfico Intel localmente neste host.
 #
-# Riscos
-# - Ajustes de kernel/energia/filesystem podem afetar boot e estabilidade; revisar após upgrades.
+# Riscos:
+# - Alterações em boot/kernel/power podem afetar estabilidade e bateria.
+# ==============================================================================
 {
   inputs,
   hostname,
   nixosModules,
   lib,
+  pkgs,
   ...
 }:
 {
@@ -61,11 +66,7 @@
   # Garante que SDDM não fique habilitado via desktop/kde/system.nix.
   services.displayManager.sddm.enable = lib.mkForce false;
 
-  # display manager Wayland-friendly + greeter DMS
-  rag.services.greetdDms.enable = true;
-
-  # (o módulo greetdDms habilita greetd; mantemos esta linha apenas se algum outro módulo tentar desligar)
-  services.greetd.enable = lib.mkForce true;
+  # LightDM como display manager principal.
 
   # Profile (v2)
   rag.profiles.laptop = {
@@ -163,6 +164,29 @@
     # Removido: parâmetros agressivos do scheduler podem causar travamentos
     # O kernel Zen já vem otimizado para desktop
     extraKernelParams = [ ];
+  };
+
+  # =========================
+  # Intel iGPU (Inspiron)
+  # =========================
+  services.xserver.videoDrivers = [ "modesetting" ];
+
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+    extraPackages = with pkgs; [
+      intel-media-driver   # VA-API iHD (Broadwell+)
+      libvdpau-va-gl       # VDPAU via VA-API
+      intel-vaapi-driver   # fallback VA-API i965 (pre-Broadwell)
+    ];
+  };
+
+  environment.sessionVariables = {
+    # Mesa / OpenGL (Intel)
+    MESA_LOADER_DRIVER_OVERRIDE = "iris";
+    LIBVA_DRIVER_NAME = "iHD";
+    # Evita fallback silencioso para software renderer (llvmpipe).
+    WLR_RENDERER_ALLOW_SOFTWARE = "0";
   };
 
   ## -------------------------

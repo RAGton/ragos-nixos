@@ -1,20 +1,22 @@
-# Módulo NixOS: base comum (todos os hosts)
+# ==============================================================================
+# Módulo: Base Comum NixOS
 # Autor: rag
 #
-# O que é
-# - Configuração “base” do sistema: nixpkgs/overlays, boot defaults, locale, rede, variáveis de sessão e pacotes comuns.
-# - Importa módulos de serviços e programas compartilhados (Steam, gaming, TLP, Snapper).
+# O que é:
+# - Camada compartilhada entre hosts com defaults de sistema, serviços e pacotes.
+# - Ponto único para opções globais não ligadas a hardware específico.
 #
-# Por quê
+# Por quê:
 # - Evita duplicação entre hosts.
-# - Mantém os hosts finos (imports + hardware/ajustes específicos).
+# - Mantém as configurações por host focadas em hardware e diferenças locais.
 #
-# Como
-# - Usa `nixpkgs.overlays` do repo.
-# - Configura `nix.registry`/`NIX_PATH` para facilitar comandos e compat.
+# Como:
+# - Importa módulos compartilhados e define defaults com `mkDefault`.
+# - Expõe registry/NIX_PATH e stack base (PipeWire, rede, locale, etc).
 #
-# Riscos
-# - Alterações aqui impactam todas as máquinas; mudanças devem ser testadas em pelo menos um host antes de propagar.
+# Riscos:
+# - Qualquer regressão aqui afeta todos os hosts; sempre validar com `nixos-rebuild test`.
+# ==============================================================================
 {
   inputs,
   outputs,
@@ -39,7 +41,6 @@
     ../services/tlp
     ../services/snapper
     ../services/tailscale
-    ../services/greetd-dms
   ];
 
   # Registra inputs da flake no registry (melhora UX com comandos `nix ...`).
@@ -203,9 +204,17 @@
 
   # Base para gerenciamento de cor/ICC (útil para HDR/WCG quando suportado)
   services.colord.enable = lib.mkDefault true;
+  # Necessário para integração de bateria/energia em apps Wayland (incluindo DMS).
+  services.upower.enable = lib.mkDefault true;
 
   # Ajustes de entrada
   services.libinput.enable = true;
+  services.logind.settings.Login = {
+    KillUserProcesses = lib.mkForce true;
+    HandleLidSwitch = lib.mkDefault "suspend";
+    HandleLidSwitchExternalPower = lib.mkDefault "ignore";
+    HandleLidSwitchDocked = lib.mkDefault "ignore";
+  };
 
   # Ajustes do Xserver
   services.xserver = {
@@ -225,7 +234,7 @@
   # Configuração de PATH
   environment.localBinInPath = true;
 
-  # Desabilita impressão via CUPS
+  # Habilita impressão via CUPS
   services.printing.enable = true;
 
   # devmon depende de udevil, que frequentemente quebra build em toolchains novos.
@@ -241,6 +250,7 @@
     alsa.support32Bit = true;
     pulse.enable = true;
     jack.enable = true;
+    wireplumber.enable = true;
 
     # Melhorias de qualidade/volume (seguras)
     # - Resampler de melhor qualidade para reduzir "som abafado" em alguns hardwares.
@@ -377,6 +387,7 @@
     jetbrains.idea-oss
     jetbrains.pycharm-oss
     jetbrains.rust-rover
+    kdePackages.dolphin
   ];
 
    # Rustup: evita o estado "rustup instalado, mas sem toolchain default".
@@ -449,4 +460,3 @@
   # Daemon OpenSSH
   services.openssh.enable = true;
 }
-

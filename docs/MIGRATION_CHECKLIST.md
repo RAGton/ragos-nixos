@@ -103,7 +103,7 @@ Integrar DankMaterialShell como rice do Hyprland.
 - [x] **5.2** Criar `desktop/hyprland/rice/dms.nix` (módulo base)
 - [x] **5.3** Integrar via módulo upstream (HM): `desktop/hyprland/rice/dms-upstream.nix` + `rag.rice.dmsUpstream.enable`
 - [ ] **5.4** Link Waybar configs (se decidir usar waybar do upstream)
-- [ ] **5.5** Testar em host (login greetd + sessão Hyprland + dms-shell)
+- [ ] **5.5** Testar em host (login LightDM + sessão Hyprland/UWSM + dms-shell)
 
 **Status**: 🔄 EM PROGRESSO (3/5 completo)
 
@@ -142,11 +142,11 @@ Criar profiles composáveis (desktop, laptop, vm).
 ## 🔥 Etapa Atual
 
 📍 **Status atual do repo (2026-02-19):**
-- `inspiron` migrou de KDE/SDDM para **Hyprland + greetd**
+- `inspiron` migrou de KDE/SDDM para **Hyprland + LightDM**
 - Usuário `rocha` criado e promovido como **user principal** do host `inspiron`
 - Home Manager: `rocha@inspiron` espelhado de `rocha@inspiron`
 - DMS habilitado via upstream: `rag.rice.dmsUpstream.enable = true`
-- Wiring greetd + DMS greeter via `rag.services.greetdDms.enable = true`
+- Sessão oficial: LightDM + `hyprland-uwsm` + DMS upstream
 - `nix flake check -L` **passa**
 
 ✅ Próximo foco recomendado: Fase 5 (DMS) Step 5.5.
@@ -170,7 +170,7 @@ home-manager switch --flake .#rocha@inspiron
 ### Atualizações recentes
 - ✅ inspiron: migrou para `rag.profiles.laptop.enable = true` (host mais fino)
 - ✅ inspiron: desabilitado OpenRGB via `rag.hardware.openrgb.enable = false`
-- ✅ inspiron: KDE/SDDM → Hyprland + greetd (Wayland)
+- ✅ inspiron: KDE/SDDM → Hyprland + LightDM (Wayland)
 - ✅ flake: usuário `rocha` adicionado e usado como principal em `nixosConfigurations.inspiron`
 
 ### Fase 1 (Concluída - 2026-02-18) ✅
@@ -198,7 +198,7 @@ home-manager switch --flake .#rocha@inspiron
 - [ ] `nixos-rebuild dry-build --flake .#inspiron` funciona
 - [ ] `nixos-rebuild dry-build --flake .#inspiron` funciona
 - [ ] Sistema atual continua bootando normalmente
-- [ ] greeter (greetd) inicia e permite login
+- [ ] LightDM inicia e permite login
 
 ---
 

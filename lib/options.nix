@@ -66,7 +66,6 @@
     # =========================
     # Services (host-toggles)
     # =========================
-    # NOTA: rag.services.greetdDms é definido em modules/nixos/services/greetd-dms/default.nix
     services = { };
 
     # =========================

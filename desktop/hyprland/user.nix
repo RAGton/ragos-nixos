@@ -1,26 +1,22 @@
-# =============================================================================
-# Desktop: Hyprland (User-level)
+# ==============================================================================
+# Módulo: Hyprland (User-level)
 # Autor: rag
 #
 # O que é:
-# - Configuração do ambiente Hyprland do usuário (configs em ~/.config/hypr, serviços e tema).
-# - Integra módulos auxiliares (gtk/qt/wallpaper/xdg, waybar, swaync, kanshi etc.).
+# - Configuração Home Manager do Hyprland (arquivos em ~/.config/hypr e serviços user).
+# - Integra o rice DMS como shell principal da sessão.
 #
 # Por quê:
-# - Mantém o setup Wayland consistente e reprodutível em máquinas novas.
-# - Centraliza o "stack" do Hyprland no Home Manager.
+# - Evita duplicação entre DMS, Waybar, Wofi e outros daemons de sessão.
+# - Garante idle/lock declarativos com integração correta ao logind.
 #
 # Como:
-# - Importa módulos do repo via `nhModules`.
-# - Publica arquivos de config do Hyprland via `xdg.configFile`.
+# - Publica `hyprland.conf`, `hypridle.conf` e `hyprlock.conf`.
+# - Desativa launchers/notificações duplicados quando DMS está ativo.
 #
 # Riscos:
-# - Alterações em portals/serviços podem impactar notificações/clipboard/idle/lock.
-#
-# Migração v2:
-# - Movido de modules/home-manager/desktop/hyprland/default.nix (Phase 2.4)
-# - User-level config separado de system-level (desktop/hyprland/system.nix)
-# =============================================================================
+# - Ajustes agressivos de idle/lock podem interromper workflows longos se mal calibrados.
+# ==============================================================================
 {
   config,
   lib,
@@ -28,6 +24,12 @@
   nhModules,
   ...
 }:
+let
+  dmsEnabled =
+    (config.rag.rice.dmsUpstream.enable or false)
+    || (config.rag.rice.dms.enable or false)
+    || (config.programs.dank-material-shell.enable or false);
+in
 {
   imports = [
     "${nhModules}/misc/gtk"
@@ -35,11 +37,7 @@
     "${nhModules}/misc/wallpaper"
     "${nhModules}/misc/xdg"
     "${nhModules}/programs/swappy"
-    "${nhModules}/programs/wofi"
-    "${nhModules}/services/cliphist"
     "${nhModules}/services/kanshi"
-    "${nhModules}/services/swaync"
-    "${nhModules}/services/waybar"
   ];
 
   # Tema de cursor consistente em todos os aplicativos.
@@ -51,31 +49,168 @@
     size = 24;
   };
 
-  # Hyprland via Home Manager (necessário para integração correta com systemd-user).
-  # Mantemos o arquivo `desktop/hyprland/hyprland.conf` como fonte única de verdade.
+  # Requisito do projeto: launcher do DMS exclusivamente (sem Wofi).
+  programs.wofi.enable = lib.mkForce false;
+
+  # Hyprland via Home Manager.
   wayland.windowManager.hyprland = {
     enable = true;
-    systemd.enable = true;
 
-    # Reaproveita o config versionado no repo (sem exec-once de barra aqui).
+    # CRÍTICO: variables = ["--all"] exporta WAYLAND_DISPLAY, DISPLAY e todas as
+    # variáveis de ambiente do Hyprland para o systemd-user e o D-Bus.
+    # Sem isso, serviços como waybar/cliphist/swaync esperam indefinidamente
+    # até o timeout de 60s do systemd antes de continuar.
+    systemd = {
+      enable = true;
+      variables = [ "--all" ];
+    };
+
+    # Reaproveita o config versionado no repo.
     extraConfig = builtins.readFile ./hyprland.conf;
   };
 
   # Publica a configuração do Hyprland a partir do store do Home Manager.
-  xdg.configFile = {
-    "hypr/hyprpaper.conf".text = ''
-      splash = false
-      preload = ${config.wallpaper}
-      wallpaper = , ${config.wallpaper}
-    '';
+  xdg.configFile = lib.mkMerge [
+    (lib.mkIf (!dmsEnabled) {
+      "hypr/hyprpaper.conf".text = ''
+        splash = false
+        preload = ${config.wallpaper}
+        wallpaper = , ${config.wallpaper}
+      '';
+    })
+    {
+      "hypr/hypridle.conf".text = ''
+        general {
+          # Usa hyprlock (não um script customizado) como comando de lock.
+          # `pidof hyprlock ||` evita iniciar duas instâncias.
+          lock_cmd = pidof hyprlock || hyprlock
+          # Bloqueia VIA LOGIND antes de dormir (integração correta com systemd).
+          before_sleep_cmd = loginctl lock-session
+          # Re-liga displays após wakeup.
+          after_sleep_cmd = hyprctl dispatch dpms on
+          # Ignora idle ao reproduzir mídia fullscreen
+          ignore_dbus_inhibit = false
+        }
 
-    "hypr/hypridle.conf".text = ''
-      general {
-        lock_cmd = pidof hyprlock || $HOME/.local/bin/dynamic-hyprlock
-        before_sleep_cmd = loginctl lock-session
-        after_sleep_cmd = hyprctl dispatch dpms on
-      }
-    '';
+        # 3 min: dim displays
+        listener {
+          timeout = 150
+          on-timeout = brightnessctl -s set 20%
+          on-resume  = brightnessctl -r
+        }
+
+        # 5 min: bloquear tela
+        listener {
+          timeout = 300
+          on-timeout = loginctl lock-session
+          on-resume  = hyprctl dispatch dpms on
+        }
+
+        # 10 min: desligar displays (economiza bateria)
+        listener {
+          timeout = 600
+          on-timeout = hyprctl dispatch dpms off
+          on-resume  = hyprctl dispatch dpms on
+        }
+
+        # 30 min: suspender sistema
+        listener {
+          timeout = 1800
+          on-timeout = systemctl suspend
+        }
+      '';
+
+      # hyprlock: tela de bloqueio completa com blur + relógio
+      "hypr/hyprlock.conf".text = ''
+        general {
+          grace     = 2       # segundos de grace period (teclado visível)
+          hide_cursor = true
+          no_fade_in  = false
+          no_fade_out = false
+          pam_module  = hyprlock
+        }
+
+        # Fundo com blur
+        background {
+          monitor =
+          path    = screenshot
+          blur_passes  = 3
+          blur_size    = 7
+          noise        = 0.0117
+          contrast     = 0.8916
+          brightness   = 0.8172
+          vibrancy     = 0.1696
+          vibrancy_darkness = 0.0
+        }
+
+        # Relógio grande centralizado
+        label {
+          monitor =
+          text     = cmd[update:1000] echo "$(date +"%-H:%M")"
+          color    = rgba(207, 213, 245, 1.0)
+          font_size   = 90
+          font_family = JetBrains Mono
+          position    = 0, 80
+          halign      = center
+          valign      = center
+          shadow_passes = 2
+          shadow_size   = 4
+        }
+
+        # Data
+        label {
+          monitor =
+          text     = cmd[update:10000] echo "$(date +"%A, %d de %B")"
+          color    = rgba(166, 173, 200, 0.8)
+          font_size   = 18
+          font_family = JetBrains Mono
+          position    = 0, -15
+          halign      = center
+          valign      = center
+          shadow_passes = 2
+          shadow_size   = 2
+        }
+
+        # Campo de senha
+        input-field {
+          monitor =
+          size     = 250, 50
+          outline_thickness = 2
+          dots_size    = 0.26
+          dots_spacing = 0.64
+          dots_center  = true
+          outer_color  = rgba(138, 133, 193, 1.0)
+          inner_color  = rgba(26, 27, 38, 0.85)
+          font_color   = rgba(207, 213, 245, 1.0)
+          fade_on_empty = true
+          placeholder_text = <span foreground="##a9b1d6" font_size="small">Senha...</span>
+          rounding     = 12
+          check_color  = rgba(115, 218, 202, 1.0)
+          fail_color   = rgba(247, 118, 142, 1.0)
+          fail_text    = <i>Senha incorreta :(</i>
+          fail_timeout = 2000
+          capslock_color = rgba(255, 158, 100, 1.0)
+          position = 0, -200
+          halign   = center
+          valign   = center
+        }
+      '';
+    }
+  ];
+
+  # DMS como fonte única de barra/launcher/notificações/wallpaper.
+  programs.dank-material-shell = lib.mkIf dmsEnabled {
+    systemd.target = "hyprland-session.target";
+
+    # Evita timeout de PowerProfiles quando o serviço D-Bus não está pronto.
+    settings.osdPowerProfileEnabled = false;
+
+    # Wallpaper declarativo vindo da configuração Nix/Home Manager.
+    session = {
+      wallpaperPath = toString config.wallpaper;
+      wallpaperPathLight = toString config.wallpaper;
+      wallpaperPathDark = toString config.wallpaper;
+    };
   };
 
   # Garante que os arquivos do DMS existam como arquivos graváveis.

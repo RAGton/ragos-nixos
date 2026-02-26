@@ -172,6 +172,9 @@
       nixosConfigurations = {
         inspiron = mkNixosConfiguration "inspiron" "rocha";
 
+        # Desktop gaming/dev — AMD Ryzen 7 9700X + RTX 4060
+        glacier = mkNixosConfiguration "glacier" "rocha";
+
         # Live ISO instaladora (multi-host)
         iso = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
@@ -190,6 +193,12 @@
         "rocha@inspiron" =
           let
             cfg = mkHomeConfiguration "x86_64-linux" "rocha" "inspiron";
+          in
+          cfg // { type = "homeManagerConfiguration"; };
+
+        "rocha@glacier" =
+          let
+            cfg = mkHomeConfiguration "x86_64-linux" "rocha" "glacier";
           in
           cfg // { type = "homeManagerConfiguration"; };
       };

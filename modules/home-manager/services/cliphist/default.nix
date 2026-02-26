@@ -13,8 +13,15 @@
 # Riscos:
 # - Histórico pode conter dados sensíveis; avalie limpeza/regras conforme seu uso.
 # =============================================================================
-{ ... }:
+{ config, ... }:
+let
+  # DMS já fornece clipboard manager próprio.
+  dmsEnabled =
+    (config.rag.rice.dmsUpstream.enable or false)
+    || (config.rag.rice.dms.enable or false)
+    || (config.programs.dank-material-shell.enable or false);
+in
 {
-  # Instala/ativa o cliphist via Home Manager.
-  services.cliphist.enable = true;
+  # Evita duplicar o gerenciamento de clipboard quando DMS está ativo.
+  services.cliphist.enable = !dmsEnabled;
 }

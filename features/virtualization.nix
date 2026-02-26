@@ -240,13 +240,8 @@ in
     # Kernel Modules
     # =========================
     boot.kernelModules = lib.flatten [
-      # KVM modules (loaded automatically, but explicit is good)
-      (lib.optionals cfg.kvm.enable [
-        "kvm-intel"  # or kvm-amd (host-specific)
-        "kvm-amd"
-      ])
-
-      # VirtualBox modules
+      # KVM Intel/AMD devem ser definidos por host (hardware-specific).
+      # Aqui mantemos apenas módulos genéricos de VirtualBox.
       (lib.optionals cfg.virtualbox.enable [
         "vboxdrv"
         "vboxnetadp"

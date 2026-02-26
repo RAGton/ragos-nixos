@@ -18,12 +18,20 @@
 # - Mudanças no desktop session podem exigir ajuste nos comandos.
 # =============================================================================
 {
+  config,
   pkgs,
   lib,
   ...
 }:
+let
+  # DMS já fornece launcher nativo; Albert ficaria duplicado.
+  dmsEnabled =
+    (config.rag.rice.dmsUpstream.enable or false)
+    || (config.rag.rice.dms.enable or false)
+    || (config.programs.dank-material-shell.enable or false);
+in
 {
-  config = lib.mkIf (!pkgs.stdenv.isDarwin) {
+  config = lib.mkIf (!pkgs.stdenv.isDarwin && !dmsEnabled) {
     # Pacote do Albert.
     home.packages = [ pkgs.albert ];
 

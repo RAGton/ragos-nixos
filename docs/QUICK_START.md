@@ -1,56 +1,37 @@
-# 🎯 PRÓXIMOS PASSOS - Ativar Solução no inspiron
+# Quick Start: LightDM + Hyprland (UWSM) + DMS
 
-## ⚡ Quick Start (3 minutos)
-
-### Passo 1: Reconstruir
+## Passo 1: Testar sem trocar geração
 ```bash
-cd /home/rocha/GitHub/dotfiles-NixOs
-nixos-rebuild switch --flake .#inspiron
+cd /home/rocha/dotfiles-NixOs
+sudo nixos-rebuild test --flake .#inspiron
+home-manager switch --flake .#rocha@inspiron
 ```
-Espere ~5-10 minutos pela compilação.
 
-### Passo 2: Reboot
+## Passo 2: Validar sessão
 ```bash
+echo "$XDG_SESSION_TYPE"
+loginctl session-status
+systemctl --user list-units --type=service --state=running | rg "dms|swaync|cliphist|albert|waybar|wofi"
+```
+
+Esperado:
+- `XDG_SESSION_TYPE=wayland`
+- sessão de login via display manager LightDM
+- apenas `dms` ativo entre os componentes de shell/launcher/notificação/clipboard
+
+## Passo 3: Aplicar definitivo
+```bash
+sudo nixos-rebuild switch --flake .#inspiron
 sudo reboot
 ```
 
-### Passo 3: Login
-1. Veja o prompt de login (greetd + tuigreet)
-2. Digite seu usuário
-3. Digite sua senha
-4. Pressione ENTER
+## Troubleshooting rápido
+```bash
+journalctl -b -p err
+journalctl --user -b | rg -i "hyprland|uwsm|lightdm|dms|portal"
+```
 
-### ✅ Resultado Esperado
-- **Hyprland inicia automaticamente**
-- **DMS shell é exibida**
-- **Você consegue usar a interface gráfica**
-
----
-
-## 📖 Se Tiver Dúvidas
-
-Consulte os arquivos:
-- `SOLUTION_SUMMARY.md` - Visão geral rápida
-- `TEST_GUIDE_WAYLAND_SESSION.md` - Passo a passo detalhado
-- `SOLUTION_LOGIND_WAYLAND.md` - Detalhes técnicos
-- `AUDIT_LOGIND_SESSION.md` - Análise completa do problema
-
----
-
-## 🔧 Se Algo Não Funcionar
-
-1. Abra um TTY (Ctrl+Alt+F2)
-2. Faça login
-3. Rode:
-   ```bash
-   journalctl -n 100 | grep -i "hyprland\|wayland\|greetd\|pam"
-   ```
-4. Procure por erros nos logs
-
----
-
-## ✨ Pronto!
-
-**Tudo foi implementado e commitado.**  
-**Próxima ação: Reboot e login!**
-
+## Documentação
+- `docs/TEST_GUIDE_WAYLAND_SESSION.md`
+- `docs/INDEX_DOCUMENTATION.md`
+- `docs/legacy/greetd/` (histórico legado)
