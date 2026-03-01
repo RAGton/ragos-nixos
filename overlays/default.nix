@@ -178,4 +178,36 @@ PY
       doInstallCheck = false;
     });
   };
+
+  # python312: stub de docs
+  #
+  # Por quê
+  # - Em alguns pins do nixpkgs, o derivation de docs do CPython (python3.12-*-doc)
+  #   pode falhar no buildSphinxPhase por bug de docutils/sphinx.
+  # - Isso não impacta runtime do Python, mas bloqueia `nh os switch`.
+  #
+  # Como
+  # - Substitui `python312.passthru.doc` por um pacote vazio (auditável), evitando
+  #   compilar a documentação.
+  #
+  # Riscos
+  # - Remove a documentação offline do Python 3.12 do sistema.
+  python312-docs-stub = final: prev: {
+    python312 = prev.python312.overrideAttrs (old: {
+      passthru = (old.passthru or { }) // {
+        doc = prev.stdenvNoCC.mkDerivation {
+          pname = "python3.12-doc";
+          version = (old.version or "unknown");
+          dontUnpack = true;
+          installPhase = ''
+            mkdir -p "$out/share/doc/python3.12"
+            cat > "$out/share/doc/python3.12/README.txt" <<'EOF'
+            Python 3.12 documentation build disabled in this flake.
+            This is a stub output to avoid build failures in sphinx/docutils.
+            EOF
+          '';
+        };
+      };
+    });
+  };
 }

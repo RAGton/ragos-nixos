@@ -41,6 +41,9 @@
     # Base do sistema
     "${nixosModules}/common"
 
+    # LightDM moderno (temporariamente direto aqui para teste)
+    ../../modules/nixos/services/lightdm.nix
+
     # Desktop: gerenciado via opção (v2 migration)
     # Features: gerenciadas via opções (v2 migration)
 
@@ -60,13 +63,24 @@
   rag.hardware.openrgb.enable = false;
 
   # Desktop
-  # Troca KDE/SDDM por Hyprland (Wayland) + DMS (user-level upstream via Home Manager).
+
+  # Hyprland (via LightDM; lockscreen via DMS)
   rag.desktop.environment = "hyprland";
+  rag.desktop.directLogin.enable = false;
 
-  # Garante que SDDM não fique habilitado via desktop/kde/system.nix.
-  services.displayManager.sddm.enable = lib.mkForce false;
+  # LightDM moderno com tema escuro
+  rag.lightdm = {
+    enable = true;
+    theme = {
+      gtk = "Adwaita-dark";
+      icons = "Papirus-Dark";
+    };
+    autoLogin = {
+      enable = false;  # TEMPORARIAMENTE DESABILITADO para debug
+      user = "rocha";
+    };
+  };
 
-  # LightDM como display manager principal.
 
   # Profile (v2)
   rag.profiles.laptop = {

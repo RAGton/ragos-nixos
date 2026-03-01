@@ -38,6 +38,7 @@
 
     ../programs/steam
     ../programs/wallpaper-engine-kde
+    # ../services/lightdm  # TEMPORARIAMENTE REMOVIDO PARA TESTE
     ../services/tlp
     ../services/snapper
     ../services/tailscale
@@ -215,6 +216,10 @@
     HandleLidSwitchExternalPower = lib.mkDefault "ignore";
     HandleLidSwitchDocked = lib.mkDefault "ignore";
   };
+
+  # Evita troca inesperada de implementação do D-Bus durante `nixos-rebuild test/switch`.
+  # (Isso costuma disparar o pre-switch check `switchInhibitors`.)
+  services.dbus.implementation = lib.mkDefault "broker";
 
   # Ajustes do Xserver
   services.xserver = {

@@ -1,5 +1,8 @@
 {
     "makefile.configureOnOpen": false,
     "editor.fontFamily": "CaskaydiaCove Nerd Font Mono, monospace",
-    "terminal.integrated.fontFamily": "monospace"
+    "terminal.integrated.fontFamily": "monospace",
+    "chat.tools.terminal.autoApprove": {
+        "nix": true
+    }
 }

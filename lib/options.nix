@@ -48,6 +48,21 @@
         default = config.rag.desktop.environment != null;
         description = "Habilita suporte a Wayland (ativado automaticamente com desktop)";
       };
+
+      directLogin = {
+        enable = lib.mkEnableOption ''
+          Inicia o desktop sem display manager (sem SDDM/greetd), usando autologin em TTY
+          e auto-start do compositor na sessão do usuário.
+
+          AVISO: isso remove a tela de login e entra direto no usuário.
+        '';
+
+        tty = lib.mkOption {
+          type = lib.types.int;
+          default = 1;
+          description = "TTY (VT) em que o auto-start do compositor deve acontecer (ex.: 1 para tty1).";
+        };
+      };
     };
 
     # =========================

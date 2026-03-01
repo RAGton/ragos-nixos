@@ -40,6 +40,17 @@ in
     "${nhModules}/services/kanshi"
   ];
 
+  # Boot direto (sem display manager): ao logar no tty, inicia Hyprland via UWSM.
+  # Segurança: isso remove a tela de login (autologin). Use apenas se você confia no acesso físico.
+  programs.zsh.loginExtra = lib.mkIf (config.rag.desktop.directLogin.enable or false) (lib.mkAfter ''
+    if [[ -z "''${WAYLAND_DISPLAY-}" && -z "''${DISPLAY-}" && "''${XDG_VTNR-}" = "${toString (config.rag.desktop.directLogin.tty or 1)}" ]]; then
+      if command -v uwsm >/dev/null 2>&1; then
+        exec uwsm start hyprland-uwsm.desktop
+      fi
+      exec Hyprland
+    fi
+  '');
+
   # Tema de cursor consistente em todos os aplicativos.
   home.pointerCursor = {
     gtk.enable = true;

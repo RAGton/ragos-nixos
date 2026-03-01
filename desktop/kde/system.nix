@@ -27,10 +27,12 @@
 let
   # Ajustado para novo local (desktop/ em vez de modules/nixos/desktop/)
   wallpaper = ../../modules/home-manager/misc/wallpaper/wallpaper.jpg;
+
+  lightdmEnabled = ((config.rag.lightdm or { }).enable or false);
 in
 {
-  # Só habilita se KDE foi escolhido
-  config = lib.mkIf (config.rag.desktop.environment == "kde") {
+  # PROTEÇÃO: Só habilita SDDM se KDE foi escolhido E LightDM não está ativo
+  config = lib.mkIf (config.rag.desktop.environment == "kde" && !lightdmEnabled) {
     # Display manager + Plasma.
     services.displayManager.sddm = {
       enable = true;

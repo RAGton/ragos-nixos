@@ -28,7 +28,7 @@ let
   # Conteúdo do /etc/os-release.
   # Usamos um conjunto pequeno e compatível (muitas ferramentas só precisam disso).
   osReleaseText = ''
-    NAME=RagOS
+    NAME="NixOS (RagOS)"
     PRETTY_NAME=${lib.escapeShellArg cfg.prettyName}
     ID=nixos
     ID_LIKE=nixos

@@ -20,6 +20,7 @@
       ++ lib.optionals (!isDarwin) [
         outputs.overlays.openrgb-git
         outputs.overlays.drkonqi-ignore-missing-buildid
+        outputs.overlays.python312-docs-stub
       ];
 
     config = {
