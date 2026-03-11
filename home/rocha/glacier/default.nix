@@ -17,6 +17,7 @@
     enable = true;
     kernels = {
       python = true;
+      c = true;
       rust   = true;
       cpp    = true;
       bash   = true;
@@ -24,9 +25,8 @@
   };
 
   rag.vscode = {
-    enable  = true;
-    channel = "unstable";
-    flavor  = "vscode";
+    enable = true;
+    installMethod = "flatpak";
   };
 
   # Ajustes específicos do host NVIDIA.

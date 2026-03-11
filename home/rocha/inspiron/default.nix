@@ -20,6 +20,7 @@
     enable = true;
     kernels = {
       python = true;
+      c = true;
       rust = true;
       cpp = true;
       bash = true;
@@ -31,7 +32,7 @@
   rag.vscode = {
     enable = true;
     channel = "unstable";
-    flavor = "vscode";
+    flavor = "vscode";    
   };
 
   home.packages = with pkgs; [

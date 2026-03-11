@@ -17,8 +17,11 @@
 # Riscos
 # - Atualizar pins (nixpkgs/home-manager) pode introduzir regressões; prefira atualizar de forma incremental.
 {
-  description = "Configurações NixOS e nix-darwin das minhas máquinas";
+  description = "Infraestrutura declarativa NixOS/nix-darwin multi-host/multi-user com Flakes, Home Manager, Flatpak, VS Code, Jupyter e toolchains de desenvolvimento.";
 
+  # =============================
+  # Inputs (flakes externos)
+  # =============================
   inputs = {
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -87,38 +90,32 @@
     };
   };
 
-  outputs =
-    {
-      self,
-      darwin,
-      home-manager,
-      nixpkgs,
-      ...
-    }@inputs:
+  # =============================
+  # Outputs (sistemas, usuários, overlays)
+  # =============================
+  outputs = { self, darwin, home-manager, nixpkgs, ... }@inputs:
     let
       inherit (self) outputs;
 
-      # Definição de usuários
+      # =============================
+      # Usuários declarados (multi-user ready)
+      # =============================
       users = {
-        # Usuário principal
         rocha = {
           avatar = ./files/avatar/ragton.jpeg;
           email = "gabriel.rag@proton.me";
-          # Chave pública usada para verificar assinatura SSH do Git.
-          # A chave privada correspondente fica fora do repo, em `~/.ssh/`.
           gitKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGIlk6EkcD7aTDYYmZVr636Jo1Vz9zDqUWiwzEpBgmMY gabriel.rag@proton.me";
-
-          # Caminho relativo ao $HOME para a chave privada usada para assinar commits.
-          # (evita hardcode de /home vs /Users)
           gitSigningKeyPath = ".ssh/id_ed25519_git_signing";
           fullName = "Gabriel Rocha";
           name = "rocha";
         };
+        # Adicione outros usuários aqui
       };
 
-      # Função para configuração de sistema (NixOS)
-      mkNixosConfiguration =
-        hostname: username:
+      # =============================
+      # Funções helpers para sistemas e home
+      # =============================
+      mkNixosConfiguration = hostname: username:
         nixpkgs.lib.nixosSystem {
           specialArgs = {
             inherit inputs outputs hostname;
@@ -128,16 +125,14 @@
           };
           modules = [
             ./hosts/${hostname}
-            ./lib/options.nix     # Sistema de opções rag.* (v2 migration)
-            ./desktop/manager.nix # Desktop auto-import (v2 migration)
-            ./features            # Features modulares (v2 migration)
-            ./profiles            # Profiles composáveis (v2 migration)
+            ./lib/options.nix
+            ./desktop/manager.nix
+            ./features
+            ./profiles
           ];
         };
 
-      # Função para configuração de sistema (nix-darwin)
-      mkDarwinConfiguration =
-        hostname: username:
+      mkDarwinConfiguration = hostname: username:
         darwin.lib.darwinSystem {
           system = "aarch64-darwin";
           specialArgs = {
@@ -149,17 +144,13 @@
           modules = [ ./hosts/${hostname} ];
         };
 
-      # Função para configuração do Home Manager
-      mkHomeConfiguration =
-        system: username: hostname:
+      mkHomeConfiguration = system: username: hostname:
         home-manager.lib.homeManagerConfiguration {
           pkgs = import nixpkgs {
             inherit system;
             overlays = [
               outputs.overlays.stable-packages
               outputs.overlays.warp-terminal-latest
-              # Workaround: nixpkgs unstable sometimes fails building xeus-cling due to
-              # notebook-based install checks (papermill). Disable checks so HM can switch.
               outputs.overlays.xeus-cling-no-checks
             ];
             config.allowUnfree = true;
@@ -168,28 +159,18 @@
             inherit inputs outputs;
             userConfig = users.${username};
             nhModules = "${self}/modules/home-manager";
-
-            # DankMaterialShell upstream HM modules expect `dmsPkgs` as a module argument.
-            # Provide it here so imports like `inputs.dms + /distro/nix/home.nix` can evaluate.
-            dmsPkgs =
-              if inputs ? dms-flake then
-                inputs.dms-flake.packages.${system}
-              else
-                { };
+            dmsPkgs = if inputs ? dms-flake then inputs.dms-flake.packages.${system} else { };
           };
-          modules = [
-            ./home/${username}/${hostname}
-          ];
+          modules = [ ./home/${username}/${hostname} ];
         };
-    in
-    {
+
+    in {
+      # =============================
+      # Sistemas NixOS (multi-host)
+      # =============================
       nixosConfigurations = {
         inspiron = mkNixosConfiguration "inspiron" "rocha";
-
-        # Desktop gaming/dev — AMD Ryzen 7 9700X + RTX 4060
         glacier = mkNixosConfiguration "glacier" "rocha";
-
-        # Live ISO instaladora (multi-host)
         iso = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = {
@@ -197,26 +178,23 @@
             hostname = "iso";
             isDarwin = false;
             nixosModules = "${self}/modules/nixos";
-            # A ISO não precisa de userConfig; se algum módulo exigir, ajustamos no host iso.
           };
           modules = [ ./hosts/iso ];
         };
       };
 
+      # =============================
+      # Home Manager (multi-user, multi-host)
+      # =============================
       homeConfigurations = {
-        "rocha@inspiron" =
-          let
-            cfg = mkHomeConfiguration "x86_64-linux" "rocha" "inspiron";
-          in
-          cfg // { type = "homeManagerConfiguration"; };
-
-        "rocha@glacier" =
-          let
-            cfg = mkHomeConfiguration "x86_64-linux" "rocha" "glacier";
-          in
-          cfg // { type = "homeManagerConfiguration"; };
+        "rocha@inspiron" = let cfg = mkHomeConfiguration "x86_64-linux" "rocha" "inspiron"; in cfg // { type = "homeManagerConfiguration"; };
+        "rocha@glacier" = let cfg = mkHomeConfiguration "x86_64-linux" "rocha" "glacier"; in cfg // { type = "homeManagerConfiguration"; };
+        # Adicione outros usuários/hosts aqui
       };
 
+      # =============================
+      # Overlays (modular, multi-overlay)
+      # =============================
       overlays = import ./overlays { inherit inputs; };
     };
 }

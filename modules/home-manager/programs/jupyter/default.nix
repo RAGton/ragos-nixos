@@ -17,6 +17,7 @@ let
   # Note: this environment already provides `bin/python`, but it may also ship `bin/jupyter`.
   python = pkgs.python3.withPackages (ps: [
     ps.jupyterlab
+    ps.notebook
     ps.ipykernel
   ]);
 
@@ -26,7 +27,7 @@ let
   # depend on a `bin/jupyter` provided by the python env and avoid PATH collisions.
   jupyterLauncher = pkgs.writeShellScriptBin "jupyter" ''
     set -euo pipefail
-    exec "${pythonBin}" -m jupyterlab "$@"
+    exec "${pythonBin}" -m jupyter "$@"
   '';
 
   # Helper: attempt to register a kernelspec only if the command exists.
@@ -46,22 +47,41 @@ let
         evcxr_jupyter --install
       else
         echo "[jupyter-bootstrap] evcxr_jupyter não encontrado no PATH" >&2
-        exit 1
       fi
     fi
 
     if [ "${lib.boolToString cfg.kernels.cpp}" = "true" ]; then
-      # xeus-cling pode disponibilizar kernels xcpp11/xcpp14/xcpp17.
+      installed_any=0
+
+      # Alguns nixpkgs expõem helpers `xcpp17-jupyter-kernel install --user`.
       for k in xcpp11-jupyter-kernel xcpp14-jupyter-kernel xcpp17-jupyter-kernel; do
         if [ -x "${pkgs.xeus-cling}/bin/$k" ]; then
           "${pkgs.xeus-cling}/bin/$k" install --user
+          installed_any=1
         fi
       done
+
+      # Outros nixpkgs já trazem kernelspecs em `${pkgs.xeus-cling}/share/jupyter/kernels/*`.
+      if [ "$installed_any" = "0" ]; then
+        for spec in xcpp11 xcpp14 xcpp17; do
+          if [ -d "${pkgs.xeus-cling}/share/jupyter/kernels/$spec" ]; then
+            "${pythonBin}" -m jupyter kernelspec install --user --replace --name "$spec" "${pkgs.xeus-cling}/share/jupyter/kernels/$spec"
+          fi
+        done
+      fi
     fi
 
     if [ "${lib.boolToString cfg.kernels.bash}" = "true" ]; then
       if command -v bash_kernel >/dev/null 2>&1; then
         bash_kernel install --user
+      fi
+    fi
+
+    if [ "${lib.boolToString cfg.kernels.c}" = "true" ]; then
+      if command -v install_c_kernel >/dev/null 2>&1; then
+        install_c_kernel --user
+      else
+        echo "[jupyter-bootstrap] install_c_kernel não encontrado no PATH" >&2
       fi
     fi
 
@@ -82,10 +102,8 @@ let
     echo "[jupyter-doctor] python: ${pythonBin}"
     "${pythonBin}" -c "import jupyterlab, ipykernel; print('jupyterlab:', jupyterlab.__version__); print('ipykernel:', ipykernel.__version__)"
 
-    if command -v jupyter >/dev/null 2>&1; then
-      echo "[jupyter-doctor] kernelspec list:"
-      jupyter kernelspec list || true
-    fi
+    echo "[jupyter-doctor] kernelspec list:"
+    "${pythonBin}" -m jupyter kernelspec list || true
   '';
 
   # nixpkgs renamed python package `bash_kernel` -> `bash-kernel`
@@ -113,6 +131,12 @@ in
         type = lib.types.bool;
         default = true;
         description = "Habilita/register kernel Python (ipykernel)";
+      };
+
+      c = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Habilita kernel C (jupyter-c-kernel).";
       };
 
       rust = lib.mkOption {
@@ -169,6 +193,7 @@ in
         jupyterDoctor
         jupyterBootstrapCmd
       ]
+      ++ lib.optionals cfg.kernels.c [ pkgs.python3Packages."jupyter-c-kernel" ]
       ++ lib.optionals cfg.kernels.rust [ pkgs.evcxr ]
       ++ lib.optionals cfg.kernels.cpp [ pkgs.xeus-cling ]
       ++ lib.optionals cfg.kernels.bash [ bashKernelPkg ]

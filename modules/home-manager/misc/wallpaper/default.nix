@@ -20,13 +20,13 @@
 {
   options.wallpaper = lib.mkOption {
     type = lib.types.path;
-    default = ../../../../files/wallpaper/wallpaper.png;
+    default = ../../../../files/wallpaper/RAGOS-WALPAPER.png;
     description = "Caminho do wallpaper padrão.";
   };
 
   options.wallpapers = lib.mkOption {
     type = lib.types.listOf lib.types.path;
-    default = [ ../../../../files/wallpaper/wallpaper.png ];
+    default = [ ../../../../files/wallpaper/RAGOS-WALPAPER.png ];
     description = "Lista de wallpapers para instalar em ~/.local/share/wallpapers (galeria).";
   };
 

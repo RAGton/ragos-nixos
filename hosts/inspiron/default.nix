@@ -89,6 +89,8 @@
       nix.enable = true;
       python.enable = true;
       javascript.enable = true;
+      rust.enable = true;
+      c.enable = true;
     };
     tools.kubernetes.enable = true;
   };

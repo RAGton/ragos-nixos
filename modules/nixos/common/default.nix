@@ -301,6 +301,7 @@
 
     packages = lib.mkDefault [
       "app.zen_browser.zen"
+      "com.visualstudio.code"
       "com.heroicgameslauncher.hgl"
       "io.github.shiftey.Desktop"
       "io.github.shonebinu.Brief"
@@ -314,6 +315,49 @@
       "org.libreoffice.LibreOffice"
       "org.gimp.GIMP"
     ];
+
+    # Overrides focados no VS Code Flatpak:
+    # - expõe toolchains do host (Nix) e diretório HOME
+    # - força Wayland (Hyprland)
+    overrides = {
+      "com.visualstudio.code" = {
+        Context = {
+          filesystems = [
+            "home"
+            "/nix:ro"
+            "/run/current-system/sw:ro"
+            "/etc/nix:ro"
+          ];
+
+          # Wayland-only (Hyprland) + acesso a agentes para Git/SSH/GPG.
+          sockets = [
+            "wayland"
+            "!x11"
+            "!fallback-x11"
+            "ssh-auth"
+            "gpg-agent"
+          ];
+
+          devices = [ "dri" ];
+        };
+
+        Environment = {
+          # Flatpak inicia com PATH mínimo (/app/bin:/usr/bin). Incluímos o toolchain do host.
+          # (Usamos /home/<user> porque é um setup single-user.)
+          PATH = lib.concatStringsSep ":" [
+            "/app/bin"
+            "/usr/bin"
+            "/run/current-system/sw/bin"
+            "/run/current-system/sw/sbin"
+            "/nix/var/nix/profiles/default/bin"
+            "/nix/var/nix/profiles/default/sbin"
+            "/home/${userConfig.name}/.nix-profile/bin"
+            "/home/${userConfig.name}/.cargo/bin"
+            "/home/${userConfig.name}/.local/bin"
+          ];
+        };
+      };
+    };
 
     uninstallUnmanaged = true;
     update.auto.enable = true;
@@ -459,6 +503,7 @@
     nerd-fonts.jetbrains-mono
     nerd-fonts.meslo-lg
     nerd-fonts.caskaydia-cove
+    iosevka
     roboto
   ];
 
