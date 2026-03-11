@@ -32,7 +32,8 @@
   rag.vscode = {
     enable = true;
     channel = "unstable";
-    flavor = "vscode";    
+    flavor = "vscode";
+    installMethod = "nixpkgs";
   };
 
   home.packages = with pkgs; [
