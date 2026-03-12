@@ -20,7 +20,6 @@
 {
   inputs,
   hostname,
-  nixosModules,
   lib,
   pkgs,
   config,
@@ -39,15 +38,10 @@
     # Este host já está instalado e usa os mounts reais em
     # `hardware-configuration.nix`.
 
-    # Base do sistema
-    "${nixosModules}/common"
-
     # Kernel e rede
     ../../modules/kernel/zen.nix
     ../../modules/virtualization/net-ragthink.nix
 
-    # Branding
-    "${nixosModules}/branding/ragos"
   ];
 
   # =========================
@@ -57,10 +51,15 @@
   rag.hardware.openrgb.enable = false;
 
   rag.desktop.environment = "hyprland";
+  rag.features.dms.enable = true;
 
   services.displayManager.sddm.enable = lib.mkForce false;
 
   rag.profiles.laptop.enable = false;
+
+  rag.profiles.dev.enable = true;
+  rag.profiles.university.enable = true;
+  rag.profiles.ti.enable = true;
 
   rag.features.development = {
     enable = true;

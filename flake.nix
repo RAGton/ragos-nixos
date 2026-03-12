@@ -11,7 +11,7 @@
 # - Manutenção: entradas e saídas claras num único lugar.
 #
 # Como
-# - Inputs: nixpkgs (unstable + stable), home-manager, plasma-manager, nix-darwin etc.
+# - Inputs: nixpkgs (unstable + stable), home-manager, nix-darwin etc.
 # - Outputs: funções `mkNixosConfiguration`/`mkDarwinConfiguration` para montar hosts.
 #
 # Riscos
@@ -39,13 +39,6 @@
     # Gerenciador declarativo de Flatpak
     nix-flatpak.url = "github:gmodena/nix-flatpak?ref=v0.6.0";
 
-    # Gerenciador declarativo do KDE Plasma
-    plasma-manager = {
-      url = "github:nix-community/plasma-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
-    };
-
     # Nix Darwin (para máquinas macOS)
     darwin = {
       url = "github:LnL7/nix-darwin";
@@ -65,9 +58,6 @@
       url = "git+https://gitlab.com/jomada/edna";
       flake = false;
     };
-
-    # Tema Bart: instalado via KDE Store (não disponível como flake)
-    # Para usar: System Settings > Get New Global Themes > Busque "Bart"
 
     # DankMaterialShell (DMS) - Rice para Hyprland (assets/configs)
     # Repo: https://github.com/AvengeMedia/DankMaterialShell
@@ -125,10 +115,7 @@
           };
           modules = [
             ./hosts/${hostname}
-            ./lib/options.nix
-            ./desktop/manager.nix
-            ./features
-            ./profiles
+            ./hosts/common
           ];
         };
 

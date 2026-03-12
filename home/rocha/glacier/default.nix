@@ -1,4 +1,4 @@
-{ pkgs, nhModules, lib, ... }:
+{ pkgs, nhModules, lib, inputs, ... }:
 {
   imports = [
     ../../../modules/home-manager/common
@@ -26,7 +26,9 @@
 
   rag.vscode = {
     enable = true;
-    installMethod = "flatpak";
+    channel = "stable";
+    flavor = "vscodium";
+    installMethod = "nixpkgs";
   };
 
   # Ajustes específicos do host NVIDIA.
@@ -38,6 +40,8 @@
   '';
 
   home.packages = with pkgs; [
+    inputs.codex.packages.${pkgs.system}.default
+
     steam
     gamemode
     atlauncher

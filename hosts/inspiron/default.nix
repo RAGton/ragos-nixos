@@ -20,7 +20,6 @@
 {
   inputs,
   hostname,
-  nixosModules,
   lib,
   pkgs,
   ...
@@ -38,9 +37,6 @@
     inputs.disko.nixosModules.disko
     ./disks.nix
 
-    # Base do sistema
-    "${nixosModules}/common"
-
     # Desktop: gerenciado via opção (v2 migration)
     # Features: gerenciadas via opções (v2 migration)
 
@@ -48,8 +44,6 @@
     ../../modules/kernel/zen.nix
     ../../modules/virtualization/net-ragthink.nix
 
-    # Branding (RagOS)
-    "${nixosModules}/branding/ragos"
   ];
 
   # =========================
@@ -63,6 +57,7 @@
 
   # Hyprland (via GDM; lockscreen via DMS)
   rag.desktop.environment = "hyprland";
+  rag.features.dms.enable = true;
   rag.desktop.directLogin.enable = false;
 
 
@@ -84,6 +79,10 @@
   };
 
   # Ajustes específicos além do profile
+  rag.profiles.dev.enable = true;
+  rag.profiles.university.enable = true;
+  rag.profiles.ti.enable = true;
+
   rag.features.development = {
     languages = {
       nix.enable = true;

@@ -15,5 +15,8 @@
     ./desktop.nix
     ./laptop.nix
     ./vm.nix
+    ./dev
+    ./university
+    ./ti
   ];
 }
