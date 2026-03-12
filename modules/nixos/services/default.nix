@@ -27,6 +27,5 @@
     swappy
     wl-clipboard
     rofi-wayland
-    wofi
   ];
 }

@@ -1,6 +1,7 @@
 # =============================================================================
 # Lib: Opções customizadas do RagOS
-# Autor: rag (via AI Maintainer)
+# Autor: Gabriel Rocha (rag) + Codex
+# Data: 2026-03-12
 #
 # O que é:
 # - Define o namespace rag.* com opções para desktop, features, rice, etc
@@ -48,7 +49,7 @@
 
       directLogin = {
         enable = lib.mkEnableOption ''
-          Inicia o desktop sem display manager (sem SDDM/greetd), usando autologin em TTY
+          Inicia o desktop sem display manager (sem GDM/greetd), usando autologin em TTY
           e auto-start do compositor na sessão do usuário.
 
           AVISO: isso remove a tela de login e entra direto no usuário.
@@ -114,7 +115,6 @@
       {
         assertion =
           config.rag.desktop.environment == null ||
-          (config.services.displayManager.sddm.enable or false) ||
           (config.services.displayManager.gdm.enable or false) ||
           (config.programs.hyprland.enable or false);
         message = ''
@@ -128,13 +128,12 @@
     warnings =
       lib.optional
         (config.rag.desktop.environment != null &&
-         !(config.services.displayManager.sddm.enable or false) &&
          !(config.services.displayManager.gdm.enable or false) &&
          !(config.programs.hyprland.enable or false))
         ''
           rag.desktop.environment está definido como "${config.rag.desktop.environment}", mas o desktop
           ainda não está sendo importado. Isso é esperado durante a migração.
-          O desktop/manager.nix cuidará do import automático na próxima etapa.
+          Verifique se hosts/common está importando modules/nixos/hyprland corretamente.
         '';
   };
 }

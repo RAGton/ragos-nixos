@@ -1,6 +1,7 @@
 # ==============================================================================
 # Módulo: Hyprland (User-level)
-# Autor: rag
+# Autor: Gabriel Rocha (rag) + Codex
+# Data: 2026-03-12
 #
 # O que é:
 # - Configuração Home Manager do Hyprland (arquivos em ~/.config/hypr e serviços user).
@@ -194,6 +195,84 @@ in
         esac
       '';
     })
+
+    (writeShellApplication {
+      name = "rag-clipboard-menu";
+      runtimeInputs = [ bash coreutils cliphist wl-clipboard rofi-wayland ];
+      text = ''
+        set -euo pipefail
+
+        # Se DMS estiver respondendo, usa o clipboard nativo do shell.
+        if command -v dms >/dev/null 2>&1 && dms ipc clipboard toggle >/dev/null 2>&1; then
+          exit 0
+        fi
+
+        # Fallback: cliphist + rofi (Wayland).
+        sel="$(cliphist list | rofi -dmenu -i -p 'Clipboard')" || exit 0
+        [ -n "$sel" ] || exit 0
+        cliphist decode <<<"$sel" | wl-copy
+      '';
+    })
+
+    (writeShellApplication {
+      name = "rag-power-menu";
+      runtimeInputs = [ bash coreutils wlogout systemd ];
+      text = ''
+        set -euo pipefail
+
+        if command -v wlogout >/dev/null 2>&1; then
+          exec wlogout -b 5
+        fi
+
+        # Fallback simples sem UI
+        echo "wlogout não disponível; suspendendo em 3s" >&2
+        sleep 3
+        exec systemctl suspend
+      '';
+    })
+
+    (writeShellApplication {
+      name = "rag-audio-menu";
+      runtimeInputs = [ bash coreutils grep gnugrep gawk rofi-wayland wireplumber pavucontrol ];
+      text = ''
+        set -euo pipefail
+
+        menu="$(printf '%s
+' 'Abrir pavucontrol' 'Saída padrão' 'Entrada padrão' | rofi -dmenu -i -p 'Áudio')" || exit 0
+        case "$menu" in
+          "Abrir pavucontrol") exec pavucontrol ;;
+          "Saída padrão")
+            out="$(wpctl status | awk '/Sinks:/{f=1;next}/Sources:/{f=0}f && $1 ~ /^[0-9]+\./{gsub("\.","",$1); print $1":"substr($0,index($0,$2))}' | rofi -dmenu -i -p 'Selecionar saída')" || exit 0
+            [ -n "$out" ] || exit 0
+            wpctl set-default "${out%%:*}"
+            ;;
+          "Entrada padrão")
+            inn="$(wpctl status | awk '/Sources:/{f=1;next}/Filters:/{f=0}f && $1 ~ /^[0-9]+\./{gsub("\.","",$1); print $1":"substr($0,index($0,$2))}' | rofi -dmenu -i -p 'Selecionar entrada')" || exit 0
+            [ -n "$inn" ] || exit 0
+            wpctl set-default "${inn%%:*}"
+            ;;
+          *) exit 0 ;;
+        esac
+      '';
+    })
+
+    (writeShellApplication {
+      name = "rag-network-menu";
+      runtimeInputs = [ bash coreutils rofi-wayland networkmanager_dmenu nm-connection-editor blueman ];
+      text = ''
+        set -euo pipefail
+
+        choice="$(printf '%s
+' 'Wi-Fi rápido (dmenu)' 'Editor de conexões' 'Bluetooth manager' | rofi -dmenu -i -p 'Rede/Bluetooth')" || exit 0
+        case "$choice" in
+          "Wi-Fi rápido (dmenu)") exec networkmanager_dmenu ;;
+          "Editor de conexões") exec nm-connection-editor ;;
+          "Bluetooth manager") exec blueman-manager ;;
+          *) exit 0 ;;
+        esac
+      '';
+    })
+
   ];
 
   imports = [
@@ -436,12 +515,6 @@ in
       "button-layout" = lib.mkForce "";
     };
 
-    "org/gnome/nautilus/preferences" = {
-      "default-folder-viewer" = "list-view";
-      "migrated-gtk-settings" = true;
-      "search-filter-time-type" = "last_modified";
-      "search-view" = "list-view";
-    };
 
     "org/gnome/nm-applet" = {
       "disable-connected-notifications" = true;

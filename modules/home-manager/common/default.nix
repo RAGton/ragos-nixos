@@ -1,5 +1,6 @@
 # Home Manager: módulo comum (base do usuário)
-# Autor: rag
+# Autor: Gabriel Rocha (rag) + Codex
+# Data: 2026-03-12
 #
 # O que é
 # - Ponto de entrada de configuração do Home Manager para o usuário.
@@ -51,6 +52,7 @@
     ../programs/zellij
     ../programs/zsh
     ../scripts
+    ../services/flatpak
 
     # Rices / desktops (opt-in por opção)
     ../../../desktop/hyprland/rice/dms-upstream.nix
