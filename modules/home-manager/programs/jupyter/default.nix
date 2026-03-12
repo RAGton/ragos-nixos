@@ -27,7 +27,7 @@ let
   # depend on a `bin/jupyter` provided by the python env and avoid PATH collisions.
   jupyterLauncher = pkgs.writeShellScriptBin "jupyter" ''
     set -euo pipefail
-    exec "${pythonBin}" -m jupyter "$@"
+    exec "${pythonBin}" -m jupyter lab "$@"
   '';
 
   # Helper: attempt to register a kernelspec only if the command exists.

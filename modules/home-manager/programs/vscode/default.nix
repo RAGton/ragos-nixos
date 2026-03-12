@@ -148,7 +148,7 @@ let
     };
   };
 
-  selectPkgs = if cfg.channel == "stable" then pkgsStable else pkgs;
+  selectPkgs = if cfg.channel == "unstable" then pkgsStable else pkgs;
 
   package =
     if cfg.flavor == "vscodium" then
@@ -213,6 +213,7 @@ in
       ];
 
       home.packages = [
+        pkgs.flatpak
         codeFlatpakWrapper
         vscodeFlatpakBootstrap
       ];

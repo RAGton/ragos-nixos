@@ -33,7 +33,7 @@
     enable = true;
     channel = "unstable";
     flavor = "vscode";
-    installMethod = "nixpkgs";
+    installMethod = "flatpak";
   };
 
   home.packages = with pkgs; [

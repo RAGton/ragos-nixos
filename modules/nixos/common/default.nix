@@ -363,6 +363,12 @@
     update.auto.enable = true;
   };
 
+  # Portal XDG para integração de apps (Flatpak, etc.)
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+  };
+
   # Configuração do usuário
   users.mutableUsers = true;
 
