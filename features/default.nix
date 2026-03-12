@@ -26,6 +26,7 @@
     ./virtualization.nix
     ./development.nix
     ./ai.nix
+    ./dms
   ];
 
   # Configuração base comum a todas as features

@@ -32,17 +32,17 @@
       enable = true;
       packages = [
         "app.zen_browser.zen"
-        "io.github.shiftey.Desktop"
         "io.github.shonebinu.Brief"
         "com.anydesk.Anydesk"
         "com.rustdesk.RustDesk"
         "com.ranfdev.DistroShelf"
         "com.github.tchx84.Flatseal"
         "io.github.flattool.Warehouse"
-        "org.kde.filelight"
         "com.rtosta.zapzap"
         "org.libreoffice.LibreOffice"
         "org.gimp.GIMP"
+        # Notion Desktop (wrapper community no Flathub)
+        "notion-app"
         ];
 
       uninstallUnmanaged = true;
