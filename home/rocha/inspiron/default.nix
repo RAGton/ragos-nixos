@@ -1,4 +1,4 @@
-{ pkgs, nhModules, lib, ... }:
+{ pkgs, nhModules, lib, inputs, ... }:
 {
   imports = [
     ../../../modules/home-manager/common
@@ -31,12 +31,14 @@
 
   rag.vscode = {
     enable = true;
-    channel = "unstable";
-    flavor = "vscode";
-    installMethod = "flatpak";
+    channel = "stable";
+    flavor = "vscodium";
+    installMethod = "nixpkgs";
   };
 
   home.packages = with pkgs; [
+    inputs.codex.packages.${pkgs.system}.default
+
     steam
     gamemode
     atlauncher

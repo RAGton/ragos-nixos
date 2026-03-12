@@ -78,6 +78,29 @@
     };
   };
 
+
+  programs.gh = {
+    enable = true;
+    gitCredentialHelper.enable = true;
+    settings = {
+      git_protocol = "ssh";
+      aliases.co = "pr checkout";
+    };
+  };
+
+  programs.ssh = {
+    enable = true;
+    matchBlocks."github.com" = {
+      user = "git";
+      identitiesOnly = true;
+      identityFile = "~/.ssh/id_ed25519";
+      extraOptions = {
+        AddKeysToAgent = "yes";
+        PreferredAuthentications = "publickey";
+      };
+    };
+  };
+
   programs.delta = {
     enable = true;
     enableGitIntegration = true;

@@ -26,16 +26,13 @@
     # =========================
     desktop = {
       environment = lib.mkOption {
-        type = lib.types.nullOr (lib.types.enum [ "kde" "hyprland" "gnome" "dms" ]);
+        type = lib.types.nullOr (lib.types.enum [ "hyprland" ]);
         default = null;
         description = ''
           Ambiente de desktop a usar.
 
           Opções:
-          - "kde": KDE Plasma 6 (SDDM + Wayland)
-          - "hyprland": compositor Hyprland (vanilla)
-          - "dms": DankMaterialShell (Hyprland + rice Material)
-          - "gnome": GNOME (suporte futuro)
+          - "hyprland": compositor Hyprland (com DMS)
           - null: sem desktop (headless/servidor)
 
           Nota: definir esta opção NÃO importa o desktop automaticamente ainda.

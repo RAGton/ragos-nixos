@@ -37,7 +37,6 @@
     ../branding/ragos
 
     ../programs/steam
-    ../programs/wallpaper-engine-kde
     ../services/tlp
     ../services/snapper
     ../services/tailscale
@@ -148,7 +147,7 @@
     # Evita matar processos críticos do sistema
     extraArgs = [
       "--avoid"
-      "^(Xorg|kwin_wayland|plasmashell|sddm)$"
+      "^(Xorg|Hyprland|gdm)$"
       "--prefer"
       "^(firefox|chromium|chrome|electron)$"
     ];
@@ -303,14 +302,12 @@
       "app.zen_browser.zen"
       "com.visualstudio.code"
       "com.heroicgameslauncher.hgl"
-      "io.github.shiftey.Desktop"
       "io.github.shonebinu.Brief"
       "com.anydesk.Anydesk"
       "com.rustdesk.RustDesk"
       "com.ranfdev.DistroShelf"
       "com.github.tchx84.Flatseal"
       "io.github.flattool.Warehouse"
-      "org.kde.filelight"
       "com.rtosta.zapzap"
       "org.libreoffice.LibreOffice"
       "org.gimp.GIMP"
@@ -445,7 +442,18 @@
     jetbrains.idea-oss
     jetbrains.pycharm-oss
     jetbrains.rust-rover
+
+    # File manager padrão: Dolphin (mantido por pedido do usuário).
     kdePackages.dolphin
+    # Plugins extras do Dolphin (ações/context menu/integrações).
+    kdePackages.dolphin-plugins
+
+    # KIO stack para integrações de rede/cloud (inclui suporte a Google Drive).
+    kdePackages.kio-extras
+  ]
+  ++ lib.optionals (builtins.hasAttr "kio-gdrive" pkgs.kdePackages) [ pkgs.kdePackages."kio-gdrive" ]
+  ++ lib.optionals (builtins.hasAttr "kio-admin" pkgs.kdePackages) [ pkgs.kdePackages."kio-admin" ]
+  ++ [
   ];
 
    # Rustup: evita o estado "rustup instalado, mas sem toolchain default".
