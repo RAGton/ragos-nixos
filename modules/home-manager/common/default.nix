@@ -43,6 +43,7 @@
     ../programs/lazygit
     ../programs/neovim
     ../programs/obs-studio
+    ../programs/ragos
     ../programs/saml2aws
     ../programs/starship
     ../programs/telegram
@@ -52,6 +53,7 @@
     ../programs/zellij
     ../programs/zsh
     ../scripts
+    ../services/cliphist
     ../services/flatpak
 
     # Rices / desktops (opt-in por opção)

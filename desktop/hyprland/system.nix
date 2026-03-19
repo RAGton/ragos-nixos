@@ -9,13 +9,38 @@ let
   directLoginTtyNumber = toString (config.rag.desktop.directLogin.tty or 1);
   directLoginTty = "tty${directLoginTtyNumber}";
 
-  hyprlandNoNixGL = pkgs.hyprland.overrideAttrs (old: {
-    nativeBuildInputs = lib.unique ((old.nativeBuildInputs or []) ++ [ pkgs.makeWrapper ]);
-    postInstall = (old.postInstall or "") + ''
-      wrapProgram $out/bin/start-hyprland \
-        --add-flags --no-nixgl
-    '';
-  });
+  mkHyprlandNoNixGL = hyprlandPkg:
+    let
+      wrapped = pkgs.runCommand "${hyprlandPkg.name}-no-nixgl"
+        {
+          nativeBuildInputs = [ pkgs.makeWrapper ];
+          outputs = [ "out" "dev" "man" ];
+          pname = (hyprlandPkg.pname or "hyprland") + "-no-nixgl";
+          version = hyprlandPkg.version;
+          meta = hyprlandPkg.meta;
+          passthru = hyprlandPkg.passthru or { };
+        }
+        ''
+          mkdir -p "$out" "$dev" "$man"
+
+          cp -a ${hyprlandPkg}/. "$out/"
+          chmod -R u+w "$out"
+          rm -f "$out/bin/start-hyprland"
+          makeWrapper ${hyprlandPkg}/bin/start-hyprland "$out/bin/start-hyprland" \
+            --add-flags --no-nixgl
+
+          cp -a ${hyprlandPkg.dev}/. "$dev/"
+          chmod -R u+w "$dev"
+          cp -a ${hyprlandPkg.man}/. "$man/"
+          chmod -R u+w "$man"
+        '';
+    in
+    wrapped // {
+      override = args: mkHyprlandNoNixGL (hyprlandPkg.override args);
+      overrideAttrs = f: mkHyprlandNoNixGL (hyprlandPkg.overrideAttrs f);
+    };
+
+  hyprlandNoNixGL = mkHyprlandNoNixGL pkgs.hyprland;
 in
 {
   config = lib.mkIf isHyprland {

@@ -10,7 +10,7 @@
   "monitorWallpapersLight": {},
   "monitorWallpapersDark": {},
   "monitorWallpaperFillModes": {},
-  "wallpaperTransition": "pixelate",
+  "wallpaperTransition": "fade",
   "includedTransitions": [
     "fade",
     "wipe",
@@ -20,7 +20,7 @@
     "pixelate",
     "portal"
   ],
-  "wallpaperCyclingEnabled": true,
+  "wallpaperCyclingEnabled": false,
   "wallpaperCyclingMode": "interval",
   "wallpaperCyclingInterval": 60,
   "wallpaperCyclingTime": "06:00",
@@ -45,8 +45,8 @@
   "themeModeEndHour": 6,
   "themeModeEndMinute": 0,
   "themeModeShareGammaSettings": true,
-  "weatherLocation": "New York, NY",
-  "weatherCoordinates": "40.7128,-74.0060",
+  "weatherLocation": "Cuiaba, MT",
+  "weatherCoordinates": "-15.6014,-56.0979",
   "pinnedApps": [
     "app.zen_browser.zen",
     "code",
@@ -80,7 +80,7 @@
   "deviceMaxVolumes": {},
   "hiddenOutputDeviceNames": [],
   "hiddenInputDeviceNames": [],
-  "locale": "",
+  "locale": "pt_BR",
   "launcherLastMode": "all",
   "appDrawerLastMode": "apps",
   "niriOverviewLastMode": "apps",

@@ -53,6 +53,9 @@
     name = "nix/path/${name}";
     value.source = value.flake;
   }) config.nix.registry;
+  systemd.tmpfiles.rules = [
+    "L+ /etc/nixos - - - - /home/${userConfig.name}/dotfiles-nixos"
+  ];
 
   # Nix: ajustes globais.
   nix.package = pkgs.nixVersions.latest;
@@ -300,7 +303,6 @@
 
     packages = lib.mkDefault [
       "app.zen_browser.zen"
-      "com.visualstudio.code"
       "com.heroicgameslauncher.hgl"
       "io.github.shonebinu.Brief"
       "com.anydesk.Anydesk"
@@ -311,50 +313,8 @@
       "com.rtosta.zapzap"
       "org.libreoffice.LibreOffice"
       "org.gimp.GIMP"
+      "com.atlauncher.ATLauncher"
     ];
-
-    # Overrides focados no VS Code Flatpak:
-    # - expõe toolchains do host (Nix) e diretório HOME
-    # - força Wayland (Hyprland)
-    overrides = {
-      "com.visualstudio.code" = {
-        Context = {
-          filesystems = [
-            "home"
-            "/nix:ro"
-            "/run/current-system/sw:ro"
-            "/etc/nix:ro"
-          ];
-
-          # Wayland-only (Hyprland) + acesso a agentes para Git/SSH/GPG.
-          sockets = [
-            "wayland"
-            "!x11"
-            "!fallback-x11"
-            "ssh-auth"
-            "gpg-agent"
-          ];
-
-          devices = [ "dri" ];
-        };
-
-        Environment = {
-          # Flatpak inicia com PATH mínimo (/app/bin:/usr/bin). Incluímos o toolchain do host.
-          # (Usamos /home/<user> porque é um setup single-user.)
-          PATH = lib.concatStringsSep ":" [
-            "/app/bin"
-            "/usr/bin"
-            "/run/current-system/sw/bin"
-            "/run/current-system/sw/sbin"
-            "/nix/var/nix/profiles/default/bin"
-            "/nix/var/nix/profiles/default/sbin"
-            "/home/${userConfig.name}/.nix-profile/bin"
-            "/home/${userConfig.name}/.cargo/bin"
-            "/home/${userConfig.name}/.local/bin"
-          ];
-        };
-      };
-    };
 
     uninstallUnmanaged = true;
     update.auto.enable = true;
@@ -373,18 +333,32 @@
   # Override per-host with a proper hashedPassword. Change immediately with passwd after boot.
   users.users.root.initialHashedPassword = lib.mkDefault "";
 
-  users.users.${userConfig.name} = {
-    description = userConfig.fullName;
-    extraGroups = [
-      "networkmanager"
-      "wheel"
-    ];
-    isNormalUser = true;
-    shell = pkgs.zsh;
-    # Emergency initial password: empty = passwordless on first boot (new accounts only).
-    # Override per-host or change immediately with passwd after first login.
-    initialHashedPassword = lib.mkDefault "";
-  };
+  users.users.${userConfig.name} =
+    {
+      description = userConfig.fullName;
+      extraGroups = [
+        "networkmanager"
+        "wheel"
+      ];
+      isNormalUser = true;
+      shell = pkgs.zsh;
+    }
+    // (
+      if userConfig ? initialHashedPassword then
+        {
+          initialHashedPassword = lib.mkDefault userConfig.initialHashedPassword;
+        }
+      else if userConfig ? initialPassword then
+        {
+          initialPassword = lib.mkDefault userConfig.initialPassword;
+        }
+      else
+        {
+          # Emergency initial password: empty = passwordless on first boot (new accounts only).
+          # Override per-host or change immediately with passwd after first login.
+          initialHashedPassword = lib.mkDefault "";
+        }
+    );
 
   # Define o avatar do usuário
   system.activationScripts.script.text = ''

@@ -99,6 +99,14 @@
           fullName = "Gabriel Rocha";
           name = "rocha";
         };
+        nina = {
+          avatar = ./files/avatar/ragton.jpeg;
+          email = "nicoly.canteiro@local";
+          gitKey = "";
+          fullName = "Nicoly Canteiro";
+          initialPassword = "nina";
+          name = "nina";
+        };
         # Adicione outros usuários aqui
       };
 
@@ -157,6 +165,7 @@
       # =============================
       nixosConfigurations = {
         inspiron = mkNixosConfiguration "inspiron" "rocha";
+        inspiron-nina = mkNixosConfiguration "inspiron-nina" "nina";
         glacier = mkNixosConfiguration "glacier" "rocha";
         iso = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
@@ -176,6 +185,7 @@
       homeConfigurations = {
         "rocha@inspiron" = let cfg = mkHomeConfiguration "x86_64-linux" "rocha" "inspiron"; in cfg // { type = "homeManagerConfiguration"; };
         "rocha@glacier" = let cfg = mkHomeConfiguration "x86_64-linux" "rocha" "glacier"; in cfg // { type = "homeManagerConfiguration"; };
+        "nina@inspiron-nina" = let cfg = mkHomeConfiguration "x86_64-linux" "nina" "inspiron-nina"; in cfg // { type = "homeManagerConfiguration"; };
         # Adicione outros usuários/hosts aqui
       };
 

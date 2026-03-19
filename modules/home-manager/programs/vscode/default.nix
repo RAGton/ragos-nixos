@@ -1,245 +1,348 @@
-# =============================================================================
-# Autor: rag
-#
-# O que é:
-# - Módulo Home Manager para configurar o VS Code.
-# - Suporta instalar via nixpkgs (legado) ou usar o VS Code do Flatpak (recomendado).
-#
-# Como usar:
-# - Importe via `modules/home-manager/common` (recomendado).
-# - Habilite:
-#     rag.vscode.enable = true;
-# - Opcional:
-#     rag.vscode.channel = "unstable"; # ou "stable"
-#     rag.vscode.flavor = "vscode";    # ou "vscodium"
-#     rag.vscode.installMethod = "flatpak"; # ou "nixpkgs"
-#
-# Notas:
-# - `vscode` (Microsoft) é unfree; este módulo força `allowUnfree` somente
-#   para o pacote específico quando necessário.
-# - Em modo Flatpak, NÃO instalamos `pkgs.vscode` e sim configuramos:
-#   - `~/.var/app/com.visualstudio.code/config/Code/argv.json` (Wayland)
-#   - `~/.var/app/com.visualstudio.code/config/Code/User/settings.json`
-# =============================================================================
-{ inputs, lib, config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.rag.vscode;
 
-  flatpakAppId = "com.visualstudio.code";
+  edition =
+    if cfg.edition != null then
+      cfg.edition
+    else if cfg.flavor == "vscodium" then
+      "codium"
+    else
+      "stable";
 
-  flatpakConfigRoot = ".var/app/${flatpakAppId}/config/Code";
-  flatpakSettingsPath = "${flatpakConfigRoot}/User/settings.json";
-  flatpakLocalePath = "${flatpakConfigRoot}/User/locale.json";
-  flatpakArgvPath = "${flatpakConfigRoot}/argv.json";
+  delivery =
+    if cfg.delivery != null then
+      cfg.delivery
+    else if edition == "insiders" then
+      "managed-download"
+    else
+      "nixpkgs";
 
-  flatpakSettings = {
-    # Tema / UX
+  configRootName =
+    if edition == "codium" then
+      "VSCodium"
+    else if edition == "insiders" then
+      "Code - Insiders"
+    else
+      "Code";
+
+  userDataDir = "${config.home.homeDirectory}/.config/${configRootName}";
+  extensionsDir = "${config.home.homeDirectory}/.local/share/ragos/vscode-insiders/extensions";
+  insidersRoot = "${config.home.homeDirectory}/.local/share/ragos/vscode-insiders";
+  insidersCurrent = "${insidersRoot}/current";
+  insidersUpdateUrl = "https://update.code.visualstudio.com/latest/linux-x64/insider";
+
+  baseVscodeSettings = {
     "workbench.colorTheme" = "Dracula";
-    "glassit.alpha" = 220;
-
-    # Editor
     "editor.fontFamily" = "Iosevka, 'JetBrainsMono Nerd Font', monospace";
     "editor.fontSize" = 14;
     "editor.fontLigatures" = true;
     "editor.minimap.enabled" = false;
     "editor.wordWrap" = "on";
-
-    # Terminal
     "terminal.integrated.scrollback" = 5000;
     "terminal.integrated.cursorStyle" = "line";
-
-    # Git
     "git.enableSmartCommit" = true;
     "git.autofetch" = true;
     "git.autofetchPeriod" = 120;
   };
 
-  flatpakLocale = {
+  vscodeSettings = baseVscodeSettings // cfg.extraSettings;
+
+  vscodeLocale = {
     locale = "pt-br";
   };
 
-  # VS Code (Electron) flags para Wayland via `argv.json` (Flatpak).
-  # Keys = flags sem o prefixo `--`.
-  flatpakArgv = {
+  vscodeArgv = {
     "ozone-platform-hint" = "auto";
     "enable-features" = "UseOzonePlatform,WaylandWindowDecorations";
   };
 
-  codeFlatpakWrapper = pkgs.writeShellScriptBin "code" ''
-    set -euo pipefail
-    exec flatpak run ${flatpakAppId} "$@"
-  '';
-
-  flatpakExtensions = [
-    # Locale
+  baseVscodeExtensions = [
     "MS-CEINTL.vscode-language-pack-pt-BR"
-
-    # Git
     "eamodio.gitlens"
     "mhutchie.git-graph"
-
-    # Jupyter
     "ms-toolsai.jupyter"
-
-    # Rust
     "rust-lang.rust-analyzer"
-
-    # C/C++
     "ms-vscode.cpptools"
-
-    # Python
     "ms-python.python"
     "ms-python.vscode-pylance"
-
-    # Nix
     "jnoortheen.nix-ide"
-
-    # UX / utilitários
     "dracula-theme.theme-dracula"
-    "s-nlf-fh.glassit"
     "EditorConfig.EditorConfig"
     "Gruntfuggly.todo-tree"
     "mechatroner.rainbow-csv"
   ];
 
-  vscodeFlatpakBootstrap = pkgs.writeShellScriptBin "vscode-flatpak-bootstrap" ''
-    set -euo pipefail
+  vscodeExtensions = baseVscodeExtensions ++ cfg.extraExtensions;
 
-    APP_ID=${lib.escapeShellArg flatpakAppId}
+  vscodePackage =
+    if edition == "codium" then
+      pkgs.vscodium
+    else
+      pkgs.vscode;
 
-    if ! command -v flatpak >/dev/null 2>&1; then
-      echo "[vscode-flatpak] flatpak não encontrado; pulando." >&2
-      exit 0
-    fi
+  codeInsiders = pkgs.writeShellApplication {
+    name = "code-insiders";
+    runtimeInputs = [
+      pkgs.coreutils
+    ];
+    text = ''
+      set -euo pipefail
 
-    if ! flatpak info "$APP_ID" >/dev/null 2>&1; then
-      echo "[vscode-flatpak] $APP_ID não está instalado (ainda); pulando." >&2
-      exit 0
-    fi
+      current_dir="${insidersCurrent}"
+      binary="$current_dir/bin/code"
 
-    if ! flatpak run --command=code "$APP_ID" --version >/dev/null 2>&1; then
-      echo "[vscode-flatpak] não consegui executar o CLI do VS Code via Flatpak; pulando." >&2
-      exit 0
-    fi
-
-    installed="$(flatpak run --command=code "$APP_ID" --list-extensions 2>/dev/null || true)"
-
-    for ext in \
-      ${lib.concatStringsSep " \\\n      " (map lib.escapeShellArg flatpakExtensions)}; do
-      if ! printf '%s\n' "$installed" | grep -Fxq "$ext"; then
-        echo "[vscode-flatpak] instalando extensão: $ext"
-        flatpak run --command=code "$APP_ID" --install-extension "$ext" --force >/dev/null 2>&1 || true
+      if [ ! -x "$binary" ]; then
+        echo "code-insiders: VS Code Insiders ainda não foi baixado." >&2
+        echo "code-insiders: rode 'systemctl --user start vscode-insiders-refresh.service' e tente novamente." >&2
+        exit 1
       fi
-    done
-  '';
 
-  # Pkgs estável (pinado em `inputs.nixpkgs-stable`).
-  # Mantém overlays do flake para não divergir de patches/overlays comuns.
-  pkgsStable = import inputs.nixpkgs-stable {
-    inherit (pkgs) system;
-    overlays = (pkgs.overlays or [ ]) ++ [ ];
-    config = {
-      allowUnfree = true;
-      allowUnfreePredicate = pkg:
-        builtins.elem (lib.getName pkg) [
-          "vscode"
-          "visual-studio-code"
-        ];
-    };
+      exec "$binary" \
+        --user-data-dir "${userDataDir}" \
+        --extensions-dir "${extensionsDir}" \
+        "$@"
+    '';
   };
 
-  selectPkgs = if cfg.channel == "unstable" then pkgsStable else pkgs;
+  codeInsidersBootstrap = pkgs.writeShellApplication {
+    name = "vscode-insiders-bootstrap";
+    runtimeInputs = [
+      codeInsiders
+      pkgs.coreutils
+      pkgs.gnugrep
+    ];
+    text = ''
+      set -euo pipefail
 
-  package =
-    if cfg.flavor == "vscodium" then
-      selectPkgs.vscodium
-    else
-      # VSCode oficial (Microsoft)
-      selectPkgs.vscode;
+      if ! code-insiders --version >/dev/null 2>&1; then
+        echo "vscode-insiders-bootstrap: VS Code Insiders indisponível; pulando." >&2
+        exit 0
+      fi
 
-  waylandFlags = builtins.readFile ./wayland-flags.conf;
+      installed="$(code-insiders --list-extensions 2>/dev/null || true)"
 
+      for ext in \
+        ${lib.concatStringsSep " \\\n        " (map lib.escapeShellArg vscodeExtensions)}; do
+        if ! printf '%s\n' "$installed" | grep -Fxq "$ext"; then
+          echo "vscode-insiders-bootstrap: instalando extensão $ext"
+          code-insiders --install-extension "$ext" --force >/dev/null 2>&1 || true
+        fi
+      done
+    '';
+  };
+
+  codeInsidersRefresh = pkgs.writeShellApplication {
+    name = "vscode-insiders-refresh";
+    runtimeInputs = [
+      codeInsidersBootstrap
+      pkgs.coreutils
+      pkgs.curl
+      pkgs.findutils
+      pkgs.gnugrep
+      pkgs.gzip
+      pkgs.gnutar
+    ];
+    text = ''
+      set -euo pipefail
+
+      base_dir="${insidersRoot}"
+      versions_dir="$base_dir/versions"
+      metadata_file="$base_dir/latest-url"
+      tmp_dir="$(mktemp -d)"
+
+      cleanup() {
+        rm -rf "$tmp_dir"
+      }
+
+      trap cleanup EXIT
+
+      mkdir -p "$versions_dir" "${extensionsDir}"
+
+      resolved_url="$(curl -fsSIL -o /dev/null -w '%{url_effective}' -L "${insidersUpdateUrl}")"
+
+      if [ -z "$resolved_url" ]; then
+        echo "vscode-insiders-refresh: não foi possível resolver a URL da build." >&2
+        exit 1
+      fi
+
+      if [ -f "$metadata_file" ] && [ "$(cat "$metadata_file")" = "$resolved_url" ] && [ -L "$base_dir/current" ]; then
+        echo "vscode-insiders-refresh: já está atualizado."
+        exit 0
+      fi
+
+      archive="$tmp_dir/vscode-insiders.tar.gz"
+      extract_dir="$tmp_dir/extracted"
+      mkdir -p "$extract_dir"
+
+      curl -fsSL "$resolved_url" -o "$archive"
+      tar -xzf "$archive" -C "$extract_dir"
+
+      app_dir="$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+
+      if [ -z "$app_dir" ] || [ ! -x "$app_dir/bin/code" ]; then
+        echo "vscode-insiders-refresh: estrutura inesperada da build baixada." >&2
+        exit 1
+      fi
+
+      version_key="$(printf '%s' "$resolved_url" | sha256sum | cut -d' ' -f1)"
+      target_dir="$versions_dir/$version_key"
+
+      rm -rf "$target_dir"
+      mv "$app_dir" "$target_dir"
+      ln -sfn "$target_dir" "$base_dir/current"
+      printf '%s\n' "$resolved_url" > "$metadata_file"
+
+      vscode-insiders-bootstrap || true
+    '';
+  };
 in
 {
   options.rag.vscode = {
-    enable = lib.mkEnableOption "Configura o VS Code (Flatpak ou nixpkgs)";
+    enable = lib.mkEnableOption "Configura uma única origem de verdade para o VSCode";
 
-    installMethod = lib.mkOption {
-      type = lib.types.enum [ "flatpak" "nixpkgs" ];
-      default = "flatpak";
-      description = "Como instalar/gerenciar o VS Code: via Flatpak (recomendado) ou via nixpkgs (legado).";
+    edition = lib.mkOption {
+      type = lib.types.nullOr (lib.types.enum [ "stable" "codium" "insiders" ]);
+      default = null;
+      description = "Edição desejada do editor.";
+    };
+
+    delivery = lib.mkOption {
+      type = lib.types.nullOr (lib.types.enum [ "nixpkgs" "managed-download" ]);
+      default = null;
+      description = "Como entregar a edição escolhida.";
+    };
+
+    extraSettings = lib.mkOption {
+      type = lib.types.attrs;
+      default = { };
+      description = "Configurações adicionais mescladas ao settings.json do VS Code.";
+    };
+
+    extraExtensions = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Lista de extensões extras instaladas além do conjunto base.";
     };
 
     channel = lib.mkOption {
-      type = lib.types.enum [ "unstable" "stable" ];
-      default = "unstable";
-      description = "Qual nixpkgs usar para o VSCode: 'unstable' (default) ou 'stable'.";
+      type = lib.types.nullOr (lib.types.enum [ "unstable" "stable" ]);
+      default = null;
+      visible = false;
+      description = "Opção legada. Use rag.vscode.edition.";
     };
 
     flavor = lib.mkOption {
-      type = lib.types.enum [ "vscode" "vscodium" ];
-      default = "vscode";
-      description = "Escolhe entre VSCode (Microsoft) e VSCodium (open-source).";
+      type = lib.types.nullOr (lib.types.enum [ "vscode" "vscodium" ]);
+      default = null;
+      visible = false;
+      description = "Opção legada. Use rag.vscode.edition.";
+    };
+
+    installMethod = lib.mkOption {
+      type = lib.types.nullOr (lib.types.enum [ "flatpak" "nixpkgs" ]);
+      default = null;
+      visible = false;
+      description = "Opção legada. O caminho flatpak foi removido.";
     };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
-    (lib.mkIf (cfg.installMethod == "nixpkgs") {
-      # Garante `allowUnfree` quando flavor for vscode.
-      nixpkgs.config = lib.mkIf (cfg.flavor == "vscode") {
-        allowUnfree = true;
-        allowUnfreePredicate = pkg:
-          builtins.elem (lib.getName pkg) [
-            "vscode"
-            "visual-studio-code"
-          ];
-      };
-
-      home.packages = [ package ];
-
-      # VSCode (Electron): flags por arquivo (lido pelo wrapper do nixpkgs).
-      # Isso evita exportar variáveis globais e reduz warnings.
-      xdg.configFile."code-flags.conf" = lib.mkIf (!pkgs.stdenv.isDarwin) {
-        text = waylandFlags;
-      };
-    })
-
-    (lib.mkIf (cfg.installMethod == "flatpak") {
+    {
       assertions = [
         {
-          assertion = !pkgs.stdenv.isDarwin;
-          message = "rag.vscode.installMethod=flatpak só é suportado em Linux.";
+          assertion = cfg.installMethod != "flatpak";
+          message = "rag.vscode.installMethod=flatpak foi removido. Use rag.vscode.edition/delivery.";
+        }
+        {
+          assertion = !(edition == "insiders" && delivery != "managed-download");
+          message = "rag.vscode.edition=\"insiders\" exige rag.vscode.delivery=\"managed-download\".";
+        }
+        {
+          assertion = !(edition != "insiders" && delivery == "managed-download");
+          message = "rag.vscode.delivery=\"managed-download\" só é suportado com edition=\"insiders\".";
         }
       ];
 
+      warnings =
+        lib.optionals (cfg.channel != null) [
+          "rag.vscode.channel está deprecated e agora é ignorado; use rag.vscode.edition/rag.vscode.delivery."
+        ]
+        ++ lib.optionals (cfg.flavor != null || cfg.installMethod != null) [
+          "rag.vscode.flavor/installMethod estão deprecated; use rag.vscode.edition/rag.vscode.delivery."
+        ];
+
+      xdg.configFile."${configRootName}/User/settings.json" = {
+        text = builtins.toJSON vscodeSettings;
+        force = true;
+      };
+
+      xdg.configFile."${configRootName}/User/locale.json" = {
+        text = builtins.toJSON vscodeLocale;
+        force = true;
+      };
+
+      xdg.configFile."${configRootName}/argv.json" = {
+        text = builtins.toJSON vscodeArgv;
+        force = true;
+      };
+    }
+
+    (lib.mkIf (delivery == "nixpkgs") {
+      home.packages = [ vscodePackage ];
+    })
+
+    (lib.mkIf (delivery == "managed-download") {
       home.packages = [
-        pkgs.flatpak
-        codeFlatpakWrapper
-        vscodeFlatpakBootstrap
+        codeInsiders
+        codeInsidersBootstrap
+        codeInsidersRefresh
       ];
 
-      home.file."${flatpakArgvPath}" = {
-        text = builtins.toJSON flatpakArgv;
-        force = true;
+      xdg.desktopEntries."code-insiders" = {
+        name = "Visual Studio Code Insiders";
+        genericName = "Code Editor";
+        comment = "VS Code Insiders com estado isolado";
+        exec = "code-insiders %F";
+        terminal = false;
+        icon = "${insidersCurrent}/resources/app/resources/linux/code.png";
+        categories = [ "Development" "IDE" "TextEditor" ];
+        mimeType = [
+          "text/plain"
+          "inode/directory"
+        ];
+        startupNotify = true;
       };
 
-      home.file."${flatpakSettingsPath}" = {
-        text = builtins.toJSON flatpakSettings;
-        force = true;
+      systemd.user.services."vscode-insiders-refresh" = {
+        Unit = {
+          Description = "Refresh the managed VS Code Insiders installation";
+        };
+        Service = {
+          Type = "oneshot";
+          ExecStart = "${codeInsidersRefresh}/bin/vscode-insiders-refresh";
+        };
       };
 
-      home.file."${flatpakLocalePath}" = {
-        text = builtins.toJSON flatpakLocale;
-        force = true;
+      systemd.user.timers."vscode-insiders-refresh" = {
+        Unit = {
+          Description = "Refresh the managed VS Code Insiders installation daily";
+        };
+        Timer = {
+          OnStartupSec = "2m";
+          OnUnitActiveSec = "1d";
+          Persistent = true;
+          Unit = "vscode-insiders-refresh.service";
+        };
+        Install = {
+          WantedBy = [ "timers.target" ];
+        };
       };
-
-      # Instala/garante extensões no VS Code Flatpak (idempotente).
-      # Não falha o `home-manager switch` se o Flatpak ainda não foi instalado.
-      home.activation.vscode-flatpak-extensions =
-        lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          echo "[home-manager] vscode(flatpak): garantindo extensões"
-          ${vscodeFlatpakBootstrap}/bin/vscode-flatpak-bootstrap || true
-        '';
     })
   ]);
 }

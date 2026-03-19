@@ -20,13 +20,128 @@
 # - Muitos language servers podem usar bastante RAM
 # - Ajuste conforme necessidade do host
 # =============================================================================
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, userConfig, ... }:
 
 let
   cfg = config.rag.features.development;
+  winePackage =
+    if pkgs ? wineWow64Packages && pkgs.wineWow64Packages ? waylandFull then
+      pkgs.wineWow64Packages.waylandFull
+    else if pkgs ? wineWowPackages && pkgs.wineWowPackages ? waylandFull then
+      pkgs.wineWowPackages.waylandFull
+    else if pkgs ? wine-wayland then
+      pkgs.wine-wayland
+    else
+      pkgs.wine;
+
+  psimPrefixRelative = ".local/share/wineprefixes/psim";
+
+  psimPrefixInit = pkgs.writeShellApplication {
+    name = "psim-prefix-init";
+    runtimeInputs = [
+      winePackage
+      pkgs.coreutils
+      pkgs.findutils
+      pkgs.winetricks
+    ];
+    text = ''
+      set -euo pipefail
+
+      export WINEPREFIX="$HOME/${psimPrefixRelative}"
+      mkdir -p "$(dirname "$WINEPREFIX")"
+
+      if [ ! -f "$WINEPREFIX/system.reg" ]; then
+        echo "Inicializando o prefixo do PSIM em $WINEPREFIX"
+        wineboot -u
+      fi
+
+      echo "Instalando componentes recomendados do Wine (corefonts, vcrun2019)..."
+      winetricks -q corefonts vcrun2019 || true
+
+      cat <<'EOF'
+Prefixo pronto.
+Use:
+  psim-install /caminho/para/o-instalador.exe
+EOF
+    '';
+  };
+
+  psimInstall = pkgs.writeShellApplication {
+    name = "psim-install";
+    runtimeInputs = [
+      psimPrefixInit
+      winePackage
+      pkgs.coreutils
+    ];
+    text = ''
+      set -euo pipefail
+
+      if [ $# -lt 1 ]; then
+        echo "Uso: psim-install /caminho/para/o-instalador.exe" >&2
+        exit 1
+      fi
+
+      installer="$1"
+      if [ ! -e "$installer" ]; then
+        echo "Instalador não encontrado: $installer" >&2
+        exit 1
+      fi
+
+      psim-prefix-init
+      export WINEPREFIX="$HOME/${psimPrefixRelative}"
+
+      exec wine start /unix "$installer"
+    '';
+  };
+
+  psimLauncher = pkgs.writeShellApplication {
+    name = "psim";
+    runtimeInputs = [
+      winePackage
+      pkgs.coreutils
+      pkgs.findutils
+    ];
+    text = ''
+      set -euo pipefail
+
+      export WINEPREFIX="$HOME/${psimPrefixRelative}"
+
+      if [ ! -f "$WINEPREFIX/system.reg" ]; then
+        echo "O prefixo do PSIM ainda não existe." >&2
+        echo "Rode: psim-prefix-init" >&2
+        exit 1
+      fi
+
+      exe=""
+      for candidate in \
+        "$WINEPREFIX/drive_c/Program Files/PSIM/PSIM.exe" \
+        "$WINEPREFIX/drive_c/Program Files (x86)/PSIM/PSIM.exe"; do
+        if [ -f "$candidate" ]; then
+          exe="$candidate"
+          break
+        fi
+      done
+
+      if [ -z "$exe" ]; then
+        exe="$(find "$WINEPREFIX/drive_c" -type f \( -iname 'PSIM.exe' -o -iname 'Psim.exe' -o -iname '*psim*.exe' \) -print -quit 2>/dev/null || true)"
+      fi
+
+      if [ -z "$exe" ]; then
+        echo "PSIM não encontrado no prefixo atual." >&2
+        echo "Rode: psim-install /caminho/para/o-instalador.exe" >&2
+        exit 1
+      fi
+
+      exec wine "$exe" "$@"
+    '';
+  };
 
 in
 {
+  imports = [
+    (lib.mkRemovedOptionModule [ "rag" "features" "development" "editors" "vscode" "enable" ] "Use rag.vscode instead.")
+  ];
+
   options.rag.features.development = {
     enable = lib.mkEnableOption "Ambiente de desenvolvimento";
 
@@ -73,10 +188,6 @@ in
     };
 
     editors = {
-      vscode = {
-        enable = lib.mkEnableOption "Visual Studio Code";
-      };
-
       neovim = {
         enable = lib.mkOption {
           type = lib.types.bool;
@@ -106,10 +217,29 @@ in
       ansible = {
         enable = lib.mkEnableOption "Gerenciamento de configuração com Ansible";
       };
+
+      arduino = {
+        enable = lib.mkEnableOption "Toolchain Arduino (IDE, CLI, serial e PlatformIO)";
+      };
+
+      wine = {
+        enable = lib.mkEnableOption "Ambiente Wine para aplicativos Windows";
+      };
+
+      psim = {
+        enable = lib.mkEnableOption "Helpers para rodar o PSIM via Wine";
+      };
     };
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.tools.psim.enable -> cfg.tools.wine.enable;
+        message = "rag.features.development.tools.psim.enable exige rag.features.development.tools.wine.enable.";
+      }
+    ];
+
     # =========================
     # Git
     # =========================
@@ -142,7 +272,6 @@ in
 
       # Editors
       (lib.optional cfg.editors.neovim.enable neovim)
-      (lib.optional cfg.editors.vscode.enable vscode)
 
       # Rust
       (lib.optionals cfg.languages.rust.enable [
@@ -234,6 +363,30 @@ in
         ansible-lint
       ])
 
+      # Arduino / embarcados
+      (lib.optionals cfg.tools.arduino.enable [
+        arduino-ide
+        arduino-cli
+        arduino-language-server
+        platformio
+        avrdude
+        minicom
+        picocom
+        usbutils
+      ])
+
+      # Wine / PSIM
+      (lib.optionals cfg.tools.wine.enable [
+        winePackage
+        winetricks
+        bottles
+      ])
+      (lib.optionals cfg.tools.psim.enable [
+        psimPrefixInit
+        psimInstall
+        psimLauncher
+      ])
+
       # Common dev tools (always included when dev is enabled)
       [
         # Build tools
@@ -288,7 +441,25 @@ in
 
       # Rust
       CARGO_HOME = lib.mkIf cfg.languages.rust.enable "$HOME/.cargo";
+
+      # Arduino / eletrônica
+      ARDUINO_DIRECTORIES_USER = lib.mkIf cfg.tools.arduino.enable "$HOME/Arduino";
+      PSIM_WINEPREFIX = lib.mkIf cfg.tools.psim.enable "$HOME/${psimPrefixRelative}";
     };
+
+    users.users.${userConfig.name}.extraGroups = lib.mkAfter (
+      lib.optionals cfg.tools.arduino.enable [ "dialout" ]
+    );
+
+    services.udev.extraRules = lib.mkIf cfg.tools.arduino.enable ''
+      # Arduino / USB serial adapters
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", MODE="0660", GROUP="dialout", TAG+="uaccess"
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="2a03", MODE="0660", GROUP="dialout", TAG+="uaccess"
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", MODE="0660", GROUP="dialout", TAG+="uaccess"
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", MODE="0660", GROUP="dialout", TAG+="uaccess"
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", MODE="0660", GROUP="dialout", TAG+="uaccess"
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="04d8", MODE="0660", GROUP="dialout", TAG+="uaccess"
+    '';
 
     # =========================
     # Programs
@@ -312,4 +483,3 @@ in
     };
   };
 }
-

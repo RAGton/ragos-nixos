@@ -13,15 +13,9 @@
 # Riscos:
 # - Histórico pode conter dados sensíveis; avalie limpeza/regras conforme seu uso.
 # =============================================================================
-{ config, ... }:
-let
-  # DMS já fornece clipboard manager próprio.
-  dmsEnabled =
-    (config.rag.rice.dmsUpstream.enable or false)
-    || (config.rag.rice.dms.enable or false)
-    || (config.programs.dank-material-shell.enable or false);
-in
+{ ... }:
 {
-  # Evita duplicar o gerenciamento de clipboard quando DMS está ativo.
-  services.cliphist.enable = !dmsEnabled;
+  # O widget/IPC de clipboard do DMS usa um backend de histórico.
+  # Mantemos o cliphist sempre ativo para o shell do DMS e para o fallback via rofi.
+  services.cliphist.enable = true;
 }
