@@ -79,13 +79,16 @@
     NIXOS_OZONE_WL = "1";
     GTK_USE_PORTAL = "1";
 
-    # Qt Quick Controls: usar estilo neutro fora do Plasma reduz inconsistências
-    # em apps Qt Quick no stack Hyprland + DMS.
-    QT_QUICK_CONTROLS_STYLE = "Basic";
+    # Fusion combina melhor com apps Qt Quick quando o stack usa Kvantum em Qt Widgets.
+    QT_QUICK_CONTROLS_STYLE = "Fusion";
 
     # Evita cair no libvirt rootless (qemu:///session), que não consegue criar bridges.
     LIBVIRT_DEFAULT_URI = "qemu:///system";
   };
+
+  xdg.configFile."distrobox/distrobox.conf".text = ''
+    container_manager="podman"
+  '';
 
   # Garante que os pacotes comuns estejam instalados
   home.packages = with pkgs; [

@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ ... }:
 {
   # Base compartilhada entre perfis desktop focados em dev/estudo.
   programs.home-manager.enable = true;
@@ -22,22 +22,6 @@
     enable = true;
     edition = "insiders";
     delivery = "managed-download";
-  };
-
-  home.packages = with pkgs; [
-    steam
-    gamemode
-    moonlight-qt
-  ];
-
-  xdg.configFile."dms/settings.json" = {
-    source = ../../files/dms/settings.json;
-    force = true;
-  };
-
-  xdg.configFile."dms/session.json" = {
-    source = ../../files/dms/session.json;
-    force = true;
   };
 
   home.stateVersion = "26.05";

@@ -22,7 +22,12 @@ Some macOS-oriented modules still live in-tree, but the public flake does not ex
 ## Desktop focus
 
 The active desktop path in this repository is `Hyprland + DankMaterialShell + GDM`.
-KDE Plasma is no longer part of the supported desktop path.
+KDE Plasma is not part of the supported shell path, but selected KDE file tools such as Dolphin and KIO remain welcome.
+
+## Credits
+
+- DankMaterialShell by AvengeMedia
+- DMS upstream: https://github.com/AvengeMedia/DankMaterialShell
 
 ## Quick start
 

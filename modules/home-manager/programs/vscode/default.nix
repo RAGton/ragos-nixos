@@ -36,12 +36,48 @@ let
   insidersRoot = "${config.home.homeDirectory}/.local/share/ragos/vscode-insiders";
   insidersCurrent = "${insidersRoot}/current";
   insidersUpdateUrl = "https://update.code.visualstudio.com/latest/linux-x64/insider";
+  vscodeRuntimeLibraries = lib.makeLibraryPath [
+    pkgs.alsa-lib
+    pkgs.at-spi2-core
+    pkgs.cairo
+    pkgs.dbus.lib
+    pkgs.expat
+    pkgs.glib
+    pkgs.gtk3
+    pkgs.libdbusmenu
+    pkgs.libgbm
+    pkgs.libglvnd
+    pkgs.libsecret
+    pkgs.libxcb
+    pkgs.libx11
+    pkgs.libxcomposite
+    pkgs.libxdamage
+    pkgs.libxext
+    pkgs.libxfixes
+    pkgs.libxkbcommon
+    pkgs.libxrandr
+    pkgs.nspr
+    pkgs.nss
+    pkgs.pango
+    pkgs.stdenv.cc.cc.lib
+    pkgs.systemd
+    pkgs.wayland
+  ];
+  vscodeGioModules = lib.makeSearchPath "lib/gio/modules" [
+    (lib.getLib pkgs.dconf)
+  ];
+  vscodeXdgDataDirs = lib.makeSearchPath "share" [
+    pkgs.gsettings-desktop-schemas
+    pkgs.gtk3
+  ];
+  vscodePixbufModuleFile = "${pkgs.librsvg}/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache";
 
   baseVscodeSettings = {
     "workbench.colorTheme" = "Dracula";
-    "editor.fontFamily" = "Iosevka, 'JetBrainsMono Nerd Font', monospace";
+    "editor.fontFamily" = "'Monocraft', monospace";
     "editor.fontSize" = 14;
     "editor.fontLigatures" = true;
+    "terminal.integrated.fontFamily" = "Monocraft";
     "editor.minimap.enabled" = false;
     "editor.wordWrap" = "on";
     "terminal.integrated.scrollback" = 5000;
@@ -78,13 +114,72 @@ let
     "mechatroner.rainbow-csv"
   ];
 
-  vscodeExtensions = baseVscodeExtensions ++ cfg.extraExtensions;
-
   vscodePackage =
     if edition == "codium" then
       pkgs.vscodium
     else
       pkgs.vscode;
+
+  editorDesktopId =
+    if delivery == "managed-download" then
+      "code.desktop"
+    else if edition == "codium" then
+      "codium.desktop"
+    else
+      "code.desktop";
+
+  editorMimeTypes = [
+    "text/plain"
+    "application/x-zerosize"
+    "application/x-desktop"
+    "application/json"
+    "application/x-ipynb+json"
+    "application/xml"
+    "application/x-shellscript"
+    "text/markdown"
+    "text/css"
+    "text/x-ini"
+    "text/x-python"
+    "text/x-readme"
+    "text/x-script.python"
+    "text/x-yaml"
+    "text/x-c"
+    "text/x-c++"
+    "text/x-c++hdr"
+    "text/x-c++src"
+    "text/x-chdr"
+    "text/x-csrc"
+    "text/x-java"
+    "text/x-makefile"
+    "text/x-moc"
+    "text/x-pascal"
+    "text/x-tcl"
+    "text/x-tex"
+  ];
+  editorDesktopMimeTypes = lib.concatStringsSep ";" (editorMimeTypes ++ [ "inode/directory" ]) + ";";
+
+  renderDesktopEntry =
+    {
+      name,
+      comment,
+      exec,
+    }:
+    ''
+      [Desktop Entry]
+      Type=Application
+      Version=1.0
+      Name=${name}
+      GenericName=Code Editor
+      Comment=${comment}
+      Exec=${exec}
+      Terminal=false
+      Categories=Development;IDE;TextEditor;
+      MimeType=${editorDesktopMimeTypes}
+      Icon=${insidersCurrent}/resources/app/resources/linux/code.png
+      StartupNotify=true
+    '';
+
+  vscodeExtensions = lib.unique (baseVscodeExtensions ++ cfg.extraExtensions);
 
   codeInsiders = pkgs.writeShellApplication {
     name = "code-insiders";
@@ -95,13 +190,29 @@ let
       set -euo pipefail
 
       current_dir="${insidersCurrent}"
-      binary="$current_dir/bin/code"
+      binary=""
 
-      if [ ! -x "$binary" ]; then
+      for candidate in \
+        "$current_dir/bin/code" \
+        "$current_dir/bin/code-insiders" \
+        "$current_dir/code" \
+        "$current_dir/code-insiders"; do
+        if [ -x "$candidate" ]; then
+          binary="$candidate"
+          break
+        fi
+      done
+
+      if [ -z "$binary" ]; then
         echo "code-insiders: VS Code Insiders ainda não foi baixado." >&2
         echo "code-insiders: rode 'systemctl --user start vscode-insiders-refresh.service' e tente novamente." >&2
         exit 1
       fi
+
+      export GIO_EXTRA_MODULES="${vscodeGioModules}''${GIO_EXTRA_MODULES:+:$GIO_EXTRA_MODULES}"
+      export GDK_PIXBUF_MODULE_FILE="${vscodePixbufModuleFile}"
+      export XDG_DATA_DIRS="${vscodeXdgDataDirs}''${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
+      export LD_LIBRARY_PATH="${vscodeRuntimeLibraries}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
       exec "$binary" \
         --user-data-dir "${userDataDir}" \
@@ -110,37 +221,79 @@ let
     '';
   };
 
-  codeInsidersBootstrap = pkgs.writeShellApplication {
-    name = "vscode-insiders-bootstrap";
+  codeCompat = pkgs.writeShellApplication {
+    name = "code";
     runtimeInputs = [
       codeInsiders
+    ];
+    text = ''
+      set -euo pipefail
+
+      exec code-insiders "$@"
+    '';
+  };
+
+  vscodeBootstrap = pkgs.writeShellApplication {
+    name = "vscode-bootstrap";
+    runtimeInputs = [
       pkgs.coreutils
+      pkgs.findutils
       pkgs.gnugrep
     ];
     text = ''
       set -euo pipefail
 
-      if ! code-insiders --version >/dev/null 2>&1; then
-        echo "vscode-insiders-bootstrap: VS Code Insiders indisponível; pulando." >&2
+      extension_cli="${
+        if delivery == "managed-download" then
+          "${codeInsiders}/bin/code-insiders"
+        else
+          lib.getExe vscodePackage
+      }"
+
+      if ! "$extension_cli" --version >/dev/null 2>&1; then
+        echo "vscode-bootstrap: editor indisponível; pulando." >&2
         exit 0
       fi
 
-      installed="$(code-insiders --list-extensions 2>/dev/null || true)"
+      installed="$("$extension_cli" --list-extensions 2>/dev/null || true)"
 
       for ext in \
         ${lib.concatStringsSep " \\\n        " (map lib.escapeShellArg vscodeExtensions)}; do
-        if ! printf '%s\n' "$installed" | grep -Fxq "$ext"; then
-          echo "vscode-insiders-bootstrap: instalando extensão $ext"
-          code-insiders --install-extension "$ext" --force >/dev/null 2>&1 || true
+        if ! printf '%s\n' "$installed" | grep -Fxiq "$ext"; then
+          echo "vscode-bootstrap: instalando extensão $ext"
+          if ! "$extension_cli" --install-extension "$ext" --force >/dev/null 2>&1; then
+            echo "vscode-bootstrap: falha ao instalar $ext (galeria/extensão incompatível com a edição atual?)" >&2
+          fi
         fi
       done
+
+      schema_target=""
+
+      for root in \
+        "${extensionsDir}" \
+        "$HOME/.vscode/extensions" \
+        "$HOME/.vscode-oss/extensions"; do
+        if [ -d "$root" ]; then
+          candidate="$(find "$root" -path '*/continue.continue*/config-yaml-schema.json' -print -quit 2>/dev/null || true)"
+          if [ -n "$candidate" ]; then
+            schema_target="$candidate"
+            break
+          fi
+        fi
+      done
+
+      if [ -n "$schema_target" ]; then
+        compat_dir="$HOME/.vscode/extensions/continue.continue-1.2.10-linux-x64"
+        mkdir -p "$compat_dir"
+        ln -sfn "$schema_target" "$compat_dir/config-yaml-schema.json"
+      fi
     '';
   };
 
   codeInsidersRefresh = pkgs.writeShellApplication {
     name = "vscode-insiders-refresh";
     runtimeInputs = [
-      codeInsidersBootstrap
+      vscodeBootstrap
       pkgs.coreutils
       pkgs.curl
       pkgs.findutils
@@ -164,6 +317,23 @@ let
 
       mkdir -p "$versions_dir" "${extensionsDir}"
 
+      find_binary() {
+        local root="$1"
+
+        for candidate in \
+          "$root/bin/code" \
+          "$root/bin/code-insiders" \
+          "$root/code" \
+          "$root/code-insiders"; do
+          if [ -x "$candidate" ]; then
+            printf '%s\n' "$candidate"
+            return 0
+          fi
+        done
+
+        return 1
+      }
+
       resolved_url="$(curl -fsSIL -o /dev/null -w '%{url_effective}' -L "${insidersUpdateUrl}")"
 
       if [ -z "$resolved_url" ]; then
@@ -185,7 +355,7 @@ let
 
       app_dir="$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
 
-      if [ -z "$app_dir" ] || [ ! -x "$app_dir/bin/code" ]; then
+      if [ -z "$app_dir" ] || ! find_binary "$app_dir" >/dev/null; then
         echo "vscode-insiders-refresh: estrutura inesperada da build baixada." >&2
         exit 1
       fi
@@ -198,7 +368,7 @@ let
       ln -sfn "$target_dir" "$base_dir/current"
       printf '%s\n' "$resolved_url" > "$metadata_file"
 
-      vscode-insiders-bootstrap || true
+      vscode-bootstrap || true
     '';
   };
 in
@@ -291,6 +461,14 @@ in
         text = builtins.toJSON vscodeArgv;
         force = true;
       };
+
+      xdg.mimeApps.defaultApplications =
+        lib.genAttrs editorMimeTypes (_: lib.mkDefault editorDesktopId);
+
+      home.activation.vscodeBootstrap = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        echo "[home-manager] vscode: sincronizando extensões"
+        ${vscodeBootstrap}/bin/vscode-bootstrap || true
+      '';
     }
 
     (lib.mkIf (delivery == "nixpkgs") {
@@ -299,24 +477,28 @@ in
 
     (lib.mkIf (delivery == "managed-download") {
       home.packages = [
+        vscodeBootstrap
+        codeCompat
         codeInsiders
-        codeInsidersBootstrap
         codeInsidersRefresh
       ];
 
-      xdg.desktopEntries."code-insiders" = {
-        name = "Visual Studio Code Insiders";
-        genericName = "Code Editor";
-        comment = "VS Code Insiders com estado isolado";
-        exec = "code-insiders %F";
-        terminal = false;
-        icon = "${insidersCurrent}/resources/app/resources/linux/code.png";
-        categories = [ "Development" "IDE" "TextEditor" ];
-        mimeType = [
-          "text/plain"
-          "inode/directory"
-        ];
-        startupNotify = true;
+      xdg.dataFile."applications/code.desktop" = {
+        force = true;
+        text = renderDesktopEntry {
+          name = "Visual Studio Code";
+          comment = "Alias compatível para o VS Code Insiders";
+          exec = "code %F";
+        };
+      };
+
+      xdg.dataFile."applications/code-insiders.desktop" = {
+        force = true;
+        text = renderDesktopEntry {
+          name = "Visual Studio Code Insiders";
+          comment = "VS Code Insiders com estado isolado";
+          exec = "code-insiders %F";
+        };
       };
 
       systemd.user.services."vscode-insiders-refresh" = {

@@ -24,15 +24,25 @@
   pkgs,
   ...
 }:
+let
+  cfg = config.rag.flatpak;
+in
 {
   imports = [ inputs.nix-flatpak.homeManagerModules.nix-flatpak ];
 
-  config = lib.mkIf (!pkgs.stdenv.isDarwin) {
+  options.rag.flatpak.enable = lib.mkOption {
+    type = lib.types.bool;
+    default = !pkgs.stdenv.isDarwin;
+    description = "Habilita a integração Flatpak no Home Manager.";
+  };
+
+  config = lib.mkIf (!pkgs.stdenv.isDarwin && cfg.enable) {
     services.flatpak = {
       enable = true;
       packages = [
         "app.zen_browser.zen"
         "io.github.shonebinu.Brief"
+        "io.github.brunofin.Cohesion"
         "com.anydesk.Anydesk"
         "com.rustdesk.RustDesk"
         "com.ranfdev.DistroShelf"

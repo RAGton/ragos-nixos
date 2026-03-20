@@ -95,9 +95,15 @@ O repositório mantém módulos para:
 
 - Hyprland com DankMaterialShell
 - GDM como display manager padrão
-- Warp Terminal via overlay
+- Dolphin, KIO, KIO Admin e ferramentas KDE úteis sem o shell do Plasma
+- Warp Terminal via Distrobox (Arch Linux)
 - VS Code/Insiders, Jupyter e ferramentas de desenvolvimento
 - Flatpak declarativo
+
+## Créditos
+
+- DankMaterialShell por AvengeMedia
+- Upstream do DMS: https://github.com/AvengeMedia/DankMaterialShell
 
 ## Documentação
 

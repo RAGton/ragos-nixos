@@ -18,7 +18,7 @@ let
 
   qtCtAppearanceConfig = generators.toINI { } {
     Appearance = {
-      icon_theme = if iconThemeName != null then iconThemeName else "breeze";
+      icon_theme = if iconThemeName != null then iconThemeName else "Papirus-Dark";
     };
   };
 
@@ -34,7 +34,7 @@ in
   qt = {
     enable = true;
     platformTheme.name = "qtct";
-    style.name = "Fusion";
+    style.name = "kvantum";
   };
 
   xdg.configFile = {

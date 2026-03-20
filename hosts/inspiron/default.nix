@@ -60,7 +60,6 @@
   rag.features.dms.enable = true;
   rag.desktop.directLogin.enable = false;
 
-
   # Profile (v2)
   rag.profiles.laptop = {
     enable = true;
@@ -68,13 +67,14 @@
     # Mantém o comportamento atual do inspiron
     virtualization = {
       enable = true;
-      docker.enable = true;
+      docker.enable = false;
+      podman.enable = true;
       libvirt.enable = true;
     };
 
     development.enable = true;
 
-    # Gaming permanece desligado no laptop
+    # Notebook principal: prioriza autonomia e responsividade em vez de stack gamer completo.
     gaming.enable = false;
   };
 
@@ -90,8 +90,15 @@
       javascript.enable = true;
       rust.enable = true;
       c.enable = true;
+      java.enable = true;
+      go.enable = true;
     };
-    tools.kubernetes.enable = true;
+    tools = {
+      kubernetes.enable = true;
+      terraform.enable = true;
+      ansible.enable = true;
+      arduino.enable = true;
+    };
   };
 
   # Codex (AI): desligado por padrão (evita builds lentos).
@@ -127,6 +134,7 @@
   boot = {
     loader = {
       systemd-boot.enable = false;
+      timeout = 1;
 
       grub = {
         enable = true;
@@ -146,8 +154,11 @@
       "rootflags=subvol=@,compress=zstd,noatime"
     ];
 
-    # Evita builds inúteis
+    # Usa systemd dentro do initrd para um boot inicial mais consistente.
     initrd.systemd.enable = true;
+
+    # No Inspiron, o splash só adiciona espera extra no boot e no desligamento.
+    plymouth.enable = lib.mkForce false;
   };
 
   # =========================
@@ -178,9 +189,9 @@
     enable = true;
     enable32Bit = true;
     extraPackages = with pkgs; [
-      intel-media-driver   # VA-API iHD (Broadwell+)
-      libvdpau-va-gl       # VDPAU via VA-API
-      intel-vaapi-driver   # fallback VA-API i965 (pre-Broadwell)
+      intel-media-driver # VA-API iHD (Broadwell+)
+      libvdpau-va-gl # VDPAU via VA-API
+      intel-vaapi-driver # fallback VA-API i965 (pre-Broadwell)
     ];
   };
 
@@ -195,11 +206,15 @@
   ## -------------------------
   ## Performance básica
   ## -------------------------
-  # Em laptop, `schedutil` costuma equilibrar performance e bateria melhor que `performance`.
-  powerManagement.cpuFreqGovernor = lib.mkForce "schedutil";
-
   services.power-profiles-daemon.enable = lib.mkForce true;
   services.tlp.enable = lib.mkForce false;
+
+  # O zram já estava ativo via common; aqui aumentamos a margem para absorver
+  # pressão de memória com mais folga no notebook.
+  zramSwap.memoryPercent = lib.mkForce 75;
+
+  # Com 16 GiB + zram, um swappiness mais baixo tende a deixar o desktop mais ágil.
+  boot.kernel.sysctl."vm.swappiness" = lib.mkForce 30;
 
   # Flatpak: mantém a lista comum vinda do módulo shared.
   # (Removemos as extensões NVIDIA do common.)
@@ -210,6 +225,54 @@
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="block", KERNEL=="nvme*", ATTR{queue/scheduler}="none"
   '';
+
+  systemd.services = {
+    # Essas unidades estão quebradas no estado atual e só poluem o journal/sleep/shutdown.
+    pre-sleep.enable = lib.mkForce false;
+    pre-shutdown.enable = lib.mkForce false;
+
+    # Garante que o Bluetooth não volte "soft blocked" por causa do estado salvo do rfkill.
+    bluetooth-unblock = {
+      description = "Unblock Bluetooth adapter before bluetoothd";
+      wantedBy = [ "multi-user.target" ];
+      wants = [ "systemd-rfkill.service" ];
+      after = [ "systemd-rfkill.service" ];
+      before = [ "bluetooth.service" ];
+      serviceConfig.Type = "oneshot";
+      script = ''
+        ${pkgs.util-linux}/bin/rfkill unblock bluetooth || true
+      '';
+    };
+
+    bluetooth-power-on = {
+      description = "Power on Bluetooth adapter after bluetoothd";
+      wantedBy = [ "multi-user.target" ];
+      wants = [
+        "bluetooth.service"
+        "bluetooth-unblock.service"
+      ];
+      after = [
+        "bluetooth.service"
+        "bluetooth-unblock.service"
+      ];
+      serviceConfig.Type = "oneshot";
+      script = ''
+        ${pkgs.bluez}/bin/bluetoothctl power on || true
+      '';
+    };
+
+    # O PPD estava subindo em power-saver; forçamos um baseline mais equilibrado.
+    power-profile-balanced = {
+      description = "Set balanced power profile on boot";
+      wantedBy = [ "multi-user.target" ];
+      wants = [ "power-profiles-daemon.service" ];
+      after = [ "power-profiles-daemon.service" ];
+      serviceConfig.Type = "oneshot";
+      script = ''
+        ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set balanced || true
+      '';
+    };
+  };
 
   ## -------------------------
   ## Virtualização (ajuste fino)
@@ -235,9 +298,18 @@
   # =========================
   services.rag.tailscale = {
     enable = true;
-    autoconnect = true;
+    # O daemon já reconecta sozinho após autenticação; manter o autoconnect
+    # bloqueava o boot por ~18s sem ganho prático.
+    autoconnect = false;
     authKeyFile = /root/tailscale-authkey.secret;
   };
+
+  system.activationScripts.bluetoothRfkillReset.text = ''
+    for state in /var/lib/systemd/rfkill/*bluetooth*; do
+      [ -e "$state" ] || continue
+      echo 0 > "$state" || true
+    done
+  '';
 
   # Codex (AI): opt-in via feature pra evitar builds lentos por padrão.
   # Para ativar: rag.features.ai.codex.enable = true;

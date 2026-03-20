@@ -114,7 +114,7 @@
           FLAKE_SRC="${inputs.self.outPath}"
 
           # Copiamos para um lugar gravável, porque o store é read-only.
-          WORKDIR="/tmp/dotfiles-NixOs"
+          WORKDIR="/tmp/ragos-nixos"
           rm -rf "$WORKDIR"
           mkdir -p "$WORKDIR"
           cp -a "$FLAKE_SRC/." "$WORKDIR/"
@@ -191,4 +191,3 @@
   networking.networkmanager.enable = lib.mkDefault true;
   services.fstrim.enable = lib.mkDefault false;
 }
-

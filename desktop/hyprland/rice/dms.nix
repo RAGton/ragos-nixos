@@ -134,9 +134,9 @@ in
       };
 
       font = {
-        name = "Roboto";
+        name = "Monocraft";
         size = 11;
-        package = pkgs.roboto;
+        package = pkgs.monocraft;
       };
     };
 
@@ -174,4 +174,3 @@ in
     '';
   };
 }
-

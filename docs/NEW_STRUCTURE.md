@@ -83,9 +83,6 @@ dotfiles-NixOs/
 │   ├── catppuccin/
 │   │   └── default.nix            # Catppuccin theme
 │   │
-│   ├── edna/
-│   │   └── default.nix            # Edna theme
-│   │
 │   └── bart/
 │       └── default.nix            # Bart theme
 │
@@ -176,7 +173,7 @@ dotfiles-NixOs/
   imports = [ ./core.nix ];
 
   # Rice (user-level theming)
-  rag.rice.dms.enable = true;  # ou catppuccin, edna, bart
+  rag.rice.dms.enable = true;  # ou catppuccin, bart
 
   # Host-specific packages
   home.packages = [ /* ... */ ];
@@ -523,7 +520,6 @@ Após implementação completa da v2:
 
 3. **Adicionar Rices**
    - Catppuccin complete
-   - Edna integration
    - Bart integration
 
 4. **Tooling**
@@ -565,4 +561,3 @@ nix build .#homeConfigurations."rocha@inspiron".activationPackage
 ---
 
 **Estrutura v2 documentada. Ready to implement! 🚀**
-

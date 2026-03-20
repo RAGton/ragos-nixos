@@ -18,7 +18,13 @@
 # - Requer CPU com suporte a virtualização (Intel VT-x / AMD-V)
 # - Pode conflitar com outros hypervisors (VirtualBox, etc)
 # =============================================================================
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  userConfig,
+  ...
+}:
 
 let
   cfg = config.rag.features.virtualization;
@@ -47,8 +53,8 @@ in
     docker = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = true;
-        description = "Habilita Docker";
+        default = false;
+        description = "Habilita Docker. Desligado por padrão neste repo; preferimos Podman.";
       };
 
       rootless = lib.mkOption {
@@ -61,8 +67,8 @@ in
     podman = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = false;
-        description = "Habilita Podman (alternativa ao Docker)";
+        default = true;
+        description = "Habilita Podman como backend de containers preferido do projeto";
       };
 
       dockerCompat = lib.mkOption {
@@ -138,7 +144,7 @@ in
 
       # Docker compatibility
       dockerCompat = cfg.podman.dockerCompat;
-      dockerSocket.enable = cfg.podman.dockerCompat;
+      dockerSocket.enable = true;
 
       # Default network
       defaultNetwork.settings.dns_enabled = true;
@@ -192,6 +198,8 @@ in
       (lib.optionals cfg.podman.enable [
         podman-compose
         podman-tui
+      ] ++ lib.optionals (builtins.hasAttr "podman-desktop" pkgs) [
+        pkgs.podman-desktop
       ])
 
       # LXC tools
@@ -203,17 +211,18 @@ in
     # =========================
     # User Groups
     # =========================
-    # Add user to virtualization groups
-    # Note: This requires userConfig to be passed
-    users.users = lib.mkIf (config ? userConfig) {
-      ${config.userConfig.name}.extraGroups = lib.flatten [
-        (lib.optional (cfg.kvm.enable && cfg.libvirt.enable) "libvirtd")
-        (lib.optional cfg.docker.enable "docker")
-        (lib.optional cfg.podman.enable "podman")
-        (lib.optional cfg.lxc.enable "lxc")
-        (lib.optional cfg.virtualbox.enable "vboxusers")
-      ];
-    };
+    # Add user to virtualization groups.
+    # `userConfig` chega via specialArgs do flake, então usamos diretamente aqui.
+    users.users.${userConfig.name}.extraGroups = lib.mkAfter (lib.flatten [
+      (lib.optionals (cfg.kvm.enable && cfg.libvirt.enable) [
+        "libvirtd"
+        "kvm"
+      ])
+      (lib.optional cfg.docker.enable "docker")
+      (lib.optional cfg.podman.enable "podman")
+      (lib.optional cfg.lxc.enable "lxc")
+      (lib.optional cfg.virtualbox.enable "vboxusers")
+    ]);
 
     # =========================
     # Networking (libvirt)
@@ -229,9 +238,6 @@ in
     # Performance
     # =========================
     boot.kernel.sysctl = lib.mkIf cfg.kvm.enable {
-      # KVM optimizations
-      "vm.swappiness" = 10;
-
       # Huge pages for VMs
       "vm.nr_hugepages" = lib.mkDefault 0;  # Adjust per host
     };

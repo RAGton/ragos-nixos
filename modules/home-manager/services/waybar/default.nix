@@ -251,7 +251,7 @@ in
     };
     style = ''
       * {
-        font-family: "CaskaydiaCove Nerd Font";
+        font-family: "Monocraft", "CaskaydiaCove Nerd Font";
         font-weight: bold;
         min-height: 0;
         font-size: 100%;

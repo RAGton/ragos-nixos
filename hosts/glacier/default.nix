@@ -59,7 +59,8 @@
 
   rag.features.gaming = {
     enable = true;
-    steam.gamescope = false;
+    steam.gamescope = true;
+    performanceGovernor = true;
   };
 
   rag.features.development = {
@@ -70,8 +71,15 @@
       javascript.enable = true;
       rust.enable = true;
       c.enable = true;
+      java.enable = true;
+      go.enable = true;
     };
-    tools.kubernetes.enable = true;
+    tools = {
+      kubernetes.enable = true;
+      terraform.enable = true;
+      ansible.enable = true;
+      wine.enable = true;
+    };
   };
 
   networking.hostName = hostname;
@@ -208,10 +216,11 @@
     ];
   };
 
-  # Desktop gaming: governor balanceado no idle; GameMode sobe para performance.
-  powerManagement.cpuFreqGovernor = lib.mkForce "schedutil";
+  # Desktop gaming: preferimos performance constante no host dedicado.
+  # Evita deixar o governor fixo disputando com o power-profiles-daemon.
+  powerManagement.cpuFreqGovernor = lib.mkForce "performance";
 
-  services.power-profiles-daemon.enable = lib.mkForce true;
+  services.power-profiles-daemon.enable = lib.mkForce false;
   services.tlp.enable = lib.mkForce false;
 
   services.flatpak.enable = lib.mkForce false;

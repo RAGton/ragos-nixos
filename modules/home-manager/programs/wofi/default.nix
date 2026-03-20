@@ -81,7 +81,7 @@ in
         background-color: alpha(@bg0, 0.92);
         border:           2px solid @border;
         border-radius:    14px;
-        font-family:      "JetBrains Mono", "Noto Sans", sans-serif;
+        font-family:      "Monocraft", sans-serif;
         font-size:        14px;
         color:            @fg0;
       }

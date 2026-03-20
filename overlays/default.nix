@@ -28,6 +28,7 @@
   };
 
   # OpenRGB bleeding-edge (git) pinado em um commit.
+  # Remova quando o nixpkgs voltar a carregar a versão desejada sem pin manual.
   openrgb-git = final: prev: {
     openrgb-git = prev.openrgb.overrideAttrs (old: let
       rev = "2a1b7a9e2e58c82cbd1e64131644bc2b208f9ba2";
@@ -126,6 +127,10 @@ PY
   # - O pacote no nixpkgs às vezes fica alguns dias/semanas atrás do release upstream.
   # - Este override mantém o Warp atualizado sem precisar esperar o bump no nixpkgs.
   #
+  # Quando remover
+  # - Quando o nixpkgs incluir esta versão (ou mais nova) do Warp e o override deixar
+  #   de agregar valor.
+  #
   # Como
   # - Sobrescreve `version` e `src` do derivation, usando os URLs oficiais do Warp.
   # - Hashes foram obtidos via `nix store prefetch-file --json <url>`.
@@ -185,6 +190,9 @@ PY
   # - Em alguns pins do nixpkgs, o derivation de docs do CPython (python3.12-*-doc)
   #   pode falhar no buildSphinxPhase por bug de docutils/sphinx.
   # - Isso não impacta runtime do Python, mas bloqueia `nh os switch`.
+  #
+  # Quando remover
+  # - Quando o build de documentação do Python 3.12 voltar a passar no pin usado aqui.
   #
   # Como
   # - Substitui `python312.passthru.doc` por um pacote vazio (auditável), evitando

@@ -13,7 +13,7 @@ configuration {
 }
 
 * {
-  font: "Roboto 12";
+  font: "Monocraft 12";
 
   bg:           #1f222a;
   bg-alt:       #262a34;

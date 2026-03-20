@@ -1,25 +1,19 @@
 # ==============================================================================
-# Módulo: hyprland (enforce do desktop único)
+# Módulo: hyprland (compat shim)
 # Autor: Gabriel Rocha (rag) + Codex
-# Data: 2026-03-12
+# Data: 2026-03-19
 #
 # O que é:
-# - Camada que força Hyprland como único desktop suportado no projeto.
+# - Shim de compatibilidade para imports antigos que esperavam um módulo
+#   "hyprland" dedicado.
 #
 # Por quê:
-# - Elimina coexistência de DEs e reduz complexidade de manutenção.
+# - A seleção real de desktop agora mora em `modules/nixos/desktop`.
+# - Mantém compatibilidade sem continuar forçando Hyprland em todo o projeto.
 # ==============================================================================
 { lib, ... }:
 {
-  imports = [ ../../../desktop/hyprland/system.nix ];
+  imports = [ ../desktop ];
 
-  config = {
-    rag.desktop.environment = lib.mkForce "hyprland";
-    services.displayManager.sddm.enable = lib.mkForce false;
-    services.desktopManager.plasma6.enable = lib.mkForce false;
-    services.xserver.desktopManager.gnome.enable = lib.mkForce false;
-
-    programs.hyprland.enable = true;
-    programs.hyprlock.enable = true;
-  };
+  config.rag.desktop.environment = lib.mkDefault "hyprland";
 }

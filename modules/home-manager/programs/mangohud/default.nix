@@ -10,7 +10,8 @@
 #
 # Como:
 # - Ativa somente no Linux via `lib.mkIf (!pkgs.stdenv.isDarwin)`.
-# - Instala `pkgs.mangohud` e escreve `~/.config/MangoHud/MangoHud.conf`.
+# - Escreve `~/.config/MangoHud/MangoHud.conf`.
+# - O pacote em si deve vir do sistema/host para evitar duplicação.
 #
 # Riscos:
 # - O OSD pode interferir com alguns jogos/anti-cheat dependendo do título.
@@ -19,8 +20,6 @@
 { lib, pkgs, ... }:
 {
   config = lib.mkIf (!pkgs.stdenv.isDarwin) {
-    home.packages = [ pkgs.mangohud ];
-
     # Preset simples (sem cores hardcoded) para monitorar FPS/frametime e uso de GPU/CPU.
     xdg.configFile."MangoHud/MangoHud.conf" = {
       force = true;

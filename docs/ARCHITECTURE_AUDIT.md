@@ -270,7 +270,7 @@ rag = {
     };
   };
 
-  rice = "dms" | "catppuccin" | "edna" | null;
+  rice = "dms" | "catppuccin" | null;
   
   branding = {
     name = "RagOS";
@@ -710,4 +710,3 @@ imports = [
 ---
 
 **Fim do relatório.**
-

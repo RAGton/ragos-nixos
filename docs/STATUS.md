@@ -339,7 +339,6 @@ Desktop:
 ### Longo Prazo (1 mês)
 - [ ] Adicionar GNOME desktop
 - [ ] Adicionar Catppuccin rice
-- [ ] Adicionar Edna rice integration
 - [ ] CI/CD para validação
 - [ ] Templates (nix flake init)
 
@@ -420,7 +419,7 @@ Este repositório está completamente documentado:
 
 **Mantenedor**: rag  
 **IA Assistente**: GitHub Copilot (Mantenedor Principal)  
-**Repositório**: [RAGton/dotfiles-NixOs](https://github.com/RAGton/dotfiles-NixOs)
+**Repositório**: [RAGton/ragos-nixos](https://github.com/RAGton/ragos-nixos)
 
 ---
 
@@ -447,4 +446,3 @@ ls -1 *.md
 ---
 
 **FIM DO STATUS REPORT**
-

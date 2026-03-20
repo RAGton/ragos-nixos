@@ -13,7 +13,7 @@
 #
 # Como:
 # - Encadeia opções, módulos de base/sistema, features e profiles.
-# - Força o uso do stack padrão do projeto (Hyprland + DMS).
+# - Expõe a seleção de desktop via `rag.desktop.environment`.
 # ==============================================================================
 { ... }:
 {
@@ -26,7 +26,7 @@
     ../../modules/nixos/network
     ../../modules/nixos/theming
     ../../modules/nixos/services
-    ../../modules/nixos/hyprland
+    ../../modules/nixos/desktop
     ../../features
     ../../profiles
   ];

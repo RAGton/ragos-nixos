@@ -23,7 +23,7 @@ while true; do
     1)
       # Instalar host existente
       FLAKE_SRC="@FLAKE_SRC@"
-      WORKDIR="/tmp/dotfiles-NixOs"
+      WORKDIR="/tmp/ragos-nixos"
       rm -rf "$WORKDIR"
       mkdir -p "$WORKDIR"
       cp -a "$FLAKE_SRC/." "$WORKDIR/"
@@ -232,4 +232,3 @@ EOF
   esac
 
 done
-

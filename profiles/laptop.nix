@@ -37,8 +37,16 @@ in
       docker = {
         enable = lib.mkOption {
           type = lib.types.bool;
-          default = true;
+          default = false;
           description = "Habilita Docker quando a virtualização está ativada";
+        };
+      };
+
+      podman = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Habilita Podman quando a virtualização está ativada";
         };
       };
 
@@ -75,6 +83,7 @@ in
       virtualization = {
         enable = lib.mkDefault cfg.virtualization.enable;
         docker.enable = lib.mkDefault cfg.virtualization.docker.enable;
+        podman.enable = lib.mkDefault cfg.virtualization.podman.enable;
 
         # Defaults laptop-friendly
         kvm.enable = lib.mkDefault cfg.virtualization.libvirt.enable;
@@ -85,4 +94,3 @@ in
     };
   };
 }
-

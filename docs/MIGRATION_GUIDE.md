@@ -513,13 +513,12 @@ nix flake prefetch github:AvengeMedia/DankMaterialShell
 # lib/options.nix (adicionar dentro de options.rag)
 
 rice = lib.mkOption {
-  type = lib.types.nullOr (lib.types.enum [ "dms" "catppuccin" "edna" "bart" ]);
+  type = lib.types.nullOr (lib.types.enum [ "dms" "catppuccin" "bart" ]);
   default = null;
   description = ''
     User theming/ricing to apply.
     - "dms": DankMaterialShell (Hyprland + Material Design)
     - "catppuccin": Catppuccin theme
-    - "edna": Edna theme
     - "bart": Bart theme
     - null: No theming
   '';
@@ -949,7 +948,6 @@ Após migração:
 
 3. **Adicionar Novas Rices**
    - Catppuccin
-   - Edna
    - Bart
 
 4. **Documentar Customização**
@@ -960,4 +958,3 @@ Após migração:
 ---
 
 **Guia de migração finalizado.**
-

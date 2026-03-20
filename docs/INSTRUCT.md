@@ -444,7 +444,7 @@ rag.
 │   ├── virtualization.enable
 │   └── networking.{tailscale,vpn}.enable
 ├── rice.
-│   ├── theme (dms|catppuccin|edna|bart)
+│   ├── theme (dms|catppuccin|bart)
 │   └── dms.{enable, theme, userConfig}
 └── branding.
     ├── name
@@ -895,4 +895,3 @@ Este arquivo é um **contrato vivo** entre você (mantenedor humano) e IAs futur
 ---
 
 **rag out. 🚀**
-

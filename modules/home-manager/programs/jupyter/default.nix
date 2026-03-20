@@ -52,10 +52,27 @@ let
 
     if [ "${lib.boolToString cfg.kernels.cpp}" = "true" ]; then
       installed_any=0
+      kernels_dir="$HOME/.local/share/jupyter/kernels"
+      mkdir -p "$kernels_dir"
+
+      prepare_kernel_dir() {
+        local spec="$1"
+        local target="$kernels_dir/$spec"
+
+        if [ -e "$target" ]; then
+          # Alguns kernelspecs copiados do nix store preservam permissões readonly.
+          # Tornamos o diretório gravável antes de substituir para evitar falhas
+          # intermitentes no `home-manager switch`.
+          chmod -R u+w "$target" 2>/dev/null || true
+          rm -rf "$target"
+        fi
+      }
 
       # Alguns nixpkgs expõem helpers `xcpp17-jupyter-kernel install --user`.
       for k in xcpp11-jupyter-kernel xcpp14-jupyter-kernel xcpp17-jupyter-kernel; do
         if [ -x "${pkgs.xeus-cling}/bin/$k" ]; then
+          spec="''${k%-jupyter-kernel}"
+          prepare_kernel_dir "$spec"
           "${pkgs.xeus-cling}/bin/$k" install --user
           installed_any=1
         fi
@@ -65,7 +82,8 @@ let
       if [ "$installed_any" = "0" ]; then
         for spec in xcpp11 xcpp14 xcpp17; do
           if [ -d "${pkgs.xeus-cling}/share/jupyter/kernels/$spec" ]; then
-            "${pythonBin}" -m jupyter kernelspec install --user --replace --name "$spec" "${pkgs.xeus-cling}/share/jupyter/kernels/$spec"
+            prepare_kernel_dir "$spec"
+            "${pythonBin}" -m jupyter kernelspec install --user --name "$spec" "${pkgs.xeus-cling}/share/jupyter/kernels/$spec"
           fi
         done
       fi

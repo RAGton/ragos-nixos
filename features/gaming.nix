@@ -22,6 +22,9 @@
 
 let
   cfg = config.rag.features.gaming;
+  isNvidia =
+    (config.hardware.nvidia.enabled or false)
+    || lib.elem "nvidia" (config.services.xserver.videoDrivers or [ ]);
 
 in
 {
@@ -37,8 +40,8 @@ in
 
       gamescope = lib.mkOption {
         type = lib.types.bool;
-        default = true;
-        description = "Habilita GameScope (micro-compositor para jogos)";
+        default = false;
+        description = "Habilita a sessão GameScope do Steam";
       };
     };
 
@@ -97,15 +100,14 @@ in
       enable = true;
       remotePlay.openFirewall = true;
       dedicatedServer.openFirewall = true;
+      localNetworkGameTransfers.openFirewall = true;
 
-      # GameScope integration
+      protontricks.enable = true;
       gamescopeSession.enable = cfg.steam.gamescope;
 
-      # Extra compatibility tools
-      extraCompatPackages = with pkgs; [
-        proton-ge-bin
-      ];
+      extraCompatPackages = lib.optional (pkgs ? proton-ge-bin) pkgs.proton-ge-bin;
     };
+    hardware.steam-hardware.enable = lib.mkIf cfg.steam.enable true;
 
     # =========================
     # GameMode
@@ -116,19 +118,14 @@ in
       settings = {
         general = {
           renice = 10;
+          desiredgov = "performance";
+          softrealtime = "auto";
+          inhibit_screensaver = 1;
         };
 
-        # CPU optimizations
         cpu = {
           park_cores = "no";
-          pin_cores = "yes";
-        };
-
-        # GPU optimizations
-        gpu = {
-          apply_gpu_optimisations = "accept-responsibility";
-          gpu_device = 0;
-          amd_performance_level = "high";
+          pin_cores = "no";
         };
       };
     };
@@ -137,27 +134,22 @@ in
     # System Packages
     # =========================
     environment.systemPackages = with pkgs; lib.flatten [
-      # MangoHud
       (lib.optional cfg.mangohud.enable mangohud)
-
-      # Launchers
       (lib.optional cfg.lutris.enable lutris)
       (lib.optional cfg.heroic.enable heroic)
-
-      # Game streaming
       (lib.optional cfg.sunshine.enable sunshine)
-      moonlight-qt  # Client para game streaming
-
-      # Utilities
-      gamemode
-      gamescope
-
-      # Emulators (basic set)
-      # (lib.optional cfg.emulators.enable [
-      #   retroarch
-      #   pcsx2
-      #   rpcs3
-      # ])
+      (lib.optional (pkgs ? atlauncher) atlauncher)
+      (lib.optional (pkgs ? moonlight-qt) moonlight-qt)
+      (lib.optional (pkgs ? gamescope) gamescope)
+      (lib.optional (pkgs ? vkbasalt) vkbasalt)
+      (lib.optional (pkgs ? vulkan-tools) vulkan-tools)
+      (lib.optional (pkgs ? mesa-demos) mesa-demos)
+      (lib.optional (pkgs ? umu-launcher) umu-launcher)
+      (lib.optional (pkgs ? protonup-qt) protonup-qt)
+      (lib.optional (pkgs ? protontricks) protontricks)
+      (lib.optional (pkgs ? dxvk) dxvk)
+      (lib.optional (pkgs ? vkd3d-proton) vkd3d-proton)
+      (lib.optional (isNvidia && pkgs ? nvtopPackages && pkgs.nvtopPackages ? nvidia) pkgs.nvtopPackages.nvidia)
     ];
 
     # =========================
@@ -184,26 +176,8 @@ in
     # Graphics
     # =========================
 
-    # OpenGL/Vulkan support
-    hardware.graphics = {
-      enable = true;
-      enable32Bit = true;  # For 32-bit games
-
-      extraPackages = with pkgs; [
-        # Vulkan
-        vulkan-loader
-        vulkan-validation-layers
-        vulkan-tools
-
-        # VAAPI (video acceleration)
-        libvdpau-va-gl
-        libva-vdpau-driver
-      ];
-
-      extraPackages32 = with pkgs.pkgsi686Linux; [
-        vulkan-loader
-      ];
-    };
+    hardware.graphics.enable = lib.mkDefault true;
+    hardware.graphics.enable32Bit = lib.mkDefault true;
 
     # =========================
     # Firewall (game streaming)
@@ -238,4 +212,3 @@ in
     ];
   };
 }
-

@@ -100,7 +100,6 @@
           inherit system;
           overlays = [
             repoOverlays.stable-packages
-            repoOverlays.warp-terminal-latest
             repoOverlays.xeus-cling-no-checks
           ];
           config.allowUnfree = true;

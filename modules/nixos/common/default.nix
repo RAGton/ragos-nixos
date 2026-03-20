@@ -290,7 +290,7 @@
     extraGroups = [
       "networkmanager"
       "wheel"
-    ];
+    ] ++ lib.optionals config.programs.wireshark.enable [ "wireshark" ];
     isNormalUser = true;
     shell = pkgs.zsh;
   }
@@ -362,9 +362,30 @@
       jetbrains.idea-oss
       jetbrains.pycharm-oss
       jetbrains.rust-rover
-      nautilus
-      file-roller
+
+      # Ferramentas KDE úteis sem precisar do Plasma completo.
+      kdePackages.dolphin
+      kdePackages.dolphin-plugins
+      kdePackages.kio-extras
+      kdePackages.ark
+      kdePackages.filelight
+
+      (writeShellApplication {
+        name = "keditfiletype";
+        text = ''
+          set -euo pipefail
+
+          real_kedit="${pkgs.kdePackages."kde-cli-tools"}/bin/keditfiletype"
+          if [ -x "$real_kedit" ]; then
+            exec "$real_kedit" "$@"
+          fi
+
+          exec ${pkgs.kdePackages.systemsettings}/bin/systemsettings "$@"
+        '';
+      })
     ]
+    ++ lib.optionals (builtins.hasAttr "kio-admin" pkgs.kdePackages) [ pkgs.kdePackages."kio-admin" ]
+    ++ lib.optionals (builtins.hasAttr "kio-gdrive" pkgs.kdePackages) [ pkgs.kdePackages."kio-gdrive" ]
     ++ [
     ];
 

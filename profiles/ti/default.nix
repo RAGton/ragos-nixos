@@ -13,8 +13,9 @@ in {
   options.rag.profiles.ti.enable = lib.mkEnableOption "Perfil TI/Sysadmin";
 
   config = lib.mkIf cfg.enable {
+    programs.wireshark.enable = true;
+
     environment.systemPackages = with pkgs; [
-      wireshark
       nmap
       tcpdump
       dig

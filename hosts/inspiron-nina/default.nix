@@ -4,11 +4,11 @@
 #
 # O que é:
 # - Configuração NixOS específica do host `inspiron-nina`.
-# - Baseada em um Dell Inspiron 15 com Intel i5 12a geração, 8 GB de RAM e SSD de 500 GB.
+# - Mantém o desktop Hyprland do repo sobre a instalação real da Nina.
 #
 # Por quê:
-# - Isola hardware, boot e perfil de uso da máquina da Nina sem reaproveitar
-#   UUIDs/identificadores do host `inspiron`.
+# - Preserva as partições/dados existentes da máquina.
+# - Evita usar o `disko` neste host enquanto ele já está instalado e em uso.
 #
 # Como:
 # - Usa módulos Intel + SSD do `nixos-hardware`.
@@ -29,11 +29,6 @@
     inputs.hardware.nixosModules.common-pc-ssd
 
     ./hardware-configuration.nix
-
-    inputs.disko.nixosModules.disko
-    ./disks.nix
-
-    ../../modules/kernel/zen.nix
   ];
 
   rag.hardware.openrgb.enable = false;
@@ -50,11 +45,11 @@
       libvirt.enable = false;
     };
     development.enable = true;
-    gaming.enable = true;
+    gaming.enable = false;
   };
 
-  rag.profiles.dev.enable = false;
-  rag.profiles.university.enable = false;
+  rag.profiles.dev.enable = true;
+  rag.profiles.university.enable = true;
   rag.profiles.ti.enable = false;
 
   rag.features.development = {
@@ -64,7 +59,7 @@
       javascript.enable = false;
       rust.enable = false;
       c.enable = true;
-      java.enable = false;
+      java.enable = true;
       go.enable = false;
     };
     tools = {
@@ -83,6 +78,7 @@
   boot = {
     loader = {
       systemd-boot.enable = false;
+      timeout = 3;
 
       grub = {
         enable = true;
@@ -97,22 +93,11 @@
       };
     };
 
-    kernelParams = [
-      "rootflags=subvol=@,compress=zstd,noatime"
-    ];
-
     initrd.systemd.enable = true;
   };
 
-  kernelZen = {
-    enable = true;
-    kernel = "zen";
-    forceLocalBuild = false;
-    useLLVMStdenv = false;
-    extraMakeFlags = [ ];
-    disableMitigations = lib.mkDefault false;
-    extraKernelParams = [ ];
-  };
+  # Mantém o kernel padrão mais próximo do NixOS atual já em uso pela Nina.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   services.xserver.videoDrivers = [ "modesetting" ];
 
@@ -132,10 +117,18 @@
     WLR_RENDERER_ALLOW_SOFTWARE = "0";
   };
 
-  powerManagement.cpuFreqGovernor = lib.mkForce "schedutil";
+  networking.firewall.enable = lib.mkForce false;
+  services.resolved.enable = true;
+  networking.nameservers = [
+    "1.1.1.3"
+    "1.0.0.3"
+  ];
 
-  services.power-profiles-daemon.enable = lib.mkForce true;
-  services.tlp.enable = lib.mkForce false;
+  hardware.enableAllFirmware = true;
+  services.fwupd.enable = true;
+  services.thermald.enable = true;
+  powerManagement.enable = true;
+  console.keyMap = "br-abnt2";
 
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="block", KERNEL=="nvme*", ATTR{queue/scheduler}="none"
