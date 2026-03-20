@@ -7,6 +7,7 @@
 let
   warpDistroboxName = "ragos-warp";
   warpManifestPath = "${config.xdg.configHome}/distrobox/warp-terminal.ini";
+  warpSigningKey = "0913165C78D5B7A41B42AC657FF7AB39D60F803F";
   warpPacmanArch =
     if pkgs.stdenv.hostPlatform.system == "x86_64-linux" then
       "x86_64"
@@ -30,6 +31,10 @@ let
       container_name="${warpDistroboxName}"
       manifest_path="${warpManifestPath}"
 
+      # O Podman rootless pode precisar de uma migração rápida depois de updates
+      # de runtime/user namespace. Isso evita falhas intermitentes ao subir o box.
+      podman system migrate >/dev/null 2>&1 || true
+
       list_containers() {
         distrobox list --no-color 2>/dev/null | tail -n +2 | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}'
       }
@@ -43,8 +48,16 @@ let
         create_container
       fi
 
-      if ! podman container inspect "$container_name" >/dev/null 2>&1 || ! podman start "$container_name" >/dev/null 2>&1; then
+      container_ready=0
+      if podman container inspect "$container_name" >/dev/null 2>&1 && podman start "$container_name" >/dev/null 2>&1; then
+        if distrobox enter --no-tty --name "$container_name" -- true >/dev/null 2>&1; then
+          container_ready=1
+        fi
+      fi
+
+      if [ "$container_ready" -ne 1 ]; then
         distrobox rm --force "$container_name" >/dev/null 2>&1 || true
+        podman rm --force "$container_name" >/dev/null 2>&1 || true
         create_container
       fi
 
@@ -58,7 +71,7 @@ let
           skip && /^\[/ { skip = 0 }
           !skip { print }
         " /etc/pacman.conf > "$tmp_config"
-        pacman --config "$tmp_config" -Sy --noconfirm --needed curl gnupg sudo
+        pacman --config "$tmp_config" -Sy --noconfirm --needed archlinux-keyring curl gnupg sudo
         rm -f "$tmp_config"
       '; do
         retries="$((retries - 1))"
@@ -77,11 +90,20 @@ let
             "Server = https://releases.warp.dev/linux/pacman/warpdotdev/${warpPacmanArch}" | sudo tee -a /etc/pacman.conf >/dev/null
         fi
 
-        if ! sudo pacman-key --list-keys "linux-maintainers@warp.dev" >/dev/null 2>&1; then
-          sudo pacman-key -r "linux-maintainers@warp.dev"
+        # O pacman dentro do Arch do Distrobox precisa do keyring e trustdb
+        # inicializados antes de aceitar repositórios assinados por terceiros.
+        sudo pacman-key --init >/dev/null 2>&1 || true
+        sudo pacman-key --populate archlinux >/dev/null 2>&1
+
+        if ! sudo pacman-key --list-keys "${warpSigningKey}" >/dev/null 2>&1; then
+          sudo pacman-key -r "${warpSigningKey}"
         fi
 
-        sudo pacman-key --lsign-key "linux-maintainers@warp.dev" >/dev/null 2>&1 || true
+        sudo pacman-key --lsign-key "${warpSigningKey}" >/dev/null 2>&1 || true
+        sudo pacman-key --updatedb >/dev/null 2>&1 || true
+
+        # Re-sincroniza os bancos já com a chave Warp confiável antes do upgrade.
+        sudo pacman -Syy --noconfirm >/dev/null 2>&1
         sudo pacman -Syu --noconfirm --needed warp-terminal
 
         distrobox-export --app /usr/share/applications/dev.warp.Warp.desktop --export-label none >/dev/null 2>&1 || true
@@ -108,6 +130,7 @@ in
           pkgs.bash
           pkgs.coreutils
           pkgs.distrobox
+          pkgs.podman
           warpBootstrap
         ];
         text = ''
@@ -115,6 +138,7 @@ in
 
           container_name="${warpDistroboxName}"
           rag-warp-bootstrap
+          podman system migrate >/dev/null 2>&1 || true
 
           exec distrobox enter --no-tty --name "$container_name" -- warp-terminal "$@"
         '';
