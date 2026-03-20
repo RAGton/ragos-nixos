@@ -36,10 +36,6 @@ Este arquivo é o **ponto de entrada** da documentação. Ele existe para:
 - Boot/recovery: [BOOT_RECOVERY.md](BOOT_RECOVERY.md)
 - Wayland session (testes): [TEST_GUIDE_WAYLAND_SESSION.md](TEST_GUIDE_WAYLAND_SESSION.md)
 
-### Desktop / UX
-
-- Plasma Manager (painéis): [plasma-manager-panels-pt_BR.md](plasma-manager-panels-pt_BR.md)
-
 ### Performance
 
 - ZRAM: [performance/zram-pt_BR.md](performance/zram-pt_BR.md)
@@ -85,5 +81,4 @@ Este índice está em `docs/`, então:
 
 - Link para arquivos do repo (raiz) usa `../` (ex.: [../README.md](../README.md))
 - Link para subpastas de docs não usa prefixo `docs/` (ex.: [development/rust-pt_BR.md](development/rust-pt_BR.md))
-
 

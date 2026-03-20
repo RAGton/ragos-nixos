@@ -1,9 +1,14 @@
 files/configs/nvim/lazy-lock.json
 files/configs/nvim/lazyvim.json
 .DS_Store
+.direnv/
+.idea/
+*.iml
 
 # outputs/symlinks de builds Nix
 result
 result-*
-.ipynb_checkpoints
+.ipynb_checkpoints/
 .cache
+iso-result
+7

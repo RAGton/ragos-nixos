@@ -36,7 +36,6 @@
     # Mantemos aqui para que todos os hosts herdem o mesmo "nome do sistema".
     ../branding/ragos
 
-    ../programs/steam
     ../services/tlp
     ../services/snapper
     ../services/tailscale
@@ -81,22 +80,22 @@
       "rd.udev.log_level=3"
     ];
     loader.efi.canTouchEfiVariables = true;
-   # loader.systemd-boot.enable = false;
-#    loader.systemd-boot.extraFiles =
- #     let
-  #      splashSrc = ../../../files/wallpaper/wallpaper.png;
-   #     splashBmp = pkgs.runCommand "systemd-boot-splash.bmp" { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
+    # loader.systemd-boot.enable = false;
+    #    loader.systemd-boot.extraFiles =
+    #     let
+    #      splashSrc = ../../../files/wallpaper/wallpaper.png;
+    #     splashBmp = pkgs.runCommand "systemd-boot-splash.bmp" { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
     #      convert "${splashSrc}" \
-     #       -alpha off \
-      #      -resize 1920x1080^ \
-       #     -gravity center \
-        #    -extent 1920x1080 \
-         #   BMP3:"$out"
-       # '';
-      #in
-     # {
-     #   "loader/splash.bmp" = splashBmp;
-     # };
+    #       -alpha off \
+    #      -resize 1920x1080^ \
+    #     -gravity center \
+    #    -extent 1920x1080 \
+    #   BMP3:"$out"
+    # '';
+    #in
+    # {
+    #   "loader/splash.bmp" = splashBmp;
+    # };
     #loader.timeout = 0;
     plymouth = {
       enable = lib.mkDefault true;
@@ -116,9 +115,6 @@
       # swappiness 60 = padrão Linux, balanceado entre RAM e swap
       # Valor muito baixo pode causar OOM kills e travamentos
       "vm.swappiness" = lib.mkDefault 60;
-
-      # Latência do scheduler (6ms é seguro para desktop)
-      "kernel.sched_latency_ns" = lib.mkDefault 6000000;
 
       # Proteção contra OOM: permite usar mais swap antes de matar processos
       "vm.vfs_cache_pressure" = lib.mkDefault 50;
@@ -200,7 +196,6 @@
     settings = {
       General = {
         Name = lib.mkDefault hostname;
-        Alias = lib.mkDefault hostname;
         Experimental = lib.mkDefault true;
       };
     };
@@ -242,60 +237,20 @@
   # Configuração de PATH
   environment.localBinInPath = true;
 
+  # Carteira de senhas padrão do projeto: GNOME Keyring via PAM + Secret Service.
+  # O foco público do repo é Hyprland + GDM, então não mantemos mais branch de KDE/KWallet aqui.
+  services.gnome.gnome-keyring.enable = lib.mkDefault true;
+  services.gnome.gcr-ssh-agent.enable = lib.mkDefault false;
+  programs.seahorse.enable = lib.mkDefault true;
+
   # Habilita impressão via CUPS
   services.printing.enable = true;
 
   # devmon depende de udevil, que frequentemente quebra build em toolchains novos.
-  # Em desktops (ex.: KDE), o fluxo recomendado para dispositivos removíveis é via udisks2.
+  # No stack Hyprland/GDM, o fluxo recomendado para dispositivos removíveis é via udisks2 + gvfs.
   services.devmon.enable = lib.mkDefault false;
   services.udisks2.enable = lib.mkDefault true;
   services.gvfs.enable = lib.mkDefault true;
-
-  # Habilita PipeWire para áudio
-  services.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    jack.enable = true;
-    wireplumber.enable = true;
-
-    # Melhorias de qualidade/volume (seguras)
-    # - Resampler de melhor qualidade para reduzir "som abafado" em alguns hardwares.
-    # - Headroom no layer Pulse (permite aumentar acima de 100% quando necessário).
-    extraConfig = {
-      pipewire."92-low-latency" = {
-        context.properties = {
-          default.clock.rate = lib.mkDefault 48000;
-          default.clock.quantum = lib.mkDefault 128;
-          default.clock.min-quantum = lib.mkDefault 64;
-          default.clock.max-quantum = lib.mkDefault 2048;
-        };
-      };
-
-      pipewire."95-audio-quality" = {
-        context.properties = {
-          # Resampler: qualidade melhor (custa um pouco mais de CPU, mas costuma valer a pena no desktop)
-          default.clock.allowed-rates = lib.mkDefault [ 44100 48000 96000 ];
-          resample.quality = lib.mkDefault 10;
-        };
-      };
-
-      pipewire-pulse."95-pulse-headroom" = {
-        stream.properties = {
-          # Permite volume acima de 1.0 (100%). Útil quando o hardware é baixo.
-          # Isso NÃO melhora a qualidade por si só, mas aumenta o ganho disponível.
-          pulse.min.quantum = lib.mkDefault 64;
-        };
-        context.properties = {
-          pulse.min.req = lib.mkDefault 64;
-          pulse.default.req = lib.mkDefault 128;
-        };
-      };
-    };
-  };
 
   # Flatpak (sistema) + gerenciamento declarativo via nix-flatpak
   services.flatpak = {
@@ -303,7 +258,6 @@
 
     packages = lib.mkDefault [
       "app.zen_browser.zen"
-      "com.heroicgameslauncher.hgl"
       "io.github.shonebinu.Brief"
       "com.anydesk.Anydesk"
       "com.rustdesk.RustDesk"
@@ -313,7 +267,6 @@
       "com.rtosta.zapzap"
       "org.libreoffice.LibreOffice"
       "org.gimp.GIMP"
-      "com.atlauncher.ATLauncher"
     ];
 
     uninstallUnmanaged = true;
@@ -329,36 +282,27 @@
   # Configuração do usuário
   users.mutableUsers = true;
 
-  # Emergency initial password for root: empty = passwordless access on first boot.
-  # Override per-host with a proper hashedPassword. Change immediately with passwd after boot.
-  users.users.root.initialHashedPassword = lib.mkDefault "";
+  # Este repositório público não publica senha bootstrap para root.
+  # Defina manualmente durante a instalação ou injete um hash fora do repo.
 
-  users.users.${userConfig.name} =
-    {
-      description = userConfig.fullName;
-      extraGroups = [
-        "networkmanager"
-        "wheel"
-      ];
-      isNormalUser = true;
-      shell = pkgs.zsh;
-    }
-    // (
-      if userConfig ? initialHashedPassword then
-        {
-          initialHashedPassword = lib.mkDefault userConfig.initialHashedPassword;
-        }
-      else if userConfig ? initialPassword then
-        {
-          initialPassword = lib.mkDefault userConfig.initialPassword;
-        }
-      else
-        {
-          # Emergency initial password: empty = passwordless on first boot (new accounts only).
-          # Override per-host or change immediately with passwd after first login.
-          initialHashedPassword = lib.mkDefault "";
-        }
-    );
+  users.users.${userConfig.name} = {
+    description = userConfig.fullName;
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+    ];
+    isNormalUser = true;
+    shell = pkgs.zsh;
+  }
+  // lib.optionalAttrs (userConfig ? initialHashedPassword) {
+    initialHashedPassword = lib.mkDefault userConfig.initialHashedPassword;
+  }
+  // lib.optionalAttrs (userConfig ? hashedPassword) {
+    hashedPassword = lib.mkDefault userConfig.hashedPassword;
+  }
+  // lib.optionalAttrs (userConfig ? hashedPasswordFile) {
+    hashedPasswordFile = lib.mkDefault userConfig.hashedPasswordFile;
+  };
 
   # Define o avatar do usuário
   system.activationScripts.script.text = ''
@@ -379,63 +323,59 @@
   security.sudo.wheelNeedsPassword = false;
 
   # Pacotes do sistema
-  environment.systemPackages = with pkgs; [
-    gcc
-    glib
-    gnumake
-    nodejs_20
-    killall
-    mesa
-    (lib.mkIf config.rag.hardware.openrgb.enable openrgb-git)
-    podman
-    distrobox
+  environment.systemPackages =
+    with pkgs;
+    [
+      gcc
+      glib
+      gnumake
+      nodejs_20
+      killall
+      mesa
+      (lib.mkIf config.rag.hardware.openrgb.enable openrgb-git)
+      podman
+      distrobox
 
-    # =========================
-    # Python (global)
-    # =========================
-    # PyCharm/IntelliJ (GUI) frequentemente não herda PATH do Home Manager.
-    # Expor o interpretador via systemPackages garante:
-    # - /run/current-system/sw/bin/python3
-    # - criação de venv por projeto via `python3 -m venv .venv`
-    python3
-    python3Packages.pip
-    python3Packages.virtualenv
+      # =========================
+      # Python (global)
+      # =========================
+      # PyCharm/IntelliJ (GUI) frequentemente não herda PATH do Home Manager.
+      # Expor o interpretador via systemPackages garante:
+      # - /run/current-system/sw/bin/python3
+      # - criação de venv por projeto via `python3 -m venv .venv`
+      python3
+      python3Packages.pip
+      python3Packages.virtualenv
 
-    # Rust (global): `rustup` gerencia toolchains; `cargo`/`rustc` úteis para uso imediato.
-    rustup
-    cargo
-    rustc
+      # Rust (global): `rustup` gerencia toolchains; `cargo`/`rustc` úteis para uso imediato.
+      rustup
+      cargo
+      rustc
 
-    # =========================
-    # Java (global)
-    # =========================
-    # JDK para apps Java (TLauncher, Minecraft, etc.)
-    # jdk21 é LTS e compatível com a maioria dos apps modernos
-    jdk21
+      # =========================
+      # Java (global)
+      # =========================
+      # JDK para apps Java (TLauncher, Minecraft, etc.)
+      # jdk21 é LTS e compatível com a maioria dos apps modernos
+      jdk21
 
-    jetbrains.idea-oss
-    jetbrains.pycharm-oss
-    jetbrains.rust-rover
+      jetbrains.idea-oss
+      jetbrains.pycharm-oss
+      jetbrains.rust-rover
+      nautilus
+      file-roller
+    ]
+    ++ [
+    ];
 
-    # File manager padrão: Dolphin (mantido por pedido do usuário).
-    kdePackages.dolphin
-    # Plugins extras do Dolphin (ações/context menu/integrações).
-    kdePackages.dolphin-plugins
-
-    # KIO stack para integrações de rede/cloud (inclui suporte a Google Drive).
-    kdePackages.kio-extras
-  ]
-  ++ lib.optionals (builtins.hasAttr "kio-gdrive" pkgs.kdePackages) [ pkgs.kdePackages."kio-gdrive" ]
-  ++ lib.optionals (builtins.hasAttr "kio-admin" pkgs.kdePackages) [ pkgs.kdePackages."kio-admin" ]
-  ++ [
-  ];
-
-   # Rustup: evita o estado "rustup instalado, mas sem toolchain default".
+  # Rustup: evita o estado "rustup instalado, mas sem toolchain default".
   # Faz bootstrap no primeiro rebuild (e mantém idempotente).
   system.activationScripts.rustupBootstrap = {
     text = ''
       USER=${lib.escapeShellArg userConfig.name}
-      HOME_DIR=${lib.escapeShellArg (config.users.users.${userConfig.name}.home or "/home/${userConfig.name}")}
+      HOME_DIR=${
+        lib.escapeShellArg (config.users.users.${userConfig.name}.home or "/home/${userConfig.name}")
+      }
 
       if [ -d "$HOME_DIR" ]; then
         # Só roda se rustup existir no sistema
@@ -457,7 +397,9 @@
   };
 
   # Regras udev para permitir acesso do OpenRGB aos dispositivos.
-  services.udev.packages = lib.optionals config.rag.hardware.openrgb.enable (with pkgs; [ openrgb-git ]);
+  services.udev.packages = lib.optionals config.rag.hardware.openrgb.enable (
+    with pkgs; [ openrgb-git ]
+  );
 
   # Configuração comum de containers
   # Nota: não habilitamos `podman.dockerCompat` por padrão porque conflita com
@@ -487,13 +429,24 @@
   programs.nix-ld.enable = true;
 
   # Configuração de fontes
-  fonts.packages = with pkgs; [
-    nerd-fonts.jetbrains-mono
-    nerd-fonts.meslo-lg
-    nerd-fonts.caskaydia-cove
-    iosevka
-    roboto
-  ];
+  fonts = {
+    packages = with pkgs; [
+      monocraft
+      nerd-fonts.jetbrains-mono
+      nerd-fonts.meslo-lg
+      nerd-fonts.caskaydia-cove
+      iosevka
+      roboto
+      noto-fonts-color-emoji
+    ];
+
+    fontconfig.defaultFonts = {
+      serif = [ "Monocraft" ];
+      sansSerif = [ "Monocraft" ];
+      monospace = [ "Monocraft" ];
+      emoji = [ "Noto Color Emoji" ];
+    };
+  };
 
   # Serviços adicionais
   services.locate.enable = true;

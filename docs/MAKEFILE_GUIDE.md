@@ -1,161 +1,61 @@
-# 📖 Como Usar o Makefile
+# Guia do Makefile
 
-## 🎯 Solução Sessão Wayland (inspiron)
+O `Makefile` do repositório foi dividido em dois grupos:
 
-### Quick Start: Uma Linha
+- alvos públicos e seguros para operação do dia a dia
+- alvos destrutivos e específicos do `inspiron`, protegidos por opt-in explícito
 
-```bash
-make wayland-session-fix
-```
+## Alvos seguros
 
-Isso:
-1. Reconstrói o NixOS com a solução implementada
-2. Faz reboot automático
-3. Você faz login normalmente após reboot
-4. Hyprland deve iniciar ✅
-
-### Validar Depois do Reboot
-
-```bash
-make wayland-session-test
-```
-
-Mostra:
-- Tipo de sessão logind (deve ser `wayland`, não `tty`)
-- Classe de sessão (deve ser `user`, não `manager`)
-- Seat (deve ser `seat0`, não vazio)
-
----
-
-## 📦 Instalação (Primeira Vez)
-
-### Instalar Nix (se não tiver)
-```bash
-make install-nix
-```
-
-### Instalar nix-darwin (macOS)
-```bash
-make install-nix-darwin
-```
-
-### Ou ambos (macOS)
-```bash
-make bootstrap-mac
-```
-
----
-
-## 🔨 Reconstrução Padrão
-
-### Reconstruir NixOS Atual
-```bash
-make nixos-rebuild
-```
-(usa o hostname atual via `HOSTNAME ?= $(shell hostname)`)
-
-### Reconstruir Host Específico
-```bash
+```sh
+make help
+make flake-show
+make flake-check
+make flake-update
 make nixos-rebuild HOSTNAME=inspiron
+make home-manager-switch HOME_TARGET=.#rocha@inspiron
+make home-manager-news HOME_TARGET=.#rocha@inspiron
+make nix-gc
 ```
 
-### Reconstruir Darwin (macOS)
-```bash
-make darwin-rebuild
+### Variáveis principais
+
+- `HOSTNAME`: host usado para montar `FLAKE`
+- `USERNAME`: usuário atual para montar `HOME_TARGET`
+- `FLAKE`: alvo do sistema, default `.#$(HOSTNAME)`
+- `HOME_TARGET`: alvo do Home Manager, default `.#$(USERNAME)@$(HOSTNAME)`
+
+## Alvos destrutivos
+
+Os alvos abaixo continuam disponíveis porque ainda são úteis para recuperação e reinstalação do `inspiron`, mas não fazem parte do fluxo público normal:
+
+```sh
+make dangerous-help
+make format-full ALLOW_DANGEROUS=1
+make format-system ALLOW_DANGEROUS=1
+make install-system ALLOW_DANGEROUS=1 INSTALL_HOST=inspiron INSTALL_USER=rocha
 ```
 
-### Aplicar Home Manager
-```bash
+### Regras desses alvos
+
+- exigem `ALLOW_DANGEROUS=1`
+- são machine-specific
+- podem apagar disco ou recriar partições
+- devem ser usados só depois de revisar o layout em `hosts/inspiron/`
+
+## Bootstrap de senha
+
+`install-system` não embute senha pública no repositório. O `nixos-install` cuidará da senha do `root`, e depois você pode ajustar manualmente o usuário instalado:
+
+```sh
+sudo nixos-enter --root /mnt -c 'passwd rocha'
+```
+
+## Dica prática
+
+Se o objetivo for só aplicar configuração em uma máquina já instalada, ignore completamente os alvos destrutivos e fique apenas com:
+
+```sh
+make nixos-rebuild
 make home-manager-switch
 ```
-
----
-
-## 🛠️ Utilidades
-
-### Verificar Flake (sintaxe Nix)
-```bash
-make flake-check
-```
-
-### Atualizar Inputs
-```bash
-make flake-update
-```
-
-### Limpar Garbage Collection
-```bash
-make nix-gc
-```
-
----
-
-## 📋 Ver Todos os Targets
-
-```bash
-make help
-```
-
-Mostra todos os targets disponíveis com descrições.
-
----
-
-## 💡 Exemplos Comuns
-
-### Exemplo 1: Ativar Solução Wayland
-```bash
-cd /home/rocha/GitHub/dotfiles-NixOs
-make wayland-session-fix
-# Espere reboot...
-# Faça login
-# Hyprland deve iniciar ✅
-```
-
-### Exemplo 2: Reconstruir Outro Host
-```bash
-make nixos-rebuild HOSTNAME=inspiron
-```
-
-### Exemplo 3: Validar Solução
-```bash
-make wayland-session-test
-
-# Esperado:
-# Session c1
-#      Type: wayland
-#     Class: user
-#     State: active
-#     Seat: seat0
-```
-
-### Exemplo 4: Limpeza Completa
-```bash
-make flake-check
-make nix-gc
-```
-
----
-
-## ⚙️ Variáveis
-
-Pode sobrescrever:
-
-```bash
-# Usar host específico
-make nixos-rebuild HOSTNAME=inspiron
-
-# Usar flake específica
-make nixos-rebuild FLAKE=.#inspiron
-
-# Usar target Home Manager específico
-make home-manager-switch HOME_TARGET=.#rocha@inspiron
-```
-
----
-
-## 📝 Notas
-
-- Todos os targets que modificam sistema usam `sudo`
-- `make help` mostra ajuda completa
-- Use `make` sem argumentos para ver ajuda padrão
-

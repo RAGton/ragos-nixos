@@ -96,22 +96,6 @@
         "type": "github"
       }
     },
-    "edna-theme": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1737813761,
-        "narHash": "sha256-g2fRqyVERLZyDY/izMac88tL8K4xPTGLoKpsSI9tAV8=",
-        "ref": "refs/heads/main",
-        "rev": "a2862be69877e907e7c33ae7b2e2bdcda3c968a0",
-        "revCount": 25,
-        "type": "git",
-        "url": "https://gitlab.com/jomada/edna"
-      },
-      "original": {
-        "type": "git",
-        "url": "https://gitlab.com/jomada/edna"
-      }
-    },
     "hardware": {
       "locked": {
         "lastModified": 1772972630,
@@ -240,7 +224,6 @@
         "disko": "disko",
         "dms": "dms",
         "dms-flake": "dms-flake",
-        "edna-theme": "edna-theme",
         "hardware": "hardware",
         "home-manager": "home-manager",
         "nix-flatpak": "nix-flatpak",

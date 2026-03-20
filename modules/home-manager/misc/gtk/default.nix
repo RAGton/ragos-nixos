@@ -10,15 +10,15 @@
     enable = true;
     colorScheme = "dark";
 
-    # Tema padrão: Breeze Dark (pode ser sobrescrito por temas como Bart)
+    # Tema padrão do stack Hyprland/DMS: base GNOME/Libadwaita.
     theme = lib.mkDefault {
-      name = "Breeze-Dark";
-      package = pkgs.kdePackages.breeze-gtk;
+      name = "adw-gtk3-dark";
+      package = pkgs.adw-gtk3;
     };
 
     iconTheme = lib.mkDefault {
-      name = "breeze-dark";
-      package = pkgs.kdePackages.breeze-icons;
+      name = "Papirus-Dark";
+      package = pkgs.papirus-icon-theme;
     };
 
     cursorTheme = {
@@ -28,8 +28,9 @@
     };
 
     font = {
-      name = "Roboto";
+      name = "Monocraft";
       size = 11;
+      package = pkgs.monocraft;
     };
 
     gtk3 = {

@@ -14,7 +14,7 @@
 # - Instala `pkgs.albert`, escreve `~/.config/albert/config` e cria `systemd.user.services.albert`.
 #
 # Riscos:
-# - A string `command_logout` depende de ferramentas do ambiente (hyprctl/jq/kdotool).
+# - A string `command_logout` depende de ferramentas do ambiente (hyprctl/jq).
 # - Mudanças no desktop session podem exigir ajuste nos comandos.
 # =============================================================================
 {
@@ -60,7 +60,7 @@ in
 
       [system]
       command_lock=loginctl lock-session
-      command_logout="[[ \"$DESKTOP_SESSION\" == hyprland* ]] && { hyprctl -j clients 2>/dev/null | jq -j '.[] | \"dispatch closewindow address:\\(.address); \"' | xargs -r hyprctl --batch 2>/dev/null; } || [ \"$DESKTOP_SESSION\" = \"plasma\" ] && kdotool search '.*' windowclose %@ || true"
+      command_logout="[[ \"$DESKTOP_SESSION\" == hyprland* ]] && { hyprctl -j clients 2>/dev/null | jq -j '.[] | \"dispatch closewindow address:\\(.address); \"' | xargs -r hyprctl --batch 2>/dev/null; } || true"
       command_poweroff=systemctl poweroff -i
       command_reboot=systemctl reboot -i
       enabled=true

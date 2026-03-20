@@ -18,8 +18,17 @@
 # Riscos:
 # - NENHUM nesta etapa (apenas define opções, não força uso)
 # =============================================================================
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
+let
+  desktopConfigured =
+    (config.services.displayManager.gdm.enable or false) || (config.programs.hyprland.enable or false);
+in
 {
   options.rag = {
     # =========================
@@ -33,11 +42,10 @@
           Ambiente de desktop a usar.
 
           Opções:
-          - "hyprland": compositor Hyprland (com DMS)
+          - "hyprland": stack desktop padrão do projeto (Hyprland + DMS + GDM)
           - null: sem desktop (headless/servidor)
 
-          Nota: definir esta opção NÃO importa o desktop automaticamente ainda.
-          Isso será implementado na próxima etapa de migração.
+          O módulo compartilhado do desktop habilita o stack correspondente.
         '';
       };
 
@@ -113,27 +121,19 @@
     # Assertions para validar configuração
     assertions = [
       {
-        assertion =
-          config.rag.desktop.environment == null ||
-          (config.services.displayManager.gdm.enable or false) ||
-          (config.programs.hyprland.enable or false);
+        assertion = config.rag.desktop.environment == null || desktopConfigured;
         message = ''
-          O ambiente de desktop requer um gerenciador de display habilitado.
-          Se estiver usando rag.desktop.environment, verifique se o módulo de desktop correspondente foi importado.
+          O ambiente de desktop requer Hyprland e GDM habilitados.
+          Se estiver usando rag.desktop.environment, verifique se o módulo compartilhado de desktop foi importado.
         '';
       }
     ];
 
     # Warnings para opções definidas mas sem efeito (transição v1→v2)
-    warnings =
-      lib.optional
-        (config.rag.desktop.environment != null &&
-         !(config.services.displayManager.gdm.enable or false) &&
-         !(config.programs.hyprland.enable or false))
-        ''
-          rag.desktop.environment está definido como "${config.rag.desktop.environment}", mas o desktop
-          ainda não está sendo importado. Isso é esperado durante a migração.
-          Verifique se hosts/common está importando modules/nixos/hyprland corretamente.
-        '';
+    warnings = lib.optional (config.rag.desktop.environment != null && !desktopConfigured) ''
+      rag.desktop.environment está definido como "${config.rag.desktop.environment}", mas o desktop
+      ainda não foi materializado em Hyprland + GDM.
+      Verifique se hosts/common está importando modules/nixos/desktop corretamente.
+    '';
   };
 }

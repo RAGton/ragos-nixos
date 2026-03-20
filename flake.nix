@@ -2,22 +2,22 @@
 # Autor: rag
 #
 # O que é
-# - Fonte única de verdade (flakes) para NixOS e nix-darwin das máquinas.
-# - Centraliza inputs, overlays e outputs (nixosConfigurations/homeConfigurations).
+# - Fonte única de verdade para hosts NixOS e perfis Home Manager.
+# - Centraliza inputs, overlays e outputs públicos do projeto.
 #
 # Por quê
 # - Reprodutibilidade: mesmos inputs -> mesmo resultado.
-# - Portabilidade: mesma base para Linux e macOS.
+# - Portabilidade: módulos compartilhados e outputs públicos consistentes.
 # - Manutenção: entradas e saídas claras num único lugar.
 #
 # Como
-# - Inputs: nixpkgs (unstable + stable), home-manager, nix-darwin etc.
-# - Outputs: funções `mkNixosConfiguration`/`mkDarwinConfiguration` para montar hosts.
+# - Inputs: nixpkgs (unstable + stable), Home Manager, hardware e integrações auxiliares.
+# - Outputs: hosts NixOS, perfis Home Manager, overlays, formatter e checks.
 #
 # Riscos
 # - Atualizar pins (nixpkgs/home-manager) pode introduzir regressões; prefira atualizar de forma incremental.
 {
-  description = "Infraestrutura declarativa NixOS/nix-darwin multi-host/multi-user com Flakes, Home Manager, Flatpak, VS Code, Jupyter e toolchains de desenvolvimento.";
+  description = "Flake pública multi-host para NixOS e Home Manager, com overlays, checks e automação de desktop/desenvolvimento.";
 
   # =============================
   # Inputs (flakes externos)
@@ -51,14 +51,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Tema (Plasma/GTK/Icons): Edna
-    # Repo: https://gitlab.com/jomada/edna
-    # Obs.: usamos flake=false porque é um repositório de assets, não um flake Nix.
-    edna-theme = {
-      url = "git+https://gitlab.com/jomada/edna";
-      flake = false;
-    };
-
     # DankMaterialShell (DMS) - Rice para Hyprland (assets/configs)
     # Repo: https://github.com/AvengeMedia/DankMaterialShell
     # Obs.: flake=false porque é um repositório de dotfiles/configs, não um flake Nix.
@@ -83,9 +75,57 @@
   # =============================
   # Outputs (sistemas, usuários, overlays)
   # =============================
-  outputs = { self, darwin, home-manager, nixpkgs, ... }@inputs:
+  outputs =
+    {
+      self,
+      home-manager,
+      nixpkgs,
+      ...
+    }@inputs:
     let
       inherit (self) outputs;
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+      repoOverlays = import ./overlays { inherit inputs; };
+
+      formatterFor = system: (import nixpkgs { inherit system; }).nixfmt;
+      stripContext = builtins.unsafeDiscardStringContext;
+
+      mkHomePkgs =
+        system:
+        import nixpkgs {
+          inherit system;
+          overlays = [
+            repoOverlays.stable-packages
+            repoOverlays.warp-terminal-latest
+            repoOverlays.xeus-cling-no-checks
+          ];
+          config.allowUnfree = true;
+        };
+
+      checkPkgs = import nixpkgs {
+        system = "x86_64-linux";
+        config.allowUnfree = true;
+      };
+
+      formattingCheck =
+        checkPkgs.runCommand "nixfmt-check"
+          {
+            nativeBuildInputs = [
+              checkPkgs.findutils
+              checkPkgs.nixfmt
+            ];
+            src = ./.;
+          }
+          ''
+            cd "$src"
+            ${checkPkgs.findutils}/bin/find . -type f -name '*.nix' -print0 \
+              | ${checkPkgs.findutils}/bin/xargs -0 ${checkPkgs.nixfmt}/bin/nixfmt --check
+            mkdir -p "$out"
+          '';
 
       # =============================
       # Usuários declarados (multi-user ready)
@@ -104,7 +144,6 @@
           email = "nicoly.canteiro@local";
           gitKey = "";
           fullName = "Nicoly Canteiro";
-          initialPassword = "nina";
           name = "nina";
         };
         # Adicione outros usuários aqui
@@ -113,7 +152,8 @@
       # =============================
       # Funções helpers para sistemas e home
       # =============================
-      mkNixosConfiguration = hostname: username:
+      mkNixosConfiguration =
+        hostname: username:
         nixpkgs.lib.nixosSystem {
           specialArgs = {
             inherit inputs outputs hostname;
@@ -127,29 +167,10 @@
           ];
         };
 
-      mkDarwinConfiguration = hostname: username:
-        darwin.lib.darwinSystem {
-          system = "aarch64-darwin";
-          specialArgs = {
-            inherit inputs outputs hostname;
-            isDarwin = true;
-            userConfig = users.${username};
-            darwinModules = "${self}/modules/darwin";
-          };
-          modules = [ ./hosts/${hostname} ];
-        };
-
-      mkHomeConfiguration = system: username: hostname:
+      mkHomeConfiguration =
+        system: username: hostname:
         home-manager.lib.homeManagerConfiguration {
-          pkgs = import nixpkgs {
-            inherit system;
-            overlays = [
-              outputs.overlays.stable-packages
-              outputs.overlays.warp-terminal-latest
-              outputs.overlays.xeus-cling-no-checks
-            ];
-            config.allowUnfree = true;
-          };
+          pkgs = mkHomePkgs system;
           extraSpecialArgs = {
             inherit inputs outputs;
             userConfig = users.${username};
@@ -159,7 +180,8 @@
           modules = [ ./home/${username}/${hostname} ];
         };
 
-    in {
+    in
+    {
       # =============================
       # Sistemas NixOS (multi-host)
       # =============================
@@ -183,15 +205,50 @@
       # Home Manager (multi-user, multi-host)
       # =============================
       homeConfigurations = {
-        "rocha@inspiron" = let cfg = mkHomeConfiguration "x86_64-linux" "rocha" "inspiron"; in cfg // { type = "homeManagerConfiguration"; };
-        "rocha@glacier" = let cfg = mkHomeConfiguration "x86_64-linux" "rocha" "glacier"; in cfg // { type = "homeManagerConfiguration"; };
-        "nina@inspiron-nina" = let cfg = mkHomeConfiguration "x86_64-linux" "nina" "inspiron-nina"; in cfg // { type = "homeManagerConfiguration"; };
+        "rocha@inspiron" =
+          let
+            cfg = mkHomeConfiguration "x86_64-linux" "rocha" "inspiron";
+          in
+          cfg // { type = "homeManagerConfiguration"; };
+        "rocha@glacier" =
+          let
+            cfg = mkHomeConfiguration "x86_64-linux" "rocha" "glacier";
+          in
+          cfg // { type = "homeManagerConfiguration"; };
+        "nina@inspiron-nina" =
+          let
+            cfg = mkHomeConfiguration "x86_64-linux" "nina" "inspiron-nina";
+          in
+          cfg // { type = "homeManagerConfiguration"; };
         # Adicione outros usuários/hosts aqui
+      };
+
+      formatter = forAllSystems formatterFor;
+
+      checks.x86_64-linux = {
+        formatting = formattingCheck;
+        "nixos-inspiron-eval" =
+          checkPkgs.writeText "nixos-inspiron-drvpath" "${stripContext self.nixosConfigurations.inspiron.config.system.build.toplevel.drvPath}\n";
+        "nixos-inspiron-nina-eval" =
+          checkPkgs.writeText "nixos-inspiron-nina-drvpath" "${stripContext self.nixosConfigurations.inspiron-nina.config.system.build.toplevel.drvPath}\n";
+        "nixos-glacier-eval" =
+          checkPkgs.writeText "nixos-glacier-drvpath" "${stripContext self.nixosConfigurations.glacier.config.system.build.toplevel.drvPath}\n";
+        "nixos-iso-eval" =
+          checkPkgs.writeText "nixos-iso-drvpath" "${stripContext self.nixosConfigurations.iso.config.system.build.toplevel.drvPath}\n";
+        "home-rocha-inspiron-eval" = checkPkgs.writeText "home-rocha-inspiron-drvpath" "${
+          stripContext self.homeConfigurations."rocha@inspiron".activationPackage.drvPath
+        }\n";
+        "home-rocha-glacier-eval" = checkPkgs.writeText "home-rocha-glacier-drvpath" "${
+          stripContext self.homeConfigurations."rocha@glacier".activationPackage.drvPath
+        }\n";
+        "home-nina-inspiron-nina-eval" = checkPkgs.writeText "home-nina-inspiron-nina-drvpath" "${
+          stripContext self.homeConfigurations."nina@inspiron-nina".activationPackage.drvPath
+        }\n";
       };
 
       # =============================
       # Overlays (modular, multi-overlay)
       # =============================
-      overlays = import ./overlays { inherit inputs; };
+      overlays = repoOverlays;
     };
 }

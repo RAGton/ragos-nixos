@@ -54,7 +54,7 @@
     "dev.warp.Warp",
     "com.anydesk.Anydesk",
     "virt-manager",
-    "org.kde.dolphin"
+    "org.gnome.Nautilus"
   ],
   "barPinnedApps": [],
   "dockLauncherPosition": 0,

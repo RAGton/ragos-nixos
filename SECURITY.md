@@ -1,21 +1,23 @@
 # Security Policy
 
-## Supported Versions
+## Supported releases
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Only the latest tagged release and the current `main` branch are considered maintained.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Do not open a public issue for security problems, leaked credentials, or sensitive configuration exposure.
 
-Use this section to tell people how to report a vulnerability.
+Report privately to `gabriel.rag@proton.me` with:
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+- a short description of the issue
+- affected file or host
+- steps to reproduce or validate
+- impact assessment if known
+
+I will try to acknowledge valid reports within 7 days and follow up with status updates when I have a fix or mitigation.
+
+## Scope
+
+This repository only covers issues caused by the configuration and automation shipped here.
+Upstream bugs in Nixpkgs, Home Manager, Hyprland, KDE, or third-party applications may still be documented here, but they are not fixed on the same timeline.
