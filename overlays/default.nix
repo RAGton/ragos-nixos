@@ -127,54 +127,6 @@
     );
   };
 
-  # Warp Terminal: força uma versão mais nova do upstream.
-  #
-  # Por quê
-  # - O pacote no nixpkgs às vezes fica alguns dias/semanas atrás do release upstream.
-  # - Este override mantém o Warp atualizado sem precisar esperar o bump no nixpkgs.
-  #
-  # Quando remover
-  # - Quando o nixpkgs incluir esta versão (ou mais nova) do Warp e o override deixar
-  #   de agregar valor.
-  #
-  # Como
-  # - Sobrescreve `version` e `src` do derivation, usando os URLs oficiais do Warp.
-  # - Hashes foram obtidos via `nix store prefetch-file --json <url>`.
-  warp-terminal-latest = final: prev: {
-    warp-terminal = prev.warp-terminal.overrideAttrs (
-      old:
-      let
-        version = "0.2026.02.25.08.24.stable_01";
-        isDarwin = prev.stdenv.hostPlatform.isDarwin;
-        system = prev.stdenv.hostPlatform.system;
-        linuxArch = if system == "x86_64-linux" then "x86_64" else "aarch64";
-
-        url =
-          if isDarwin then
-            "https://releases.warp.dev/stable/v${version}/Warp.dmg"
-          else
-            "https://releases.warp.dev/stable/v${version}/warp-terminal-v${version}-1-${linuxArch}.pkg.tar.zst";
-
-        hash =
-          if isDarwin then
-            "sha256-Q29tEoB3RVE7PlDK5o4OiaSC39ksgK9F3DYQ9uIu9no="
-          else if system == "x86_64-linux" then
-            "sha256-PBDITM/Zc6rj91knMIu4QvwF6NRJ8fxzq8Btd01ens0="
-          else
-            "sha256-FC1WYLRv5nAddKKZKmEGUQLMuDMdT2WUleA5/fL7JIc=";
-      in
-      {
-        inherit version;
-        src = prev.fetchurl { inherit url hash; };
-
-        # O binário recente do Warp passou a depender de `liblzma.so.5`.
-        # `xz` fornece essa lib e permite o auto-patchelf satisfazer a dependência.
-        buildInputs = (old.buildInputs or [ ]) ++ [ prev.xz ];
-        runtimeDependencies = (old.runtimeDependencies or [ ]) ++ [ prev.xz ];
-      }
-    );
-  };
-
   # xeus-cling: workaround
   #
   # Por quê
@@ -227,5 +179,45 @@
         };
       };
     });
+  };
+
+  # ATLauncher: API workaround + bundled Java runtime libs
+  #
+  # Por quê
+  # - O user-agent detalhado usado nas chamadas para api.atlauncher.com está
+  #   recebendo HTTP 403 do Cloudflare, o que quebra News e resolução de
+  #   loaders via GraphQL (ex.: Fabric).
+  # - O runtime Java baixado pelo próprio launcher (ex.: java-runtime-gamma)
+  #   precisa de bibliotecas X11/AWT extras no NixOS para mods/clientes que
+  #   inicializam AWT/ImageIO (ex.: FancyMenu, Polymer, screenshot tools).
+  #
+  # Como
+  # - Aplica um patch pequeno para reutilizar o user-agent simples do launcher
+  #   também nas chamadas internas de API.
+  # - Expõe as libs nativas extras via `LD_LIBRARY_PATH` para que o processo
+  #   do launcher e o Java do Minecraft herdem um ambiente compatível.
+  #
+  # Quando remover
+  # - Quando o upstream do ATLauncher corrigir o formato aceito pelo endpoint
+  #   e/ou passar a exportar esse conjunto de libs automaticamente.
+  atlauncher-api-user-agent-workaround = _final: prev: {
+    atlauncher =
+      (prev.atlauncher.override {
+        additionalLibs = with prev; [
+          fontconfig
+          freetype
+          libxext
+          libxi
+          libxrandr
+          libxrender
+          libxtst
+          zlib
+        ];
+      }).overrideAttrs
+        (old: {
+          patches = (old.patches or [ ]) ++ [
+            ./patches/atlauncher-simplify-api-user-agent.patch
+          ];
+        });
   };
 }

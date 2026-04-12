@@ -70,16 +70,22 @@
     cores = lib.mkDefault 0;
   };
 
-  # Boot: defaults pensados para reduzir ruído e melhorar UX.
+  # Boot: defaults genéricos de silêncio/recovery.
+  # Flags de hardware ficam nos hosts; flags do Zen ficam no módulo do kernel.
   boot = {
-    consoleLogLevel = 0;
-    initrd.verbose = false;
-    kernelParams = [
+    consoleLogLevel = lib.mkDefault 3;
+    initrd.verbose = lib.mkDefault false;
+    kernelParams = lib.mkBefore [
       "quiet"
-      "splash"
       "rd.udev.log_level=3"
+      "systemd.show_status=auto"
+      "rd.systemd.show_status=auto"
+      "vt.global_cursor_default=0"
     ];
-    loader.efi.canTouchEfiVariables = true;
+    loader = {
+      timeout = lib.mkDefault 3;
+      efi.canTouchEfiVariables = lib.mkDefault true;
+    };
     # loader.systemd-boot.enable = false;
     #    loader.systemd-boot.extraFiles =
     #     let
@@ -209,7 +215,7 @@
   # Ajustes de entrada
   services.libinput.enable = true;
   services.logind.settings.Login = {
-    KillUserProcesses = lib.mkForce true;
+    KillUserProcesses = lib.mkDefault false;
     HandleLidSwitch = lib.mkDefault "suspend";
     HandleLidSwitchExternalPower = lib.mkDefault "ignore";
     HandleLidSwitchDocked = lib.mkDefault "ignore";
@@ -265,7 +271,6 @@
       "com.github.tchx84.Flatseal"
       "io.github.flattool.Warehouse"
       "com.rtosta.zapzap"
-      "org.libreoffice.LibreOffice"
       "org.gimp.GIMP"
     ];
 
@@ -276,7 +281,6 @@
   # Portal XDG para integração de apps (Flatpak, etc.)
   xdg.portal = {
     enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 
   # Configuração do usuário

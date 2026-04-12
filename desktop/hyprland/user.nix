@@ -32,8 +32,41 @@ let
     || (config.programs.dank-material-shell.enable or false);
   dmsBaseSettings = builtins.fromJSON (builtins.readFile ../../files/dms/settings.json);
   dmsBaseSession = builtins.fromJSON (builtins.readFile ../../files/dms/session.json);
+  runIfOnBattery = pkgs.writeShellScript "rag-run-if-on-battery" ''
+    set -euo pipefail
+
+    found_ac=0
+    ac_online=0
+
+    for f in /sys/class/power_supply/*/online; do
+      case "$f" in
+        */AC*/online|*/ACAD*/online|*/ADP*/online|*/Mains*/online)
+          found_ac=1
+          if [ "$(cat "$f" 2>/dev/null || echo 0)" = "1" ]; then
+            ac_online=1
+            break
+          fi
+          ;;
+      esac
+    done
+
+    # Se não houver telemetria AC disponível, assume conectado para evitar
+    # suspender/desligar tela indevidamente em desktops.
+    if [ "$found_ac" -eq 0 ]; then
+      ac_online=1
+    fi
+
+    if [ "$ac_online" -eq 0 ]; then
+      exec "$@"
+    fi
+  '';
   dmsSettings = lib.recursiveUpdate dmsBaseSettings config.rag.rice.dmsOverrides.settings // {
     osdPowerProfileEnabled = false;
+    acMonitorTimeout = 0;
+    acLockTimeout = 0;
+    acSuspendTimeout = 0;
+    acSuspendBehavior = 0;
+    fadeToDpmsEnabled = false;
   };
   dmsSession = lib.recursiveUpdate dmsBaseSession config.rag.rice.dmsOverrides.session // {
     wallpaperPath = toString config.wallpaper;
@@ -627,7 +660,7 @@ in
               exec dms ipc launcher toggle
               ;;
             "Terminal")
-              exec uwsm app -- warp-terminal
+              exec uwsm app -- rag-terminal
               ;;
             "Arquivos")
               exec uwsm app -- dolphin
@@ -667,21 +700,6 @@ in
       })
 
     ];
-    # Boot direto (sem display manager): ao logar no tty, inicia Hyprland via UWSM.
-    # Segurança: isso remove a tela de login (autologin). Use apenas se você confia no acesso físico.
-    programs.zsh.loginExtra = lib.mkIf (config.rag.desktop.directLogin.enable or false) (
-      lib.mkAfter ''
-        if [[ -z "''${WAYLAND_DISPLAY-}" && -z "''${DISPLAY-}" && "''${XDG_VTNR-}" = "${
-          toString (config.rag.desktop.directLogin.tty or 1)
-        }" ]]; then
-          if command -v uwsm >/dev/null 2>&1; then
-            exec uwsm start hyprland || exec uwsm start hyprland-uwsm.desktop
-          fi
-          exec Hyprland
-        fi
-      ''
-    );
-
     # Tema de cursor consistente em todos os aplicativos.
     home.pointerCursor = {
       gtk.enable = true;
@@ -763,14 +781,14 @@ in
           # 10 min: desligar displays (economiza bateria)
           listener {
             timeout = 600
-            on-timeout = hyprctl dispatch dpms off
+            on-timeout = ${runIfOnBattery} hyprctl dispatch dpms off
             on-resume  = hyprctl dispatch dpms on
           }
 
           # 30 min: suspender sistema
           listener {
             timeout = 1800
-            on-timeout = systemctl suspend
+            on-timeout = ${runIfOnBattery} systemctl suspend
           }
         '';
 
@@ -878,6 +896,34 @@ in
         wallpaperPathDark = toString config.wallpaper;
       };
     };
+
+    # O DMS persiste estado do launcher/dock nesse arquivo em ~/.local/state.
+    # Se ele virar symlink para o store, o shell não consegue atualizar pinned apps,
+    # cache do launcher nem preferências da sessão.
+    home.activation.ensureDmsMutableSessionState = lib.mkIf dmsEnabled (
+      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        target="$HOME/.local/state/DankMaterialShell/session.json"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$HOME/.local/state/DankMaterialShell"
+
+        tmp="$(${pkgs.coreutils}/bin/mktemp)"
+        cat > "$tmp" <<'EOF'
+        ${builtins.toJSON dmsSession}
+        EOF
+
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$target"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m 0644 "$tmp" "$target"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$tmp"
+      ''
+    );
+
+    # O módulo upstream do DMS ainda declara esse arquivo em `home.file`.
+    # Forçamos a atualização do link para o switch não abortar na checagem,
+    # e o activation acima o converte em arquivo regular gravável logo depois.
+    home.file."${config.home.homeDirectory}/.local/state/DankMaterialShell/session.json" =
+      lib.mkIf dmsEnabled
+        {
+          force = lib.mkForce true;
+        };
 
     # Garante que os arquivos do DMS existam como arquivos graváveis.
     # O Hyprland faz `source` desses arquivos; se não existirem, podem gerar erros.

@@ -310,13 +310,13 @@ in
         # JavaScript/TypeScript
         (lib.optionals cfg.languages.javascript.enable [
           nodejs_22
-          nodePackages.npm
-          nodePackages.yarn
-          nodePackages.pnpm
-          nodePackages.typescript
-          nodePackages.typescript-language-server
-          nodePackages.eslint
-          nodePackages.prettier
+          # npm já vem embutido no nodejs_22.
+          yarn
+          pnpm
+          typescript
+          typescript-language-server
+          eslint
+          prettier
         ])
 
         # Go

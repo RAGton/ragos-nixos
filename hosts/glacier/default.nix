@@ -107,12 +107,9 @@
       };
     };
 
-    # NVIDIA DRM modesetting — OBRIGATÓRIO para Wayland
-    kernelParams = [
+    # Flags específicas do hardware/FS deste host.
+    kernelParams = lib.mkAfter [
       "rootflags=subvol=@,compress=zstd,noatime"
-      "nvidia-drm.modeset=1"
-      "nvidia-drm.fbdev=1" # framebuffer para TTY
-      "amd_pstate=active" # P-State activo (Zen 5)
     ];
 
     # Módulos carregados no initrd (necessário para DRM early)
@@ -204,8 +201,8 @@
   kernelZen = {
     enable = true;
     kernel = "zen";
-    forceLocalBuild = true;
-    useLLVMStdenv = true;
+    forceLocalBuild = false;
+    useLLVMStdenv = false;
     extraMakeFlags = [ ];
     disableMitigations = lib.mkDefault false;
     extraKernelParams = [

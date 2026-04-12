@@ -100,6 +100,7 @@
           inherit system;
           overlays = [
             repoOverlays.stable-packages
+            repoOverlays.atlauncher-api-user-agent-workaround
             repoOverlays.xeus-cling-no-checks
           ];
           config.allowUnfree = true;
@@ -109,6 +110,30 @@
         system = "x86_64-linux";
         config.allowUnfree = true;
       };
+
+      devShellsFor =
+        system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+          latexShell = pkgs.mkShell {
+            packages = with pkgs; [
+              texlive.combined.scheme-full
+              texlivePackages.latexmk
+              texlab
+              biber
+              texlivePackages.chktex
+              ghostscript
+              perl
+            ];
+          };
+        in
+        {
+          default = latexShell;
+          latex = latexShell;
+        };
 
       formattingCheck =
         checkPkgs.runCommand "nixfmt-check"
@@ -223,6 +248,7 @@
       };
 
       formatter = forAllSystems formatterFor;
+      devShells = forAllSystems devShellsFor;
 
       checks.x86_64-linux = {
         formatting = formattingCheck;

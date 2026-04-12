@@ -54,7 +54,7 @@ in
         prompt = " Buscar...";
 
         # Sem terminal popup (usa o que está no PATH)
-        term = "warp-terminal";
+        term = "rag-terminal";
 
         # Ícones
         show_all = false;

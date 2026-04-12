@@ -40,6 +40,12 @@
     oh-my-zsh = {
       enable = true;
 
+      # No setup via Nix, os diretórios de completion podem aparecer com owner
+      # imutável do store e disparar falso positivo do compfix.
+      extraConfig = ''
+        ZSH_DISABLE_COMPFIX=true
+      '';
+
       # Não carregar tema via oh-my-zsh: o Powerlevel10k será carregado via pacote Nix.
       # Isso evita o erro "theme 'powerlevel10k/powerlevel10k' not found".
       theme = "";
@@ -68,12 +74,6 @@
         clear
         fastfetch || true
       fi
-
-      # =========================
-      # Completion
-      # =========================
-      autoload -Uz compinit
-      compinit
 
       # =========================
       # Powerlevel10k

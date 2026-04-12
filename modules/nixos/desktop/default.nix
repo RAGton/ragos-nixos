@@ -17,6 +17,7 @@ in
       services.desktopManager.gnome.enable = lib.mkForce false;
       services.greetd.enable = lib.mkForce false;
 
+      programs.dconf.enable = true;
       programs.hyprlock.enable = lib.mkDefault true;
     })
   ];

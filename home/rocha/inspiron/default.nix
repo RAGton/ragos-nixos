@@ -1,10 +1,17 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 {
   imports = [
     ../../../modules/home-manager/common
     ../../../desktop/hyprland/user.nix
+    ../../../desktop/hyprland/rice/dms-upstream.nix
     ../../shared/dev-workstation.nix
     ../shared/vscode.nix
+  ];
+
+  rag.rice.dmsUpstream.enable = true;
+
+  home.packages = with pkgs; [
+    atlauncher
   ];
 
   wayland.windowManager.hyprland.extraConfig = lib.mkAfter ''
@@ -54,7 +61,7 @@
       pinnedApps = [
         "app.zen_browser.zen"
         "code"
-        "dev.warp.Warp"
+        "com.gexperts.Tilix"
         "virt-manager"
         "org.kde.dolphin"
         "org.kde.filelight"

@@ -142,17 +142,18 @@ in
     # Kernel como padrão (permitindo override)
     boot.kernelPackages = lib.mkDefault kernelPackages;
 
-    # Parâmetros de kernel
-    boot.kernelParams = [
-      "quiet"
-      "nowatchdog"
-    ]
-    ++ lib.optionals cfg.disableMitigations [
-      "mitigations=off"
-      "noibrs"
-      "noibpb"
-    ]
-    ++ cfg.extraKernelParams;
+    # Parâmetros globais do Zen; flags genéricas de boot moram em common.
+    boot.kernelParams = lib.mkAfter (
+      [
+        "nowatchdog"
+      ]
+      ++ lib.optionals cfg.disableMitigations [
+        "mitigations=off"
+        "noibrs"
+        "noibpb"
+      ]
+      ++ cfg.extraKernelParams
+    );
 
   };
 }

@@ -8,8 +8,11 @@
   imports = [
     ../../../modules/home-manager/common
     ../../../desktop/hyprland/user.nix
+    ../../../desktop/hyprland/rice/dms-upstream.nix
     ../../shared/dev-workstation.nix
   ];
+
+  rag.rice.dmsUpstream.enable = true;
 
   rag.vscode.extraExtensions = [
     "vsciot-vscode.vscode-arduino"

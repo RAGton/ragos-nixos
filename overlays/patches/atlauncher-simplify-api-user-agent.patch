@@ -1,0 +1,19 @@
+diff --git a/src/main/java/com/atlauncher/Network.java b/src/main/java/com/atlauncher/Network.java
+index e32f3a6..a316d9e 100644
+--- a/src/main/java/com/atlauncher/Network.java
++++ b/src/main/java/com/atlauncher/Network.java
+@@ -64,10 +64,11 @@ public final class Network {
+             "%s/%s (+%s)", Constants.LAUNCHER_NAME, Constants.VERSION.toStringForUserAgent(),
+             Constants.LAUNCHER_WEBSITE);
+ 
++    // Cloudflare currently rejects the verbose API user agent, which breaks
++    // GraphQL-backed pack/news requests. Reuse the simpler launcher UA instead.
+     public static final String API_USER_AGENT = String.format(
+-            "%s/%s [%s/%s] (+%s)", Constants.LAUNCHER_NAME, Constants.VERSION.toStringForLogging(),
+-            Constants.VERSION.getSha1Revision(),
+-            OS.getInstallMethod().toString(),
++            "%s/%s (+%s)", Constants.LAUNCHER_NAME,
++            Constants.VERSION.toStringForUserAgent(),
+             Constants.LAUNCHER_WEBSITE);
+ 
+     static {

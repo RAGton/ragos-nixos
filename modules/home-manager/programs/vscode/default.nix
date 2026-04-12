@@ -88,15 +88,30 @@ let
   };
 
   vscodeSettings = baseVscodeSettings // cfg.extraSettings;
+  vscodeSettingsFile = pkgs.writeText "vscode-settings.json" (builtins.toJSON vscodeSettings);
 
   vscodeLocale = {
     locale = "pt-br";
   };
+  vscodeLocaleFile = pkgs.writeText "vscode-locale.json" (builtins.toJSON vscodeLocale);
 
   vscodeArgv = {
     "ozone-platform-hint" = "auto";
     "enable-features" = "UseOzonePlatform,WaylandWindowDecorations";
   };
+  vscodeArgvFile = pkgs.writeText "vscode-argv.json" (builtins.toJSON vscodeArgv);
+
+  writeMutableJson = relativePath: sourcePath: ''
+    target="${config.xdg.configHome}/${relativePath}"
+    target_dir="$(${pkgs.coreutils}/bin/dirname "$target")"
+
+    $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$target_dir"
+
+    if [ -L "$target" ] || [ ! -e "$target" ] || ! ${pkgs.diffutils}/bin/cmp -s ${sourcePath} "$target"; then
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$target"
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -Dm644 ${sourcePath} "$target"
+    fi
+  '';
 
   baseVscodeExtensions = [
     "MS-CEINTL.vscode-language-pack-pt-BR"
@@ -470,24 +485,15 @@ in
             "rag.vscode.flavor/installMethod estão deprecated; use rag.vscode.edition/rag.vscode.delivery."
           ];
 
-        xdg.configFile."${configRootName}/User/settings.json" = {
-          text = builtins.toJSON vscodeSettings;
-          force = true;
-        };
-
-        xdg.configFile."${configRootName}/User/locale.json" = {
-          text = builtins.toJSON vscodeLocale;
-          force = true;
-        };
-
-        xdg.configFile."${configRootName}/argv.json" = {
-          text = builtins.toJSON vscodeArgv;
-          force = true;
-        };
-
         xdg.mimeApps.defaultApplications = lib.genAttrs editorMimeTypes (_: lib.mkDefault editorDesktopId);
 
-        home.activation.vscodeBootstrap = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        home.activation.vscodeMutableConfigFiles = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          ${writeMutableJson "${configRootName}/User/settings.json" vscodeSettingsFile}
+          ${writeMutableJson "${configRootName}/User/locale.json" vscodeLocaleFile}
+          ${writeMutableJson "${configRootName}/argv.json" vscodeArgvFile}
+        '';
+
+        home.activation.vscodeBootstrap = lib.hm.dag.entryAfter [ "vscodeMutableConfigFiles" ] ''
           echo "[home-manager] vscode: sincronizando extensões"
           ${vscodeBootstrap}/bin/vscode-bootstrap || true
         '';

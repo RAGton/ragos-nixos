@@ -4,6 +4,7 @@
     ../../../modules/home-manager/common
     # Desktop user config (hyprland com DMS)
     ../../../desktop/hyprland/user.nix
+    ../../../desktop/hyprland/rice/dms-upstream.nix
     ../shared/vscode.nix
   ];
 
@@ -96,7 +97,7 @@
         "steam"
         "heroic"
         "lutris"
-        "dev.warp.Warp"
+        "com.gexperts.Tilix"
         "codium"
         "org.kde.dolphin"
         "org.kde.filelight"

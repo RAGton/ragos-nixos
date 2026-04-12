@@ -11,15 +11,15 @@
 #
 # Como:
 # - Lista diretórios em `~/Documents/repositories` e usa `fzf` para seleção.
-# - Abre o `warp-terminal` e inicia `zellij` no diretório selecionado.
+# - Abre o `rag-terminal` (Tilix) e inicia `zellij` no diretório selecionado.
 #
 # Riscos:
-# - Depende de `fzf`, `warp-terminal` e `zellij` estarem disponíveis no PATH.
+# - Depende de `fzf`, `rag-terminal` e `zellij` estarem disponíveis no PATH.
 # - Se o diretório base mudar, a busca não encontra projetos.
 # =============================================================================
 
 selected=$(find ~/Documents/repositories -mindepth 1 -maxdepth 2 -type d -not -iwholename '*.git*' | fzf)
 if [ -n "$selected" ]; then
-	# Abre o warp-terminal (wrapper) iniciando o zellij no diretório selecionado
-	warp-terminal start --cwd "$selected" -- zellij || exit
+	# Abre o Tilix via launcher do repo já no diretório selecionado
+	rag-terminal start --cwd "$selected" -- zellij || exit
 fi

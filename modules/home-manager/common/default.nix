@@ -25,6 +25,7 @@
 {
   imports = [
     ../programs/aerospace
+    ../programs/tilix
     ../programs/warp-terminal
     ../programs/albert
     ../programs/atuin
@@ -54,9 +55,6 @@
     ../scripts
     ../services/cliphist
     ../services/flatpak
-
-    # Rices / desktops (opt-in por opção)
-    ../../../desktop/hyprland/rice/dms-upstream.nix
   ];
 
   # Habilita Jupyter via módulo declarativo.
@@ -85,10 +83,6 @@
     # Evita cair no libvirt rootless (qemu:///session), que não consegue criar bridges.
     LIBVIRT_DEFAULT_URI = "qemu:///system";
   };
-
-  xdg.configFile."distrobox/distrobox.conf".text = ''
-    container_manager="podman"
-  '';
 
   # Garante que os pacotes comuns estejam instalados
   home.packages = with pkgs; [

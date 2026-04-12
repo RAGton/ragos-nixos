@@ -21,8 +21,16 @@ let
 
   python = pkgs.python3;
 
-  # Alguns channels mantém um alias que lança `throw` ao avaliar ijavascript.
-  ijavascriptEval = builtins.tryEval pkgs.nodePackages.ijavascript;
+  # Em channels novos, nodePackages pode existir mas lançar erro ao acessar attrs.
+  # Preferimos o pacote top-level quando disponível.
+  ijavascriptEval =
+    if pkgs ? ijavascript then
+      builtins.tryEval pkgs.ijavascript
+    else
+      {
+        success = false;
+        value = null;
+      };
   hasIjavascript = ijavascriptEval.success;
   ijavascriptPkg = if hasIjavascript then ijavascriptEval.value else null;
 

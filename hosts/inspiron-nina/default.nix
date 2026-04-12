@@ -117,7 +117,6 @@
     WLR_RENDERER_ALLOW_SOFTWARE = "0";
   };
 
-  networking.firewall.enable = lib.mkForce false;
   services.resolved.enable = true;
   networking.nameservers = [
     "1.1.1.3"

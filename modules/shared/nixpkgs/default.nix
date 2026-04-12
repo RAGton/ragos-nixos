@@ -14,6 +14,7 @@
   nixpkgs = {
     overlays = [
       outputs.overlays.stable-packages
+      outputs.overlays.atlauncher-api-user-agent-workaround
     ]
     ++ lib.optionals (!isDarwin) [
       outputs.overlays.openrgb-git

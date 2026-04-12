@@ -134,7 +134,6 @@
   boot = {
     loader = {
       systemd-boot.enable = false;
-      timeout = 1;
 
       grub = {
         enable = true;
@@ -149,16 +148,15 @@
       };
     };
 
-    # Kernel params globais.
-    kernelParams = [
+    # Flags específicas do hardware/FS deste host.
+    kernelParams = lib.mkAfter [
       "rootflags=subvol=@,compress=zstd,noatime"
     ];
 
     # Usa systemd dentro do initrd para um boot inicial mais consistente.
     initrd.systemd.enable = true;
 
-    # No Inspiron, o splash só adiciona espera extra no boot e no desligamento.
-    plymouth.enable = lib.mkForce false;
+    plymouth.enable = lib.mkForce true;
   };
 
   # =========================
@@ -261,17 +259,6 @@
       '';
     };
 
-    # O PPD estava subindo em power-saver; forçamos um baseline mais equilibrado.
-    power-profile-balanced = {
-      description = "Set balanced power profile on boot";
-      wantedBy = [ "multi-user.target" ];
-      wants = [ "power-profiles-daemon.service" ];
-      after = [ "power-profiles-daemon.service" ];
-      serviceConfig.Type = "oneshot";
-      script = ''
-        ${pkgs.power-profiles-daemon}/bin/powerprofilesctl set balanced || true
-      '';
-    };
   };
 
   ## -------------------------

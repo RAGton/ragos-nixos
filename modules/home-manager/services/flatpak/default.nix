@@ -49,7 +49,6 @@ in
         "com.github.tchx84.Flatseal"
         "io.github.flattool.Warehouse"
         "com.rtosta.zapzap"
-        "org.libreoffice.LibreOffice"
         "org.gimp.GIMP"
       ];
 

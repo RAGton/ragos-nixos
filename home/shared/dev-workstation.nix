@@ -3,8 +3,6 @@
   # Base compartilhada entre perfis desktop focados em dev/estudo.
   programs.home-manager.enable = true;
 
-  rag.rice.dmsUpstream.enable = true;
-
   programs.jupyter = {
     enable = true;
     kernels = {

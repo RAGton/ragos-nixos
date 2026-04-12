@@ -96,7 +96,7 @@ O repositório mantém módulos para:
 - Hyprland com DankMaterialShell
 - GDM como display manager padrão
 - Dolphin, KIO, KIO Admin e ferramentas KDE úteis sem o shell do Plasma
-- Warp Terminal via Distrobox (Arch Linux)
+- Warp Terminal via nixpkgs (`pkgs.warp-terminal`)
 - VS Code/Insiders, Jupyter e ferramentas de desenvolvimento
 - Flatpak declarativo
 

@@ -20,13 +20,21 @@ in
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
+      anki
+      appflowy
+      calibre
+      foliate
       gnome-clocks
       libreoffice
+      localsend
+      zotero
+      obsidian
       thunderbird
       xournalpp
       drawio
       evince
-      kdePackages.kalar
+      kdePackages.kalarm
+      kdePackages.merkuro
       kdePackages.okular
     ];
   };
