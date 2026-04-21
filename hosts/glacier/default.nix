@@ -213,13 +213,10 @@
   kernelZen = {
     enable = true;
     kernel = "zen";
-    # Desktop dedicado: compila o Zen localmente no próprio host.
+    # Compila localmente com toolchain padrão para evitar a falha do LLVM.
     forceLocalBuild = true;
-    useLLVMStdenv = true;
-    extraMakeFlags = [
-      "KCFLAGS=-march=znver5 -O2 -pipe"
-      "KCPPFLAGS=-march=znver5 -O2 -pipe"
-    ];
+    useLLVMStdenv = false;
+    extraMakeFlags = [ ];
     disableMitigations = lib.mkDefault false;
     extraKernelParams = [
       "amd_iommu=on"
