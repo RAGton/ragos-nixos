@@ -28,6 +28,7 @@
     ../programs/tilix
     ../programs/warp-terminal
     ../programs/albert
+    ../programs/ai-workstation
     ../programs/atuin
     ../programs/bat
     ../programs/mangohud
@@ -44,6 +45,7 @@
     ../programs/lazygit
     ../programs/neovim
     ../programs/obs-studio
+    ../programs/rofi
     ../programs/saml2aws
     ../programs/starship
     ../programs/telegram

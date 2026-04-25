@@ -5,20 +5,22 @@
 # - Módulo Home Manager para habilitar e configurar o `rofi`.
 #
 # Por quê:
-# - Mantém o tema e o comportamento do launcher declarativos.
-# - Facilita trocar tema editando um único arquivo.
+# - Os menus auxiliares de clipboard/janelas continuam usando `rofi`, então o
+#   visual precisa acompanhar o shell atual em vez do tema padrão do nixpkgs.
 #
 # Como:
-# - Habilita `programs.rofi`.
-# - Define `programs.rofi.theme` apontando para `theme.rasi`.
+# - Habilita `programs.rofi` apenas no Linux.
+# - Aponta para um tema local alinhado ao esquema do Caelestia.
 # =============================================================================
-{ pkgs, ... }:
 {
+  lib,
+  pkgs,
+  ...
+}:
+lib.mkIf pkgs.stdenv.isLinux {
   programs.rofi = {
     enable = true;
     package = pkgs.rofi;
-    # Tema do nixpkgs (vem junto com o rofi):
-    #   ${pkgs.rofi-unwrapped}/share/rofi/themes/material.rasi
-    theme = "${pkgs.rofi-unwrapped}/share/rofi/themes/material.rasi";
+    theme = ./theme.rasi;
   };
 }

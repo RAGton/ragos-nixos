@@ -12,13 +12,13 @@ A origem da flake segue esta ordem:
 
 1. `--flake <path|uri>` informado no comando
 2. variável de ambiente `RAGOS_FLAKE`
-3. checkout local do projeto no diretório atual ou em algum pai com `flake.nix`
+3. checkout local do RagOS VE no diretório atual ou em algum pai, reconhecido pelos marcadores do projeto
 4. `/etc/ragos/flake.nix`, quando o sistema já foi instalado
 5. erro com instrução clara para informar a flake manualmente
 
 Em modo `--verbose`, a CLI mostra o host atual, a flake resolvida e o modo detectado (`explicit`, `env`, `dev-repo` ou `etc-ragos`).
 
-No uso diário, o checkout local do projeto tem precedência sobre `/etc/ragos`. Em máquinas instaladas, a origem padrão passa a ser `/etc/ragos`.
+No uso diário, o checkout local do RagOS VE tem precedência sobre `/etc/ragos`. Em máquinas instaladas, a origem padrão passa a ser `/etc/ragos`.
 
 ## Comandos do dia a dia
 

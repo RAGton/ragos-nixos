@@ -207,6 +207,25 @@
   services.power-profiles-daemon.enable = lib.mkForce true;
   services.tlp.enable = lib.mkForce false;
 
+  # Este notebook é usado como estação ativa; não deve suspender nem por tampa,
+  # nem por teclas ACPI, nem por idle do logind.
+  systemd.sleep.settings.Sleep = {
+    AllowSuspend = "no";
+    AllowHibernation = "no";
+    AllowHybridSleep = "no";
+    AllowSuspendThenHibernate = "no";
+  };
+
+  services.logind.settings.Login = {
+    HandlePowerKey = "ignore";
+    HandleSuspendKey = "ignore";
+    HandleHibernateKey = "ignore";
+    HandleLidSwitch = "ignore";
+    HandleLidSwitchExternalPower = "ignore";
+    HandleLidSwitchDocked = "ignore";
+    IdleAction = "ignore";
+  };
+
   # O zram já estava ativo via common; aqui aumentamos a margem para absorver
   # pressão de memória com mais folga no notebook.
   zramSwap.memoryPercent = lib.mkForce 75;

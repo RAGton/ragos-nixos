@@ -9,7 +9,8 @@
 #
 # Como
 # - `home.file.".local/bin"` com `recursive = true` copia o diretório `./bin`.
-# - Em Darwin, adiciona `~/.local/bin` ao PATH da sessão.
+# - Adiciona `~/.local/bin` ao PATH da sessão para que os wrappers locais
+#   ganhem precedência sobre binários globais quando necessário.
 #
 # Riscos
 # - Scripts precisam ter dependências disponíveis (via Nix) e não devem assumir paths fixos.
@@ -28,9 +29,5 @@
   };
 
   # Configuração condicional para sistemas Darwin.
-  home.sessionPath = lib.mkMerge [
-    (lib.mkIf pkgs.stdenv.isDarwin [
-      "$HOME/.local/bin"
-    ])
-  ];
+  home.sessionPath = [ "$HOME/.local/bin" ];
 }

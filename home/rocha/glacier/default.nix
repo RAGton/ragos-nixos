@@ -2,7 +2,6 @@
 {
   imports = [
     ../../../modules/home-manager/common
-    ../../../modules/home-manager/programs/obsidian
     ../../../desktop/hyprland/shell-backend.nix
     ../../../desktop/hyprland/user.nix
     ../../../desktop/hyprland/rice/caelestia-config.nix
@@ -10,6 +9,7 @@
   ];
 
   rag.shell.backend = "caelestia";
+  rag.programs.aiWorkstation.enable = true;
 
   rag.flatpak.enable = false;
 
@@ -105,10 +105,12 @@
       maxShown = 10;
       maxWallpapers = 9;
       favouriteApps = [
+        "obsidian"
         "steam"
         "heroic"
         "lutris"
         "codium"
+        "trae"
         "com.gexperts.Tilix"
         "org.kde.dolphin"
         "org.kde.filelight"

@@ -37,7 +37,7 @@ let
     ]
   );
   ragosWallpaper = ../../../../files/wallpaper/ragos-system-4k.png;
-  ragosGdmWallpaper = ../../../../files/wallpaper/ragos-gdm-4k.png;
+  ragosGdmWallpaper = ../../../../files/wallpaper/ragos-system-4k.png;
   ragosAvatar = ../../../../files/wallpaper/ragos-ava.png;
   grubSplash =
     pkgs.runCommand "ragos-grub-splash.png"
@@ -60,24 +60,49 @@ let
         ];
       }
       ''
-              themeDir="$out/share/plymouth/themes/ragos"
-              imageDir="$themeDir/images"
-              mkdir -p "$imageDir"
+        themeDir="$out/share/plymouth/themes/ragos"
+        imageDir="$themeDir/images"
+        mkdir -p "$imageDir"
 
-              cp ${ragosWallpaper} "$imageDir/background.png"
-              cp ${ragosAvatar} "$imageDir/logo.png"
+        magick "${ragosWallpaper}" \
+          -resize 1920x1080^ \
+          -gravity center \
+          -extent 1920x1080 \
+          -blur 0x18 \
+          -modulate 60,75,100 \
+          -fill '#081018aa' \
+          -colorize 45 \
+          PNG32:"$imageDir/background.png"
 
-              for i in $(seq 1 30); do
-                frame="$(printf '%04d' "$i")"
-                magick "$imageDir/logo.png" \
-                  -background none \
-                  -gravity center \
-                  -resize 96x96 \
-                  -extent 96x96 \
-                  "$imageDir/throbber-$frame.png"
-              done
+        magick "${ragosAvatar}" \
+          -background none \
+          -resize 120x120 \
+          -gravity center \
+          -extent 120x120 \
+          PNG32:"$imageDir/logo.png"
 
-              cat > "$themeDir/ragos.plymouth" <<EOF
+        for i in $(seq 0 47); do
+          frame="$(printf '%04d' "$((i + 1))")"
+
+          if [ "$i" -le 23 ]; then
+            pulse="$i"
+          else
+            pulse="$((47 - i))"
+          fi
+
+          size="$((100 + pulse))"
+          glow_size="$((128 + pulse * 2))"
+          glow_alpha="0.$((30 + pulse))"
+
+          magick -size 176x176 xc:none \
+            \( "$imageDir/logo.png" -resize "''${glow_size}x''${glow_size}" -alpha set -channel A -evaluate multiply "''${glow_alpha}" +channel -fill '#f0c78b' -colorize 100 -blur 0x18 \) \
+            -gravity center -compose over -composite \
+            \( "$imageDir/logo.png" -resize "''${size}x''${size}" \) \
+            -gravity center -compose over -composite \
+            PNG32:"$imageDir/throbber-''${frame}.png"
+        done
+
+        cat > "$themeDir/ragos.plymouth" <<EOF
         [Plymouth Theme]
         Name=RagOS
         Description=Tema de boot do RagOS
@@ -86,16 +111,16 @@ let
         [two-step]
         Font=Cantarell 20
         ImageDir=$imageDir
-        BackgroundStartColor=0x05070c
-        BackgroundEndColor=0x05070c
-        ProgressBarBackgroundColor=0x1b2433
-        ProgressBarForegroundColor=0xe9eef9
+        BackgroundStartColor=0x081018
+        BackgroundEndColor=0x081018
+        ProgressBarBackgroundColor=0x1b2a36
+        ProgressBarForegroundColor=0xf0c78b
         DialogHorizontalAlignment=.5
         DialogVerticalAlignment=.82
         HorizontalAlignment=.5
-        VerticalAlignment=.74
-        Transition=fade-in
-        TransitionDuration=0.35
+        VerticalAlignment=.72
+        Transition=fade-over
+        TransitionDuration=0.45
         MessageBelowAnimation=true
         UseEndAnimation=false
 

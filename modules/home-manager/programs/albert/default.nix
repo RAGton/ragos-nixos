@@ -25,10 +25,9 @@
 }:
 let
   shellBackend = config.rag.shell.backend or null;
-  shellProvidesLauncher = shellBackend == "caelestia";
 in
 {
-  config = lib.mkIf (!pkgs.stdenv.isDarwin && !shellProvidesLauncher) {
+  config = lib.mkIf (!pkgs.stdenv.isDarwin) {
     # Pacote do Albert.
     home.packages = [ pkgs.albert ];
 

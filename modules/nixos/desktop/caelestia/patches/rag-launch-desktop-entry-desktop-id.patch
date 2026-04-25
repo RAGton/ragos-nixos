@@ -1,0 +1,15 @@
+diff --git a/modules/launcher/services/Apps.qml b/modules/launcher/services/Apps.qml
+index 80be6e7..29ac8ec 100644
+--- a/modules/launcher/services/Apps.qml
++++ b/modules/launcher/services/Apps.qml
+@@ -14,7 +14,7 @@ Searcher {
+                 workingDirectory: entry.workingDirectory
+             });
+         else
+-            Quickshell.execDetached({
+-                command: ["app2unit", "--", ...entry.command],
++            Quickshell.execDetached({
++                command: ["app2unit", "--", "rag-launch-desktop-entry", entry.id],
+                 workingDirectory: entry.workingDirectory
+             });
+     }

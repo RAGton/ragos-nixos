@@ -8,7 +8,7 @@
 ### Arquitetura
 - Existência de legado KDE/Plasma no repositório (arquivos e módulos) sem uso na composição ativa.
 - Camadas de desktop ainda com rastros de tooling GNOME/Nautilus no Home Manager de Hyprland.
-- Notion Desktop declarado em módulo Flatpak, mas o módulo de Flatpak não era importado no agregador comum do Home Manager.
+- Obsidian deve ser o app canônico de notas/conhecimento; referências antigas a Notion precisam sair do caminho principal.
 
 ### UX Hyprland + DMS
 - Atalho `SUPER+V` não tinha fallback robusto para quando o IPC do DMS não estivesse disponível.
@@ -47,13 +47,13 @@
 - `kio-gdrive` e `kio-admin` adicionados condicionalmente quando disponíveis no canal.
 - Transparência do Dolphin mantida no `hyprland.conf` via `windowrule`.
 
-### VSCodium + Notion
+### VSCodium + Obsidian
 - VSCodium já consolidado nos hosts (`stable + nixpkgs`).
-- Notion Desktop consolidado no Flatpak e ativado de fato ao importar `../services/flatpak` no módulo comum de Home Manager.
+- Obsidian passa a ser o app canônico de notas, estudo e memória pessoal no stack.
 
 ### Limpeza estrutural e coerência
 - Removido bloco de preferências Nautilus do Home Manager Hyprland.
-- Removida referência de `wofi` nos pacotes de serviços NixOS (mantendo rofi-wayland como fallback universal).
+- Removida referência de `wofi`; o launcher principal deve ser Caelestia IPC e o fallback continua fora do caminho principal.
 - Ajustado texto/validação de opções para remover menção a SDDM no fluxo principal.
 
 ## 3) Pendências e limitações
@@ -63,7 +63,7 @@
 
 ## 4) Testes executados nesta sessão
 - Busca de consistência de atalhos/scripts Hyprland via `rg`.
-- Busca de consistência de Dolphin/KIO/Notion via `rg`.
+- Busca de consistência de Dolphin/KIO/Obsidian e remoção de Notion/Wofi via `rg`.
 - Tentativa de validação Nix (`nix flake check`) não executável por ausência de binário `nix` no ambiente.
 
 ## 5) Testes obrigatórios para fechamento (rodar em host com Nix)

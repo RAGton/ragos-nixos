@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+old_path="${PATH:-}"
+filtered_path=""
+
+IFS=':' read -r -a path_entries <<< "$old_path"
+for path_entry in "${path_entries[@]}"; do
+  if [[ "$path_entry" != "$script_dir" ]]; then
+    if [[ -n "$filtered_path" ]]; then
+      filtered_path="$filtered_path:$path_entry"
+    else
+      filtered_path="$path_entry"
+    fi
+  fi
+done
+
+PATH="$filtered_path"
+real_nh="$(command -v nh || true)"
+PATH="$old_path"
+
+if [[ -z "$real_nh" ]]; then
+  echo "nh-wrapper: não encontrei o binário real do nh no PATH." >&2
+  exit 1
+fi
+
+is_ragos_checkout() {
+  local repo_root="$1"
+
+  [[ -e "$repo_root/flake.nix" ]] || return 1
+  [[ -e "$repo_root/packages/ragos-cli.nix" ]] || return 1
+  [[ -d "$repo_root/hosts" ]] || return 1
+}
+
+find_ragos_root() {
+  local current_dir parent_dir
+  current_dir="$PWD"
+
+  while [[ -n "$current_dir" ]]; do
+    if is_ragos_checkout "$current_dir"; then
+      printf '%s\n' "$current_dir"
+      return 0
+    fi
+
+    if [[ "$current_dir" == "/" ]]; then
+      return 1
+    fi
+
+    parent_dir="$(dirname "$current_dir")"
+    if [[ "$parent_dir" == "$current_dir" ]]; then
+      return 1
+    fi
+
+    current_dir="$parent_dir"
+  done
+
+  return 1
+}
+
+resolve_fallback_flake() {
+  if [[ -n "${RAGOS_FLAKE:-}" ]]; then
+    printf '%s\n' "$RAGOS_FLAKE"
+    return 0
+  fi
+
+  if [[ -n "${NH_OS_FLAKE:-}" ]]; then
+    printf '%s\n' "$NH_OS_FLAKE"
+    return 0
+  fi
+
+  if [[ -n "${NH_FLAKE:-}" ]]; then
+    printf '%s\n' "$NH_FLAKE"
+    return 0
+  fi
+
+  if [[ -e /etc/ragos/flake.nix ]]; then
+    printf '%s\n' 'path:/etc/ragos'
+    return 0
+  fi
+
+  return 1
+}
+
+if [[ "${1:-}" == "os" && "${2:-}" =~ ^(switch|boot|test)$ && "${3:-}" == "." ]]; then
+  if ! find_ragos_root >/dev/null 2>&1; then
+    if fallback_flake="$(resolve_fallback_flake)"; then
+      exec "$real_nh" os "$2" "$fallback_flake" "${@:4}"
+    fi
+  fi
+fi
+
+exec "$real_nh" "$@"

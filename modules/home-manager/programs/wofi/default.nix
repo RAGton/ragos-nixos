@@ -6,10 +6,10 @@
 # - Configuração declarativa do launcher Wofi.
 #
 # Por quê:
-# - Mantém launcher opcional para setups sem shell principal declarativo.
+# - Mantém o launcher disponível mesmo quando Caelestia é o launcher principal.
 #
 # Como:
-# - Só habilita Wofi quando DMS não está ativo.
+# - Habilita Wofi de forma declarativa e deixa o atalho principal para o shell.
 #
 # Riscos:
 # - Se habilitado junto de outro launcher, gera duplicação de atalhos/fluxo.
@@ -17,10 +17,9 @@
 { config, lib, ... }:
 let
   shellBackend = config.rag.shell.backend or null;
-  shellProvidesLauncher = shellBackend == "caelestia";
 in
 {
-  config = lib.mkIf (!shellProvidesLauncher) {
+  config = {
     programs.wofi = {
       enable = true;
 

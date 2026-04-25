@@ -13,7 +13,7 @@
 #
 # Como:
 # - Publica `hyprland.conf`, `hypridle.conf` e `hyprlock.conf`.
-# - Desativa launchers/notificações duplicados quando o shell já cobre essa UX.
+# - Mantém o launcher principal no Caelestia, sem impedir launchers auxiliares.
 #
 # Riscos:
 # - Ajustes agressivos de idle/lock podem interromper workflows longos se mal calibrados.
@@ -335,6 +335,26 @@ in
         })
 
         (writeShellApplication {
+          name = "rag-caelestia-ipc";
+          runtimeInputs = [
+            bash
+            coreutils
+            jq
+          ];
+          text = ''
+            set -euo pipefail
+
+            pid="$(caelestia-shell list --all --json | jq -r 'map(select(.config_path | contains("caelestia-shell/shell.qml"))) | first | .pid // empty')"
+            [ -n "$pid" ] || exit 1
+
+            qs_bin="$(readlink -f "/proc/$pid/exe")"
+            [ -n "$qs_bin" ] || exit 1
+
+            exec "$qs_bin" ipc --pid "$pid" call "$@"
+          '';
+        })
+
+        (writeShellApplication {
           name = "rag-shell-launcher";
           runtimeInputs = [
             bash
@@ -348,13 +368,15 @@ in
 
             case "$backend" in
               caelestia)
-                command -v caelestia >/dev/null 2>&1 || exec rofi -show drun
-                exec caelestia shell drawers toggle launcher
+                if command -v rag-caelestia-ipc >/dev/null 2>&1 && rag-caelestia-ipc drawers toggle launcher; then
+                  exit 0
+                fi
                 ;;
               *)
-                exec rofi -show drun
                 ;;
             esac
+
+            exec rofi -show drun
           '';
         })
 
@@ -371,8 +393,8 @@ in
 
             case "$backend" in
               caelestia)
-                if command -v caelestia >/dev/null 2>&1; then
-                  exec caelestia shell drawers toggle dashboard
+                if command -v rag-caelestia-ipc >/dev/null 2>&1 && rag-caelestia-ipc drawers toggle dashboard; then
+                  exit 0
                 fi
                 ;;
             esac
@@ -395,8 +417,9 @@ in
 
             case "$backend" in
               caelestia)
-                command -v caelestia >/dev/null 2>&1 || exit 0
-                exec caelestia shell drawers toggle sidebar
+                if command -v rag-caelestia-ipc >/dev/null 2>&1 && rag-caelestia-ipc drawers toggle sidebar; then
+                  exit 0
+                fi
                 ;;
               *)
                 if command -v swaync-client >/dev/null 2>&1; then
@@ -422,8 +445,9 @@ in
 
             case "$backend" in
               caelestia)
-                command -v caelestia >/dev/null 2>&1 || exit 0
-                exec caelestia shell notifs clear
+                if command -v rag-caelestia-ipc >/dev/null 2>&1 && rag-caelestia-ipc notifs clear; then
+                  exit 0
+                fi
                 ;;
               *)
                 if command -v swaync-client >/dev/null 2>&1; then
@@ -449,8 +473,8 @@ in
 
             case "$backend" in
               caelestia)
-                if command -v caelestia >/dev/null 2>&1; then
-                  exec caelestia shell lock lock
+                if command -v rag-caelestia-ipc >/dev/null 2>&1 && rag-caelestia-ipc lock lock; then
+                  exit 0
                 fi
                 ;;
             esac
@@ -476,8 +500,8 @@ in
 
             case "$backend" in
               caelestia)
-                if command -v caelestia >/dev/null 2>&1; then
-                  exec caelestia shell drawers toggle session
+                if command -v rag-caelestia-ipc >/dev/null 2>&1 && rag-caelestia-ipc drawers toggle session; then
+                  exit 0
                 fi
                 ;;
             esac
@@ -744,8 +768,8 @@ in
 
             case "$backend" in
               caelestia)
-                if command -v caelestia >/dev/null 2>&1; then
-                  exec caelestia shell controlCenter open
+                if command -v rag-caelestia-ipc >/dev/null 2>&1 && rag-caelestia-ipc controlCenter open; then
+                  exit 0
                 fi
                 ;;
             esac
@@ -818,9 +842,6 @@ in
         name = config.gtk.cursorTheme.name;
         size = 24;
       };
-
-      # Quando o shell já oferece launcher próprio, evitamos duplicação com Wofi.
-      programs.wofi.enable = lib.mkIf shellProvidesChrome (lib.mkForce false);
 
       # Hyprland via Home Manager.
       wayland.windowManager.hyprland = {

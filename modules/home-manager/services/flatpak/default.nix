@@ -44,7 +44,6 @@ in
         "io.github.shonebinu.Brief"
         "io.github.brunofin.Cohesion"
         "com.anydesk.Anydesk"
-        "com.rustdesk.RustDesk"
         "com.ranfdev.DistroShelf"
         "com.github.tchx84.Flatseal"
         "io.github.flattool.Warehouse"

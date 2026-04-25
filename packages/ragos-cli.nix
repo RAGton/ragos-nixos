@@ -75,12 +75,20 @@ writeShellApplication {
           esac
         }
 
+        is_ragos_checkout() {
+          local repo_root="$1"
+
+          [[ -e "$repo_root/flake.nix" ]] || return 1
+          [[ -e "$repo_root/packages/ragos-cli.nix" ]] || return 1
+          [[ -d "$repo_root/hosts" ]] || return 1
+        }
+
         find_local_flake_root() {
           local current_dir parent_dir
           current_dir="$(pwd)"
 
           while [[ -n "$current_dir" ]]; do
-            if [[ -e "$current_dir/flake.nix" ]]; then
+            if is_ragos_checkout "$current_dir"; then
               printf '%s\n' "$current_dir"
               return 0
             fi

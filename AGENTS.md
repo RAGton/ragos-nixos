@@ -35,6 +35,19 @@ Quando houver conflito entre documentação e código:
 
 Nunca continue um refactor grande com base apenas em relatórios antigos de migração.
 
+## Ordem de contexto para agentes
+
+Para reduzir ruído e token desnecessário, siga esta ordem:
+
+1. `AGENTS.md`
+2. `context/INDEX.md`
+3. skill relevante em `skills/**`
+4. código real do repositório
+5. web oficial apenas quando necessário
+
+Use `context/` como porta de entrada curta e indexada.
+Considere `ai/` como material histórico/experimental, não como camada principal nova.
+
 ---
 
 ## Direção arquitetural obrigatória

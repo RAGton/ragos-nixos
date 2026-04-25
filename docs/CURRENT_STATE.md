@@ -1,6 +1,6 @@
 # Estado atual do RagOS VE
 
-**Atualizado em:** 2026-04-22
+**Atualizado em:** 2026-04-23
 
 ## Resumo
 
@@ -15,6 +15,7 @@ A base atual já entrega:
 - `features/` e `profiles/` reais
 - stack desktop **Hyprland** com **Caelestia** como shell principal
 - CLI operacional `ragos`
+- ferramentas de estudo e AI do usuário com Obsidian, Codex CLI, Claude Code e launcher manual do Trae
 - `nixosConfigurations`, `homeConfigurations`, `overlays`, `formatter` e `checks`
 
 ## Arquitetura real
@@ -66,6 +67,7 @@ A base atual já entrega:
 - o fluxo operacional já pode convergir para `ragos`
 - Caelestia já está integrado no nível de sistema sem ativação principal via Home Manager
 - o fluxo diário do shell já é Caelestia-first: launcher, control center, dashboard, sessão, lock, notificações e wallpapers
+- os perfis `rocha@inspiron` e `rocha@glacier` expõem Obsidian como app canônico de notas e wrappers npm-backed para Codex/Claude
 - a galeria de wallpapers do shell usa `~/.local/share/wallpapers` como fonte declarativa
 
 ## O que ainda precisa de atenção
@@ -128,3 +130,6 @@ O branding público já pode ser tratado como **RagOS VE**, mas o nome do reposi
 nixos-rebuild test --flake .#inspiron \
   --override-input caelestia-shell path:/home/rocha/src/caelestia-shell
 ```
+
+- RustDesk no `inspiron`: pacote nativo do nixpkgs, sem Flatpak.
+- GDM no `inspiron`: permanece em Wayland; a sessão do usuário também continua em Hyprland/Wayland.

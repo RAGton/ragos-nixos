@@ -10,6 +10,41 @@ let
   system = pkgs.stdenv.hostPlatform.system;
   caelestiaPackages = inputs.caelestia-shell.packages.${system};
   defaultPackage = caelestiaPackages.with-cli;
+  cliPackage = inputs.caelestia-shell.inputs.caelestia-cli.packages.${system}.default;
+  launcherPatch = ./patches/rag-launch-desktop-entry-desktop-id.patch;
+  launcherHelper = pkgs.writeShellApplication {
+    name = "rag-launch-desktop-entry";
+    runtimeInputs = [ pkgs.systemd ];
+    text = ''
+      set -eu
+
+      entry="''${1-}"
+      [ -n "$entry" ] || exit 2
+      shift || true
+
+      action_suffix=""
+      case "$entry" in
+        *:*)
+          action_suffix=":''${entry#*:}"
+          entry="''${entry%%:*}"
+          ;;
+      esac
+
+      case "$entry" in
+        *.desktop|/*|./*|../*)
+          desktop_target="$entry"
+          ;;
+        *)
+          desktop_target="''${entry}.desktop"
+          ;;
+      esac
+
+      exec uwsm app -- "''${desktop_target}''${action_suffix}" "$@"
+    '';
+  };
+  effectivePackage = cfg.package.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ launcherPatch ];
+  });
 in
 {
   options.rag.shell.caelestia = {
@@ -41,6 +76,35 @@ in
       default = [ "QT_QPA_PLATFORM=wayland" ];
       description = "Variáveis extras exportadas para o serviço systemd-user do Caelestia.";
     };
+
+    extraRuntimePackages = lib.mkOption {
+      type = lib.types.listOf lib.types.package;
+      default = [
+        cliPackage
+        pkgs.app2unit
+        pkgs.brightnessctl
+        pkgs.coreutils
+        pkgs.ddcutil
+        pkgs.findutils
+        pkgs.gnugrep
+        pkgs.gnused
+        pkgs.libqalculate
+        pkgs.lm_sensors
+        pkgs.networkmanager
+        pkgs.procps
+        launcherHelper
+        pkgs.swappy
+        pkgs.systemd
+        pkgs.util-linux
+      ];
+      description = ''
+        Dependências de runtime adicionadas ao PATH do serviço do Caelestia.
+
+        O upstream depende explicitamente do CLI `caelestia` e de ferramentas
+        como `lsblk`, `pidof`, `nmcli` e `brightnessctl` para o shell operar
+        com funcionalidade completa.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -51,17 +115,21 @@ in
       }
     ];
 
-    environment.systemPackages = [ cfg.package ];
+    environment.systemPackages = [
+      effectivePackage
+      cliPackage
+    ];
 
     systemd.user.services.caelestia = {
       description = "Caelestia Shell";
       after = [ cfg.systemdTarget ];
       partOf = [ cfg.systemdTarget ];
       wantedBy = [ cfg.systemdTarget ];
+      path = cfg.extraRuntimePackages;
 
       serviceConfig = {
         Type = "exec";
-        ExecStart = "${cfg.package}/bin/caelestia-shell";
+        ExecStart = "${effectivePackage}/bin/caelestia-shell";
         Restart = "on-failure";
         RestartSec = "5s";
         TimeoutStopSec = "5s";

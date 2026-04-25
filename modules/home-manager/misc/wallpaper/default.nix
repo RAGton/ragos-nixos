@@ -28,7 +28,6 @@
     type = lib.types.listOf lib.types.path;
     default = [
       ../../../../files/wallpaper/ragos-system-4k.png
-      ../../../../files/wallpaper/ragos-gdm-4k.png
       ../../../../files/wallpaper/wallpaperragos.png
       ../../../../files/wallpaper/walpaper-1.png
     ];
