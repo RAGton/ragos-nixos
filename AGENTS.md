@@ -1,8 +1,8 @@
-# AGENTS.md — RagOS VE / Codex
+# AGENTS.md — Kryonix / Codex
 
 ## Objetivo
 
-Este arquivo orienta agentes de código que atuem no repositório do **RagOS VE**.
+Este arquivo orienta agentes de código que atuem no repositório do **Kryonix**.
 A prioridade do projeto hoje é **consolidação arquitetural, maturidade operacional e coerência documental**.
 Agentes devem preferir mudanças pequenas, reversíveis e alinhadas ao estado real do código.
 
@@ -15,8 +15,8 @@ Agentes devem preferir mudanças pequenas, reversíveis e alinhadas ao estado re
 - O shell/UX do desktop está em **transição**:
   - **DMS está sendo removido**.
   - **Celestial Shell é a direção de substituição**.
-- O namespace público já existente é `rag.*`.
-- A CLI `ragos` é o **entrypoint operacional padrão**.
+- O namespace público já existente é `kryonix.*`.
+- A CLI `kryonix` é o **entrypoint operacional padrão**.
 - O host principal atual é **`glacier`**.
 - O repositório já possui `hosts/`, `hosts/common/`, `features/`, `profiles/`, `modules/nixos/**`, `desktop/hyprland/**` e `home/**`.
 - O projeto já passou da fase de “proposta de arquitetura” e está em fase de **limpeza, consolidação e coerência**.
@@ -54,9 +54,9 @@ Considere `ai/` como material histórico/experimental, não como camada principa
 
 Trate estas decisões como atuais e preferenciais:
 
-- **desktop** = `rag.desktop.environment`
-- **rice / shell / theming** = `rag.rice.*`
-- **feature** = `rag.features.*`
+- **desktop** = `kryonix.desktop.environment`
+- **rice / shell / theming** = `kryonix.rice.*`
+- **feature** = `kryonix.features.*`
 - **Hyprland é o desktop real atual**.
 - **DMS não é desktop separado**.
 - **DMS está em descontinuação dentro do projeto**.
@@ -92,7 +92,7 @@ Quando várias direções forem possíveis, priorize nesta ordem:
 5. **Quebrar módulos grandes por responsabilidade**
 6. **Melhorar energia/idle do notebook principal sem auto-lock/auto-suspend indesejado**
 7. **Refinar `glacier` como workstation principal**
-8. **Fortalecer a CLI `ragos` como interface operacional**
+8. **Fortalecer a CLI `kryonix` como interface operacional**
 
 Não abra frentes novas de produto se ainda houver contradição documental ou duplicação estrutural no que já existe.
 
@@ -115,17 +115,23 @@ No host já instalado:
 
 Mudanças em `glacier` devem ser seguras, incrementais e orientadas ao host já existente.
 
-### CLI `ragos`
+### CLI `kryonix`
 
-A CLI `ragos` é o fluxo preferencial do dia a dia.
+A CLI `kryonix` é o fluxo preferencial do dia a dia.
 Ao melhorar operação, prefira integrar com:
 
 - `nh`
 - `nix`
 - `nvd`
-- resolução de flake existente (`explicit`, `env`, `dev-repo`, `etc-ragos`)
+- resolução de flake existente (`explicit`, `env`, `dev-repo`, `etc-kryonix`)
 
-Evite reinventar fluxos já cobertos por `ragos`, `nh` ou comandos padrão do NixOS.
+Evite reinventar fluxos já cobertos por `kryonix`, `nh` ou comandos padrão do NixOS.
+
+Compatibilidade temporária:
+
+- `ragos` deve continuar funcionando como alias para `kryonix`
+- `rag.*`, `services.rag.*`, `programs.ragos.*` e `ragos.*` devem existir apenas como aliases de migração
+- `/etc/kryonix` é o caminho primário; `/etc/ragos` é fallback temporário
 
 ### Escopo
 
@@ -266,9 +272,9 @@ nix build .#homeConfigurations.<user>@<host>.activationPackage
 Se a mudança for operacional e a CLI estiver disponível:
 
 ```bash
-ragos fmt
-ragos check
-ragos doctor
+kryonix fmt
+kryonix check
+kryonix doctor
 ```
 
 ### Regra de honestidade
@@ -362,7 +368,7 @@ Para tarefas maiores, preferir commits curtos e objetivos.
 
 ### Bom pedido para agente
 
-> Implemente apenas `ragos doctor`, `ragos snapshot`, `ragos generations` e `ragos rollback`, sem mexer em branding, VMs ou `flake.lock`.
+> Implemente apenas `kryonix doctor`, `kryonix snapshot`, `kryonix generations` e `kryonix rollback`, sem mexer em branding, VMs ou `flake.lock`.
 
 ### Bom pedido de migração de shell
 
@@ -383,6 +389,6 @@ Neste projeto, a melhor mudança normalmente é:
 - reversível
 - validada
 - coerente com o código atual
-- alinhada ao RagOS VE como plataforma pessoal declarativa de uso real
+- alinhada ao Kryonix como plataforma pessoal declarativa de uso real
 
 Quando em dúvida, escolha a opção que **reduz contradição**, **reduz duplicação**, **facilita a remoção do DMS** e **aumenta previsibilidade operacional**.

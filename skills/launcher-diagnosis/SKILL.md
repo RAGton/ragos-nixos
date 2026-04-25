@@ -29,7 +29,7 @@ Encontrar e corrigir a causa real de apps abrindo errado, lentos ou não abrindo
 ## Comandos de validação
 
 ```bash
-rg -n "rag-launch-desktop-entry|Apps.qml|uwsm app --" /home/rocha/src/caelestia-shell desktop modules
+rg -n "kryonix-launch|rag-launch-desktop-entry|Apps.qml|uwsm app --" /home/rocha/src/caelestia-shell desktop modules
 systemctl --user status caelestia --no-pager
 find ~/.local/share ~/.nix-profile/share /run/current-system/sw/share -type f | rg '<app>\\.desktop$'
 pgrep -af '<app>'

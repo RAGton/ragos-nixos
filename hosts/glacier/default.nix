@@ -46,25 +46,25 @@
   ];
 
   # =========================
-  # RagOS Options (v2)
+  # Kryonix Options (v2)
   # =========================
 
-  rag.hardware.openrgb.enable = true;
+  kryonix.hardware.openrgb.enable = true;
 
-  rag.desktop.environment = "hyprland";
-  rag.shell.caelestia.enable = true;
+  kryonix.desktop.environment = "hyprland";
+  kryonix.shell.caelestia.enable = true;
 
-  rag.profiles.dev.enable = true;
-  rag.profiles.university.enable = true;
-  rag.profiles.ti.enable = true;
+  kryonix.profiles.dev.enable = true;
+  kryonix.profiles.university.enable = true;
+  kryonix.profiles.ti.enable = true;
 
-  rag.features.gaming = {
+  kryonix.features.gaming = {
     enable = true;
     steam.gamescope = true;
     performanceGovernor = true;
   };
 
-  rag.features.virtualization = {
+  kryonix.features.virtualization = {
     enable = true;
     kvm.enable = true;
     libvirt.enable = true;
@@ -74,7 +74,7 @@
     virtualbox.enable = false;
   };
 
-  rag.features.development = {
+  kryonix.features.development = {
     enable = true;
     languages = {
       nix.enable = true;
@@ -241,11 +241,11 @@
   '';
 
   # =========================
-  # RagOS
+  # Kryonix
   # =========================
-  ragos = {
+  kryonix.branding = {
     enable = true;
-    prettyName = "RagOS";
+    prettyName = "Kryonix";
     edition = "VE";
     versionId = "26.05";
   };
@@ -253,7 +253,7 @@
   # =========================
   # Tailscale
   # =========================
-  services.rag.tailscale = {
+  services.kryonix.tailscale = {
     enable = true;
     autoconnect = true;
     authKeyFile = /root/tailscale-authkey.secret;

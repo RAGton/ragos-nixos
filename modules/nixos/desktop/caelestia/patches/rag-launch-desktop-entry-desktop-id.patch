@@ -9,7 +9,7 @@ index 80be6e7..29ac8ec 100644
 -            Quickshell.execDetached({
 -                command: ["app2unit", "--", ...entry.command],
 +            Quickshell.execDetached({
-+                command: ["app2unit", "--", "rag-launch-desktop-entry", entry.id],
++                command: ["kryonix-launch", entry.id],
                  workingDirectory: entry.workingDirectory
              });
      }

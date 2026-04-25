@@ -11,12 +11,13 @@
 # ==============================================================================
 { config, lib, ... }:
 let
-  cfg = config.rag.features.dms;
+  cfg = config.kryonix.features.dms;
 in
 {
-  options.rag.features.dms.enable = lib.mkEnableOption "Feature legada do DMS (DankMaterialShell)";
+  options.kryonix.features.dms.enable =
+    lib.mkEnableOption "Feature legada do DMS (DankMaterialShell)";
 
   config = lib.mkIf cfg.enable {
-    rag.desktop.environment = lib.mkForce "hyprland";
+    kryonix.desktop.environment = lib.mkForce "hyprland";
   };
 }

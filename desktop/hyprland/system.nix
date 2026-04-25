@@ -7,10 +7,10 @@
 }:
 
 let
-  isHyprland = config.rag.desktop.environment == "hyprland";
+  isHyprland = config.kryonix.desktop.environment == "hyprland";
 
-  directLoginEnabled = (config.rag.desktop.directLogin.enable or false) && userConfig != null;
-  directLoginTtyNumber = toString (config.rag.desktop.directLogin.tty or 1);
+  directLoginEnabled = (config.kryonix.desktop.directLogin.enable or false) && userConfig != null;
+  directLoginTtyNumber = toString (config.kryonix.desktop.directLogin.tty or 1);
   directLoginTty = "tty${directLoginTtyNumber}";
 
   mkHyprlandNoNixGL =
@@ -68,7 +68,7 @@ in
     # Boot direto (sem display manager): ao logar no TTY escolhido, inicia Hyprland via UWSM.
     # Mantemos isso no nível do sistema para funcionar mesmo sem `home-manager switch`.
     # Só inicia Hyprland automaticamente quando não há display manager.
-    programs.zsh.loginShellInit = lib.mkIf (config.rag.desktop.directLogin.enable) (
+    programs.zsh.loginShellInit = lib.mkIf (config.kryonix.desktop.directLogin.enable) (
       lib.mkAfter ''
         if [[ -z "''${WAYLAND_DISPLAY-}" && -z "''${DISPLAY-}" && "''${XDG_VTNR-}" = "${directLoginTtyNumber}" ]]; then
           if command -v uwsm >/dev/null 2>&1; then
@@ -87,7 +87,7 @@ in
     services.displayManager = {
       sddm.enable = lib.mkForce false;
       gdm = {
-        enable = lib.mkForce (!config.rag.desktop.directLogin.enable);
+        enable = lib.mkForce (!config.kryonix.desktop.directLogin.enable);
         wayland = true;
       };
 
@@ -95,7 +95,9 @@ in
       sessionPackages = [ hyprlandNoNixGL ];
 
       # Disable DM autologin somente quando NÃO usamos DM (directLogin)
-      autoLogin.enable = lib.mkIf (config.rag.desktop.directLogin.enable or false) (lib.mkForce false);
+      autoLogin.enable = lib.mkIf (config.kryonix.desktop.directLogin.enable or false) (
+        lib.mkForce false
+      );
     };
 
     services.xserver.displayManager.lightdm.enable = lib.mkForce false;

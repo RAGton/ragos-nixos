@@ -15,5 +15,5 @@
 {
   imports = [ ../desktop ];
 
-  config.rag.desktop.environment = lib.mkDefault "hyprland";
+  config.kryonix.desktop.environment = lib.mkDefault "hyprland";
 }

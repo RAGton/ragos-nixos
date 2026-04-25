@@ -47,21 +47,21 @@
   ];
 
   # =========================
-  # RagOS Options (v2)
+  # Kryonix Options (v2)
   # =========================
 
   # Hardware toggles
-  rag.hardware.openrgb.enable = false;
+  kryonix.hardware.openrgb.enable = false;
 
   # Desktop
 
   # Hyprland segue como desktop; Caelestia entra como shell principal de sistema.
-  rag.desktop.environment = "hyprland";
-  rag.shell.caelestia.enable = true;
-  rag.desktop.directLogin.enable = false;
+  kryonix.desktop.environment = "hyprland";
+  kryonix.shell.caelestia.enable = true;
+  kryonix.desktop.directLogin.enable = false;
 
   # Profile (v2)
-  rag.profiles.laptop = {
+  kryonix.profiles.laptop = {
     enable = true;
 
     # Mantém o comportamento atual do inspiron
@@ -79,11 +79,11 @@
   };
 
   # Ajustes específicos além do profile
-  rag.profiles.dev.enable = true;
-  rag.profiles.university.enable = true;
-  rag.profiles.ti.enable = true;
+  kryonix.profiles.dev.enable = true;
+  kryonix.profiles.university.enable = true;
+  kryonix.profiles.ti.enable = true;
 
-  rag.features.development = {
+  kryonix.features.development = {
     languages = {
       nix.enable = true;
       python.enable = true;
@@ -103,7 +103,7 @@
 
   # Codex (AI): desligado por padrão (evita builds lentos).
   # Para ativar quando quiser: mude para `true`.
-  rag.features.ai.codex.enable = false;
+  kryonix.features.ai.codex.enable = false;
 
   networking.hostName = hostname;
 
@@ -289,20 +289,20 @@
   '';
 
   # =========================
-  # RagOS (branding do sistema)
+  # Kryonix (branding do sistema)
   # =========================
   # Mantém o mesmo número de versão do seu `system.stateVersion` para exibição.
   # Obs.: `system.stateVersion` continua sendo a chave de compat do NixOS.
-  ragos = {
+  kryonix.branding = {
     enable = true;
-    prettyName = "RagOS";
+    prettyName = "Kryonix";
     versionId = "26.05";
   };
 
   # =========================
   # Tailscale VPN
   # =========================
-  services.rag.tailscale = {
+  services.kryonix.tailscale = {
     enable = true;
     # O daemon já reconecta sozinho após autenticação; manter o autoconnect
     # bloqueava o boot por ~18s sem ganho prático.
@@ -318,5 +318,5 @@
   '';
 
   # Codex (AI): opt-in via feature pra evitar builds lentos por padrão.
-  # Para ativar: rag.features.ai.codex.enable = true;
+  # Para ativar: kryonix.features.ai.codex.enable = true;
 }

@@ -18,7 +18,7 @@
 
 let
   # Regra do repo: não rodar Waybar quando o shell ativo já entrega sua própria barra.
-  shellBackend = config.rag.shell.backend or null;
+  shellBackend = config.kryonix.shell.backend or null;
   shellProvidesBar = shellBackend == "caelestia";
 in
 {

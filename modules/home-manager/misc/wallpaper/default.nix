@@ -20,15 +20,15 @@
 {
   options.wallpaper = lib.mkOption {
     type = lib.types.path;
-    default = ../../../../files/wallpaper/ragos-system-4k.png;
+    default = ../../../../files/wallpaper/kryonix-system-4k.png;
     description = "Caminho do wallpaper padrão.";
   };
 
   options.wallpapers = lib.mkOption {
     type = lib.types.listOf lib.types.path;
     default = [
-      ../../../../files/wallpaper/ragos-system-4k.png
-      ../../../../files/wallpaper/wallpaperragos.png
+      ../../../../files/wallpaper/kryonix-system-4k.png
+      ../../../../files/wallpaper/wallpaper-kryonix.png
       ../../../../files/wallpaper/walpaper-1.png
     ];
     description = "Lista de wallpapers para instalar em ~/.local/share/wallpapers (galeria).";

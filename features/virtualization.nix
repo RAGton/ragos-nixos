@@ -8,11 +8,11 @@
 #
 # Por quê:
 # - Centraliza toda configuração de virtualização
-# - Ativa/desativa facilmente: rag.features.virtualization.enable = true
+# - Ativa/desativa facilmente: kryonix.features.virtualization.enable = true
 # - Suporta múltiplos backends
 #
 # Como usar:
-# No host: rag.features.virtualization.enable = true;
+# No host: kryonix.features.virtualization.enable = true;
 #
 # Riscos:
 # - Requer CPU com suporte a virtualização (Intel VT-x / AMD-V)
@@ -27,11 +27,11 @@
 }:
 
 let
-  cfg = config.rag.features.virtualization;
+  cfg = config.kryonix.features.virtualization;
 
 in
 {
-  options.rag.features.virtualization = {
+  options.kryonix.features.virtualization = {
     enable = lib.mkEnableOption "Stack de virtualização";
 
     kvm = {

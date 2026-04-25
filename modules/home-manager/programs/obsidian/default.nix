@@ -4,8 +4,8 @@
   ...
 }:
 let
-  obsidianSafeLauncher = pkgs.writeShellApplication {
-    name = "rag-obsidian";
+  kryonixObsidian = pkgs.writeShellApplication {
+    name = "kryonix-obsidian";
     text = ''
       export NIXOS_OZONE_WL="''${NIXOS_OZONE_WL:-1}"
       export ELECTRON_OZONE_PLATFORM_HINT="''${ELECTRON_OZONE_PLATFORM_HINT:-auto}"
@@ -15,12 +15,21 @@ let
       exec ${pkgs.obsidian}/bin/obsidian --disable-gpu "$@"
     '';
   };
+  ragObsidianCompat = pkgs.writeShellApplication {
+    name = "rag-obsidian";
+    runtimeInputs = [ kryonixObsidian ];
+    text = ''
+      printf '%s\n' "rag-obsidian is deprecated, use kryonix-obsidian" >&2
+      exec kryonix-obsidian "$@"
+    '';
+  };
 in
 {
   config = lib.mkIf (!pkgs.stdenv.isDarwin) {
     home.packages = [
       pkgs.obsidian
-      obsidianSafeLauncher
+      kryonixObsidian
+      ragObsidianCompat
     ];
 
     # Sobrescreve a entrada `.desktop` do pacote para usar o launcher estável.
@@ -28,7 +37,7 @@ in
       name = "Obsidian";
       genericName = "Knowledge Base";
       comment = "Obsidian com launcher estável para Wayland/NVIDIA";
-      exec = "rag-obsidian %U";
+      exec = "kryonix-obsidian %U";
       icon = "obsidian";
       terminal = false;
       startupNotify = true;

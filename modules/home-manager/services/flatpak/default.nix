@@ -25,12 +25,12 @@
   ...
 }:
 let
-  cfg = config.rag.flatpak;
+  cfg = config.kryonix.flatpak;
 in
 {
   imports = [ inputs.nix-flatpak.homeManagerModules.nix-flatpak ];
 
-  options.rag.flatpak.enable = lib.mkOption {
+  options.kryonix.flatpak.enable = lib.mkOption {
     type = lib.types.bool;
     default = !pkgs.stdenv.isDarwin;
     description = "Habilita a integração Flatpak no Home Manager.";

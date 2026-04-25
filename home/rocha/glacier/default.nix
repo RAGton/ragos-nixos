@@ -8,10 +8,10 @@
     ../shared/vscode.nix
   ];
 
-  rag.shell.backend = "caelestia";
-  rag.programs.aiWorkstation.enable = true;
+  kryonix.shell.backend = "caelestia";
+  kryonix.programs.aiWorkstation.enable = true;
 
-  rag.flatpak.enable = false;
+  kryonix.flatpak.enable = false;
 
   programs.home-manager.enable = true;
 
@@ -26,7 +26,7 @@
     };
   };
 
-  rag.vscode = {
+  kryonix.vscode = {
     enable = true;
     edition = "codium";
     delivery = "nixpkgs";
@@ -75,7 +75,7 @@
     windowrule = match:class ^(steam|steam_app_.*|heroic|lutris)$, opacity 0.97 0.93
   '';
 
-  rag.shell.caelestia.settings = {
+  kryonix.shell.caelestia.settings = {
     appearance.transparency = {
       enabled = true;
       base = 0.78;
@@ -95,7 +95,7 @@
     };
 
     general.apps = {
-      terminal = [ "rag-terminal" ];
+      terminal = [ "kryonix-terminal" ];
       explorer = [ "dolphin" ];
       audio = [ "pavucontrol" ];
     };

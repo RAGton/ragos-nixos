@@ -24,6 +24,14 @@
 }:
 {
   imports = [
+    (
+      { lib, ... }:
+      {
+        imports = [
+          (lib.mkAliasOptionModule [ "rag" ] [ "kryonix" ])
+        ];
+      }
+    )
     ../programs/aerospace
     ../programs/tilix
     ../programs/warp-terminal

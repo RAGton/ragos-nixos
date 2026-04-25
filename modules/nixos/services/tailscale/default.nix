@@ -24,7 +24,7 @@
   ...
 }:
 let
-  cfg = config.services.rag.tailscale;
+  cfg = config.services.kryonix.tailscale;
   boolToFlag = b: if b then "true" else "false";
   tailscaleUpArgs = lib.concatStringsSep " " (
     [ "--accept-dns=${boolToFlag cfg.acceptDNS}" ]
@@ -38,7 +38,11 @@ let
   needsForwarding = cfg.advertiseExitNode || cfg.advertiseRoutes != [ ];
 in
 {
-  options.services.rag.tailscale = {
+  imports = [
+    (lib.mkAliasOptionModule [ "services" "rag" "tailscale" ] [ "services" "kryonix" "tailscale" ])
+  ];
+
+  options.services.kryonix.tailscale = {
     enable = lib.mkEnableOption "Tailscale VPN (system-wide)";
 
     openFirewall = lib.mkOption {

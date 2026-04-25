@@ -1,9 +1,10 @@
-# RagOS VE
+# Kryonix
 
-RagOS VE é a edição de workstation, gaming e virtualização do meu sistema pessoal **RagOS**.
+Kryonix é a plataforma NixOS declarativa para workstation, gaming, virtualização, estudo e desenvolvimento.
 
-- Repositório atual: `RAGton/ragos-nixos`
-- Posicionamento público: **RagOS VE**
+- Repositório principal: `https://github.com/RAGton/kryonix`
+- Vault de conhecimento: `https://github.com/RAGton/kryonix-vault.git`
+- Posicionamento público: **Kryonix**
 - Idioma: PT-BR | [English](README-en.md)
 
 ## O que este projeto é
@@ -15,7 +16,7 @@ Este repositório já não é apenas uma coleção de dotfiles. Ele é uma plata
 - virtualização pessoal com KVM/libvirt
 - estudo e desenvolvimento
 - branding consistente
-- base futura para ISOs instaláveis do RagOS VE
+- base futura para ISOs instaláveis do Kryonix
 
 ## Estado atual
 
@@ -24,29 +25,29 @@ O flake publica hoje:
 - `nixosConfigurations` para `inspiron`, `inspiron-nina`, `glacier` e `iso`
 - `homeConfigurations` para `rocha@inspiron`, `rocha@glacier` e `nina@inspiron-nina`
 - overlays reutilizáveis
-- formatter, checks e pacote `ragos`
+- formatter, checks e pacotes `kryonix` e `ragos` compat
 
 O host principal de produto neste momento é o `glacier`, tratado como:
 
 - workstation AMD + NVIDIA
 - host gamer
 - host de VMs
-- laboratório do próprio RagOS VE
+- laboratório do próprio Kryonix
 
 ## Fluxo diário
 
-O fluxo operacional padrão agora é a CLI `ragos`, instalada no PATH do sistema:
+O fluxo operacional padrão agora é a CLI `kryonix`, instalada no PATH do sistema. A CLI antiga `ragos` continua disponível temporariamente como alias e emite `ragos is deprecated, use kryonix`.
 
 ```sh
-ragos switch
-ragos switch --update
-ragos boot --update
-ragos home
-ragos diff
-ragos doctor
-ragos check
-ragos fmt
-ragos iso
+kryonix switch
+kryonix switch --update
+kryonix boot --update
+kryonix home
+kryonix diff
+kryonix doctor
+kryonix check
+kryonix fmt
+kryonix iso
 ```
 
 Ela usa `nh`, `nix`, `nvd` e o hostname atual para reduzir atrito operacional no dia a dia.
@@ -56,8 +57,8 @@ Ela usa `nh`, `nix`, `nvd` e o hostname atual para reduzir atrito operacional no
 Se quiser clonar já com o naming novo:
 
 ```sh
-git clone https://github.com/RAGton/ragos-nixos ragos-ve
-cd ragos-ve
+git clone https://github.com/RAGton/kryonix kryonix
+cd kryonix
 ```
 
 Inspecionar a flake:
@@ -70,13 +71,13 @@ nix flake check --keep-going
 Aplicar o host atual:
 
 ```sh
-ragos switch
+kryonix switch
 ```
 
 Aplicar explicitamente um host:
 
 ```sh
-ragos switch --host glacier
+kryonix switch --host glacier
 ```
 
 ## Glacier
@@ -94,7 +95,7 @@ Além do storage base, o host mantém um storage operacional para virtualizaçã
 
 ## Branding
 
-O projeto já padroniza o branding do RagOS no:
+O projeto já padroniza o branding do Kryonix no:
 
 - `Plymouth`
 - `GRUB`
@@ -102,11 +103,10 @@ O projeto já padroniza o branding do RagOS no:
 - wallpaper do desktop
 - `/etc/os-release` e `/etc/issue`
 
-O produto é apresentado publicamente como **RagOS VE**, sem perder a identidade base do sistema `RagOS`.
+O produto é apresentado publicamente como **Kryonix**. O nome antigo permanece apenas como compatibilidade temporária de CLI/opções/caminho.
 
 ## Documentação
 
-- [Visão do produto RagOS VE](docs/RAGOS_VE.md)
 - [Operação diária e CLI](docs/OPERATIONS.md)
 - [Papel do host glacier](docs/GLACIER.md)
 - [Índice da documentação](docs/INDEX.md)
@@ -115,7 +115,7 @@ O produto é apresentado publicamente como **RagOS VE**, sem perder a identidade
 
 - não use `disko`, `format-*` ou `install-system` no `glacier` já instalado
 - não trate `hosts/glacier/disks.nix` como verdade do hardware atual
-- prefira `ragos test` e `ragos boot` antes de mudanças de maior risco
+- prefira `kryonix test` e `kryonix boot` antes de mudanças de maior risco
 
 ## Licença
 

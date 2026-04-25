@@ -25,20 +25,20 @@ if [[ -z "$real_nh" ]]; then
   exit 1
 fi
 
-is_ragos_checkout() {
+is_kryonix_checkout() {
   local repo_root="$1"
 
   [[ -e "$repo_root/flake.nix" ]] || return 1
-  [[ -e "$repo_root/packages/ragos-cli.nix" ]] || return 1
+  [[ -e "$repo_root/packages/kryonix-cli.nix" || -e "$repo_root/packages/ragos-cli.nix" ]] || return 1
   [[ -d "$repo_root/hosts" ]] || return 1
 }
 
-find_ragos_root() {
+find_kryonix_root() {
   local current_dir parent_dir
   current_dir="$PWD"
 
   while [[ -n "$current_dir" ]]; do
-    if is_ragos_checkout "$current_dir"; then
+    if is_kryonix_checkout "$current_dir"; then
       printf '%s\n' "$current_dir"
       return 0
     fi
@@ -59,6 +59,11 @@ find_ragos_root() {
 }
 
 resolve_fallback_flake() {
+  if [[ -n "${KRYONIX_FLAKE:-}" ]]; then
+    printf '%s\n' "$KRYONIX_FLAKE"
+    return 0
+  fi
+
   if [[ -n "${RAGOS_FLAKE:-}" ]]; then
     printf '%s\n' "$RAGOS_FLAKE"
     return 0
@@ -74,18 +79,49 @@ resolve_fallback_flake() {
     return 0
   fi
 
+  if [[ -e /etc/kryonix/flake.nix ]]; then
+    printf '%s\n' '/etc/kryonix'
+    return 0
+  fi
+
   if [[ -e /etc/ragos/flake.nix ]]; then
-    printf '%s\n' 'path:/etc/ragos'
+    printf '%s\n' '/etc/ragos'
     return 0
   fi
 
   return 1
 }
 
+exec_with_flake() {
+  local action="$1"
+  local flake_ref="$2"
+  shift 2
+
+  case "$flake_ref" in
+    path:*)
+      flake_ref="${flake_ref#path:}"
+      ;;
+  esac
+
+  case "$flake_ref" in
+    /*|./*|../*|.|..)
+      if [[ ! -e "$flake_ref/flake.nix" ]]; then
+        echo "nh-wrapper: flake local inválida '$flake_ref'; esperado flake.nix." >&2
+        exit 1
+      fi
+      cd "$flake_ref"
+      exec "$real_nh" os "$action" . "$@"
+      ;;
+    *)
+      exec "$real_nh" os "$action" "$flake_ref" "$@"
+      ;;
+  esac
+}
+
 if [[ "${1:-}" == "os" && "${2:-}" =~ ^(switch|boot|test)$ && "${3:-}" == "." ]]; then
-  if ! find_ragos_root >/dev/null 2>&1; then
+  if ! find_kryonix_root >/dev/null 2>&1; then
     if fallback_flake="$(resolve_fallback_flake)"; then
-      exec "$real_nh" os "$2" "$fallback_flake" "${@:4}"
+      exec_with_flake "$2" "$fallback_flake" "${@:4}"
     fi
   fi
 fi

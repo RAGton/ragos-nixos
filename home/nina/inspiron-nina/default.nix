@@ -13,9 +13,9 @@
     ../../shared/dev-workstation.nix
   ];
 
-  rag.shell.backend = "caelestia";
+  kryonix.shell.backend = "caelestia";
 
-  rag.shell.caelestia.settings = {
+  kryonix.shell.caelestia.settings = {
     appearance.transparency = {
       enabled = true;
       base = 0.84;
@@ -35,7 +35,7 @@
     };
 
     general.apps = {
-      terminal = [ "rag-terminal" ];
+      terminal = [ "kryonix-terminal" ];
       explorer = [ "dolphin" ];
       audio = [ "pavucontrol" ];
     };
@@ -57,12 +57,12 @@
     utilities.enabled = true;
   };
 
-  rag.vscode.extraExtensions = [
+  kryonix.vscode.extraExtensions = [
     "vsciot-vscode.vscode-arduino"
     "platformio.platformio-ide"
   ];
 
-  rag.vscode.extraSettings = {
+  kryonix.vscode.extraSettings = {
     "arduino.useArduinoCli" = true;
   };
 

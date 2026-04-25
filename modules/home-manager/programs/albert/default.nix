@@ -24,7 +24,7 @@
   ...
 }:
 let
-  shellBackend = config.rag.shell.backend or null;
+  shellBackend = config.kryonix.shell.backend or null;
 in
 {
   config = lib.mkIf (!pkgs.stdenv.isDarwin) {

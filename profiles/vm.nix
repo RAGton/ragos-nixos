@@ -11,20 +11,20 @@
 # - Mantém hosts VM consistentes.
 #
 # Como usar (no host):
-#   rag.profiles.vm.enable = true;
+#   kryonix.profiles.vm.enable = true;
 #
 # Importante:
 # - Este profile NÃO escolhe desktop environment.
-# - O desktop continua sendo escolhido via `rag.desktop.environment`.
+# - O desktop continua sendo escolhido via `kryonix.desktop.environment`.
 # =============================================================================
 { config, lib, ... }:
 
 let
-  cfg = config.rag.profiles.vm;
+  cfg = config.kryonix.profiles.vm;
 
 in
 {
-  options.rag.profiles.vm = {
+  options.kryonix.profiles.vm = {
     enable = lib.mkEnableOption "Perfil VM (defaults com footprint reduzido)";
 
     development = {
@@ -71,7 +71,7 @@ in
 
   config = lib.mkIf cfg.enable {
     # Defaults enxutos
-    rag.features = {
+    kryonix.features = {
       development.enable = lib.mkDefault cfg.development.enable;
 
       virtualization = {

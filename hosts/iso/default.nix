@@ -2,7 +2,7 @@
 #
 # Objetivo
 # - Gerar uma ISO bootável que facilite a instalação dos hosts deste flake.
-# - A ISO traz um script `rag-install` que particiona (Disko) e roda `nixos-install`.
+# - A ISO traz um script `kryonix-install` que particiona (Disko) e roda `nixos-install`.
 {
   inputs,
   hostname,

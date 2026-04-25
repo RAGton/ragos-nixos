@@ -1,4 +1,4 @@
-# RagOS VE — Instruções de Repositório para Copilot
+# Kryonix — Instruções de Repositório para Copilot
 
 Leia `AGENTS.md` e `context/INDEX.md` antes de propor mudanças amplas.
 

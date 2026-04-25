@@ -13,10 +13,10 @@
   ...
 }:
 let
-  cfg = config.rag.profiles.university;
+  cfg = config.kryonix.profiles.university;
 in
 {
-  options.rag.profiles.university.enable = lib.mkEnableOption "Perfil universitário";
+  options.kryonix.profiles.university.enable = lib.mkEnableOption "Perfil universitário";
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [

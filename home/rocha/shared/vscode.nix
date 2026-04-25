@@ -1,6 +1,6 @@
 { pkgs, ... }:
 {
-  rag.vscode.extraSettings = {
+  kryonix.vscode.extraSettings = {
     "symbols.hidesExplorerArrows" = false;
     "workbench.iconTheme" = "material-icon-theme";
     "workbench.colorTheme" = "GitHub Dark Default";
@@ -132,7 +132,7 @@
     "http.systemCertificatesNode" = true;
   };
 
-  rag.vscode.extraExtensions = [
+  kryonix.vscode.extraExtensions = [
     "Continue.continue"
     "GitHub.copilot"
     "GitHub.copilot-chat"

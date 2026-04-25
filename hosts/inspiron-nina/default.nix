@@ -31,13 +31,13 @@
     ./hardware-configuration.nix
   ];
 
-  rag.hardware.openrgb.enable = false;
+  kryonix.hardware.openrgb.enable = false;
 
-  rag.desktop.environment = "hyprland";
-  rag.shell.caelestia.enable = true;
-  rag.desktop.directLogin.enable = false;
+  kryonix.desktop.environment = "hyprland";
+  kryonix.shell.caelestia.enable = true;
+  kryonix.desktop.directLogin.enable = false;
 
-  rag.profiles.laptop = {
+  kryonix.profiles.laptop = {
     enable = true;
     virtualization = {
       enable = false;
@@ -48,11 +48,11 @@
     gaming.enable = false;
   };
 
-  rag.profiles.dev.enable = true;
-  rag.profiles.university.enable = true;
-  rag.profiles.ti.enable = false;
+  kryonix.profiles.dev.enable = true;
+  kryonix.profiles.university.enable = true;
+  kryonix.profiles.ti.enable = false;
 
-  rag.features.development = {
+  kryonix.features.development = {
     languages = {
       nix.enable = true;
       python.enable = true;
@@ -69,7 +69,7 @@
     };
   };
 
-  rag.features.ai.codex.enable = false;
+  kryonix.features.ai.codex.enable = false;
 
   networking.hostName = hostname;
 
@@ -133,9 +133,9 @@
     ACTION=="add", SUBSYSTEM=="block", KERNEL=="nvme*", ATTR{queue/scheduler}="none"
   '';
 
-  ragos = {
+  kryonix.branding = {
     enable = true;
-    prettyName = "RagOS";
+    prettyName = "Kryonix";
     versionId = "26.05";
   };
 }

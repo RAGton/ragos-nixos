@@ -16,7 +16,7 @@
 # ==============================================================================
 { config, lib, ... }:
 let
-  shellBackend = config.rag.shell.backend or null;
+  shellBackend = config.kryonix.shell.backend or null;
 in
 {
   config = {
@@ -51,7 +51,7 @@ in
         prompt = " Buscar...";
 
         # Sem terminal popup (usa o que está no PATH)
-        term = "rag-terminal";
+        term = "kryonix-terminal";
 
         # Ícones
         show_all = false;

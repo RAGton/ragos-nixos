@@ -39,7 +39,7 @@ Rice baseada em Material Design para Hyprland.
      ../../../desktop/hyprland/rice/dms.nix
    ];
    
-   rag.rice.dms.enable = true;
+   kryonix.rice.dms.enable = true;
    ```
 
 4. **Validar compatibilidade**
@@ -59,7 +59,7 @@ Rice baseada em Material Design para Hyprland.
   ];
 
   # Habilitar DMS
-  rag.rice.dms = {
+  kryonix.rice.dms = {
     enable = true;
     variant = "default";  # ou "minimal" ou "full"
     wallpaper = ./path/to/wallpaper.png;  # opcional
@@ -71,7 +71,7 @@ Rice baseada em Material Design para Hyprland.
 
 ```nix
 # hosts/<hostname>/default.nix
-rag.desktop.environment = "hyprland";
+kryonix.desktop.environment = "hyprland";
 ```
 
 ### 3. Rebuild
@@ -122,7 +122,7 @@ Instaladas automaticamente pelo módulo:
 ### Wallpaper
 
 ```nix
-rag.rice.dms.wallpaper = ./wallpapers/meu-wallpaper.png;
+kryonix.rice.dms.wallpaper = ./wallpapers/meu-wallpaper.png;
 ```
 
 ### Modificar Waybar

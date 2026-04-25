@@ -17,7 +17,7 @@
 # Riscos
 # - Atualizar pins (nixpkgs/home-manager) pode introduzir regressões; prefira atualizar de forma incremental.
 {
-  description = "RagOS VE: plataforma NixOS pessoal para workstation, gaming, virtualizacao, desenvolvimento e futuras ISOs.";
+  description = "Kryonix: plataforma NixOS pessoal para workstation, gaming, virtualizacao, desenvolvimento e futuras ISOs.";
 
   # =============================
   # Inputs (flakes externos)
@@ -67,7 +67,8 @@
 
     # Caelestia Shell
     # Fonte padrão: GitHub pinado no lock do flake.
-    # Desenvolvimento local no inspiron: use `--override-input caelestia-shell path:/home/rocha/src/caelestia-shell`.
+    # Desenvolvimento local: use `--override-input caelestia-shell path:../caelestia-shell`
+    # a partir do diretório do checkout que contém este flake.
     caelestia-shell = {
       url = "github:caelestia-dots/shell";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -264,10 +265,14 @@
             inherit system;
             config.allowUnfree = true;
           };
-          ragosCli = pkgs.callPackage ./packages/ragos-cli.nix { };
+          kryonixCli = pkgs.callPackage ./packages/kryonix-cli.nix { };
+          ragosCli = pkgs.callPackage ./packages/ragos-cli.nix {
+            kryonix-cli = kryonixCli;
+          };
         in
         {
-          default = ragosCli;
+          default = kryonixCli;
+          kryonix = kryonixCli;
           ragos = ragosCli;
         }
       );

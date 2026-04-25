@@ -26,7 +26,7 @@
   ...
 }:
 let
-  configuredShellBackend = config.rag.shell.backend or null;
+  configuredShellBackend = config.kryonix.shell.backend or null;
   shellBackend = configuredShellBackend;
   shellProvidesChrome = shellBackend != null;
   runIfOnBattery = pkgs.writeShellScript "rag-run-if-on-battery" ''
@@ -787,14 +787,14 @@ in
               'Rede/Bluetooth' \
               'Power' \
               'Copiar cor' \
-              | rofi -dmenu -i -p 'RagOS')" || exit 0
+              | rofi -dmenu -i -p 'Kryonix')" || exit 0
 
             case "$choice" in
               "Launcher do shell")
                 exec rag-shell-launcher
                 ;;
               "Terminal")
-                exec uwsm app -- rag-terminal
+                exec uwsm app -- kryonix-terminal
                 ;;
               "Arquivos")
                 exec uwsm app -- dolphin

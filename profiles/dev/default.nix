@@ -14,10 +14,10 @@
   ...
 }:
 let
-  cfg = config.rag.profiles.dev;
+  cfg = config.kryonix.profiles.dev;
 in
 {
-  options.rag.profiles.dev.enable = lib.mkEnableOption "Perfil de desenvolvimento";
+  options.kryonix.profiles.dev.enable = lib.mkEnableOption "Perfil de desenvolvimento";
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [

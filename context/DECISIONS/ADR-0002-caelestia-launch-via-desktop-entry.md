@@ -24,4 +24,5 @@ No host real, isso gerou pelo menos dois comportamentos incorretos:
 
 ## Consequência
 
-Mantemos `uwsm`, mantemos o launcher atual e corrigimos o helper mínimo no pacote do Caelestia com um patch local.
+Mantemos `uwsm`, mantemos o launcher atual e corrigimos o caminho gráfico no pacote do Caelestia com `kryonix-launch`.
+O wrapper usa desktop ID resolvido, tenta `gtk-launch` se o `uwsm` falhar e só usa `Exec=` como fallback final.

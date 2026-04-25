@@ -1,4 +1,4 @@
-# Contexto do RagOS VE
+# Contexto do Kryonix
 
 Este diretório é a porta de entrada curta para agentes.
 Use leitura progressiva, não varredura cega.

@@ -19,7 +19,7 @@
 # =============================================================================
 { config, lib, ... }:
 let
-  shellBackend = config.rag.shell.backend or null;
+  shellBackend = config.kryonix.shell.backend or null;
   shellProvidesNotifications = shellBackend == "caelestia";
 in
 {

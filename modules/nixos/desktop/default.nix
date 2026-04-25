@@ -1,6 +1,6 @@
 { config, lib, ... }:
 let
-  env = config.rag.desktop.environment;
+  env = config.kryonix.desktop.environment;
 in
 {
   imports = [
@@ -10,7 +10,7 @@ in
 
   config = lib.mkMerge [
     (lib.mkIf (env == "hyprland") {
-      rag.desktop.directLogin.enable = lib.mkForce false;
+      kryonix.desktop.directLogin.enable = lib.mkForce false;
 
       services.displayManager.gdm.enable = lib.mkForce true;
       services.displayManager.sddm.enable = lib.mkForce false;

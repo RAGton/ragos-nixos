@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.rag.shell.caelestia;
+  cfg = config.kryonix.shell.caelestia;
   blueScheme = {
     name = "rag-blue";
     flavour = "blue";
@@ -112,7 +112,7 @@ let
   '';
 in
 {
-  options.rag.shell.caelestia = {
+  options.kryonix.shell.caelestia = {
     settings = lib.mkOption {
       type = lib.types.attrsOf lib.types.anything;
       default = { };
@@ -137,8 +137,18 @@ in
     };
   };
 
-  config = lib.mkIf ((config.rag.shell.backend or null) == "caelestia") {
+  config = lib.mkIf ((config.kryonix.shell.backend or null) == "caelestia") {
+    kryonix.shell.caelestia.settings.launcher.useFuzzy.apps = lib.mkDefault false;
+
     home.activation.caelestiaMutableState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      applications_dir="${config.xdg.dataHome}/applications"
+      if [ -d "$applications_dir" ]; then
+        $DRY_RUN_CMD ${pkgs.desktop-file-utils}/bin/update-desktop-database "$applications_dir"
+      fi
+
+      caelestia_state_dir="${config.xdg.stateHome}/caelestia"
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$caelestia_state_dir"/apps.sqlite*
+
       ${lib.optionalString (shellSettingsFile != null) (
         writeMutableFile "${config.xdg.configHome}/caelestia/shell.json" shellSettingsFile
       )}

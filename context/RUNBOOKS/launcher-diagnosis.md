@@ -7,7 +7,7 @@ Localizar regressões entre o drawer do Caelestia, desktop entries, wrappers e `
 ## Checklist curto
 
 1. confirmar helper real de launch:
-   `rg -n "rag-launch-desktop-entry|Apps.qml|uwsm app --" /home/rocha/src/caelestia-shell desktop modules`
+   `rg -n "kryonix-launch|rag-launch-desktop-entry|Apps.qml|uwsm app --" /home/rocha/src/caelestia-shell desktop modules`
 2. confirmar serviço do shell:
    `systemctl --user status caelestia --no-pager`
 3. confirmar desktop entry:

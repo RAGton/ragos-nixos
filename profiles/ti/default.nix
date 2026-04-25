@@ -13,10 +13,10 @@
   ...
 }:
 let
-  cfg = config.rag.profiles.ti;
+  cfg = config.kryonix.profiles.ti;
 in
 {
-  options.rag.profiles.ti.enable = lib.mkEnableOption "Perfil TI/Sysadmin";
+  options.kryonix.profiles.ti.enable = lib.mkEnableOption "Perfil TI/Sysadmin";
 
   config = lib.mkIf cfg.enable {
     programs.wireshark.enable = true;

@@ -5,7 +5,7 @@
 #
 # O que é:
 # - Configuração declarativa do terminal Tilix para hosts Linux.
-# - Publica um launcher estável (`rag-terminal`) para atalhos e scripts internos.
+# - Publica um launcher estável (`kryonix-terminal`) para atalhos e scripts internos.
 #
 # Por quê:
 # - Centraliza a escolha do terminal sem depender de wrappers específicos do Warp.
@@ -27,10 +27,10 @@
 }:
 let
   tilixProfileId = "9c6ef0ae-fd91-4a52-a92f-5dfc5181e4c1";
-  tilixProfileName = "RagOS";
+  tilixProfileName = "Kryonix";
 
-  ragTerminal = pkgs.writeShellApplication {
-    name = "rag-terminal";
+  kryonixTerminal = pkgs.writeShellApplication {
+    name = "kryonix-terminal";
     runtimeInputs = [
       pkgs.bash
       pkgs.coreutils
@@ -50,7 +50,7 @@ let
           case "$1" in
             --cwd)
               [[ $# -ge 2 ]] || {
-                echo "rag-terminal: faltou informar um diretório após --cwd" >&2
+                echo "kryonix-terminal: faltou informar um diretório após --cwd" >&2
                 exit 2
               }
               cwd="$2"
@@ -62,7 +62,7 @@ let
               break
               ;;
             *)
-              echo "Uso: rag-terminal [start [--cwd DIR] [-- comando...]]" >&2
+              echo "Uso: kryonix-terminal [start [--cwd DIR] [-- comando...]]" >&2
               exit 2
               ;;
           esac
@@ -90,16 +90,27 @@ let
       exec tilix "${"$"}{tilix_args[@]}"
     '';
   };
+  ragTerminalCompat = pkgs.writeShellApplication {
+    name = "rag-terminal";
+    runtimeInputs = [ kryonixTerminal ];
+    text = ''
+      set -euo pipefail
+
+      printf '%s\n' "rag-terminal is deprecated, use kryonix-terminal" >&2
+      exec kryonix-terminal "$@"
+    '';
+  };
 
 in
 {
   config = lib.mkIf pkgs.stdenv.isLinux {
     home.packages = [
       pkgs.tilix
-      ragTerminal
+      kryonixTerminal
+      ragTerminalCompat
     ];
 
-    home.sessionVariables.TERMINAL = "rag-terminal";
+    home.sessionVariables.TERMINAL = "kryonix-terminal";
 
     dconf.settings = {
       "com/gexperts/Tilix" = {
@@ -137,7 +148,7 @@ in
       name = "Tilix";
       genericName = "Terminal";
       comment = "Tilix configurado pelo Home Manager";
-      exec = "rag-terminal";
+      exec = "kryonix-terminal";
       icon = "com.gexperts.Tilix";
       terminal = false;
       startupNotify = true;
@@ -153,7 +164,7 @@ in
       actions = {
         new-window = {
           name = "New Window";
-          exec = "rag-terminal";
+          exec = "kryonix-terminal";
         };
         preferences = {
           name = "Preferences";

@@ -16,7 +16,7 @@
     };
   };
 
-  rag.vscode = {
+  kryonix.vscode = {
     enable = true;
     edition = "insiders";
     delivery = "managed-download";

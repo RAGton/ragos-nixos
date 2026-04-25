@@ -21,4 +21,6 @@
 ## Uso neste repositório
 
 - o app desktop atual é exposto pelo launcher local
+- o wrapper primário é `kryonix-obsidian`; `rag-obsidian` fica só como compatibilidade temporária
+- remoto oficial do vault: `https://github.com/RAGton/kryonix-vault.git`
 - qualquer camada de memória/IA deve tratar o vault como dado do usuário, não como arquivo do repositório

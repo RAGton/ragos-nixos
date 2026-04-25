@@ -1,10 +1,10 @@
 # =============================================================================
-# Lib: Opções customizadas do RagOS
+# Lib: Opções customizadas do Kryonix
 # Autor: Gabriel Rocha (rag) + Codex
 # Data: 2026-03-12
 #
 # O que é:
-# - Define o namespace rag.* com opções para desktop, features, rice, etc
+# - Define o namespace kryonix.* com opções para desktop, features, rice, etc
 #
 # Por quê:
 # - Abstração de alto nível para configuração
@@ -13,7 +13,7 @@
 #
 # Como:
 # - Importado nos módulos do flake via mkNixosConfiguration
-# - Opções ficam disponíveis em config.rag.*
+# - Opções ficam disponíveis em config.kryonix.*
 #
 # Riscos:
 # - NENHUM nesta etapa (apenas define opções, não força uso)
@@ -30,7 +30,11 @@ let
     (config.services.displayManager.gdm.enable or false) || (config.programs.hyprland.enable or false);
 in
 {
-  options.rag = {
+  imports = [
+    (lib.mkAliasOptionModule [ "rag" ] [ "kryonix" ])
+  ];
+
+  options.kryonix = {
     # =========================
     # Desktop Environment
     # =========================
@@ -51,7 +55,7 @@ in
 
       wayland = lib.mkOption {
         type = lib.types.bool;
-        default = config.rag.desktop.environment != null;
+        default = config.kryonix.desktop.environment != null;
         description = "Habilita suporte a Wayland (ativado automaticamente com desktop)";
       };
 
@@ -102,7 +106,7 @@ in
     branding = {
       name = lib.mkOption {
         type = lib.types.str;
-        default = "RagOS";
+        default = "Kryonix";
         description = "Nome do branding do sistema (exibido na tela de login, etc)";
       };
 
@@ -121,17 +125,17 @@ in
     # Assertions para validar configuração
     assertions = [
       {
-        assertion = config.rag.desktop.environment == null || desktopConfigured;
+        assertion = config.kryonix.desktop.environment == null || desktopConfigured;
         message = ''
           O ambiente de desktop requer Hyprland e GDM habilitados.
-          Se estiver usando rag.desktop.environment, verifique se o módulo compartilhado de desktop foi importado.
+          Se estiver usando kryonix.desktop.environment, verifique se o módulo compartilhado de desktop foi importado.
         '';
       }
     ];
 
     # Warnings para opções definidas mas sem efeito (transição v1→v2)
-    warnings = lib.optional (config.rag.desktop.environment != null && !desktopConfigured) ''
-      rag.desktop.environment está definido como "${config.rag.desktop.environment}", mas o desktop
+    warnings = lib.optional (config.kryonix.desktop.environment != null && !desktopConfigured) ''
+      kryonix.desktop.environment está definido como "${config.kryonix.desktop.environment}", mas o desktop
       ainda não foi materializado em Hyprland + GDM.
       Verifique se hosts/common está importando modules/nixos/desktop corretamente.
     '';

@@ -48,6 +48,6 @@ jobs:
       - uses: DeterminateSystems/flakehub-push@main
         with:
           visibility: public
-          name: RAGton/ragos-nixos
+          name: RAGton/kryonix
           tag: ${{ inputs.tag || github.ref_name }}
           include-output-paths: true

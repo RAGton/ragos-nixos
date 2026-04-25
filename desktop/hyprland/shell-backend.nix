@@ -1,6 +1,6 @@
 { lib, ... }:
 {
-  options.rag.shell.backend = lib.mkOption {
+  options.kryonix.shell.backend = lib.mkOption {
     type = lib.types.nullOr (
       lib.types.enum [
         "caelestia"

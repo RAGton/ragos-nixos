@@ -1,6 +1,6 @@
 ---
 agent: "agent"
-description: "Diagnosticar e corrigir regressões do launcher Caelestia no RagOS VE"
+description: "Diagnosticar e corrigir regressões do launcher Caelestia no Kryonix"
 ---
 
 Leia `#file:../../AGENTS.md`, `#file:../../context/INDEX.md` e `#file:../../skills/launcher-diagnosis/SKILL.md`.

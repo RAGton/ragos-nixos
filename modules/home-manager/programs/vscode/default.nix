@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.rag.vscode;
+  cfg = config.kryonix.vscode;
 
   edition =
     if cfg.edition != null then
@@ -32,8 +32,9 @@ let
       "Code";
 
   userDataDir = "${config.home.homeDirectory}/.config/${configRootName}";
-  extensionsDir = "${config.home.homeDirectory}/.local/share/ragos/vscode-insiders/extensions";
-  insidersRoot = "${config.home.homeDirectory}/.local/share/ragos/vscode-insiders";
+  legacyInsidersRoot = "${config.home.homeDirectory}/.local/share/ragos/vscode-insiders";
+  insidersRoot = "${config.home.homeDirectory}/.local/share/kryonix/vscode-insiders";
+  extensionsDir = "${insidersRoot}/extensions";
   insidersCurrent = "${insidersRoot}/current";
   insidersUpdateUrl = "https://update.code.visualstudio.com/latest/linux-x64/insider";
   vscodeRuntimeLibraries = lib.makeLibraryPath [
@@ -384,7 +385,7 @@ let
   };
 in
 {
-  options.rag.vscode = {
+  options.kryonix.vscode = {
     enable = lib.mkEnableOption "Configura uma única origem de verdade para o VSCode";
 
     edition = lib.mkOption {
@@ -431,7 +432,7 @@ in
       );
       default = null;
       visible = false;
-      description = "Opção legada. Use rag.vscode.edition.";
+      description = "Opção legada. Use kryonix.vscode.edition.";
     };
 
     flavor = lib.mkOption {
@@ -443,7 +444,7 @@ in
       );
       default = null;
       visible = false;
-      description = "Opção legada. Use rag.vscode.edition.";
+      description = "Opção legada. Use kryonix.vscode.edition.";
     };
 
     installMethod = lib.mkOption {
@@ -465,24 +466,24 @@ in
         assertions = [
           {
             assertion = cfg.installMethod != "flatpak";
-            message = "rag.vscode.installMethod=flatpak foi removido. Use rag.vscode.edition/delivery.";
+            message = "kryonix.vscode.installMethod=flatpak foi removido. Use kryonix.vscode.edition/delivery.";
           }
           {
             assertion = !(edition == "insiders" && delivery != "managed-download");
-            message = "rag.vscode.edition=\"insiders\" exige rag.vscode.delivery=\"managed-download\".";
+            message = "kryonix.vscode.edition=\"insiders\" exige kryonix.vscode.delivery=\"managed-download\".";
           }
           {
             assertion = !(edition != "insiders" && delivery == "managed-download");
-            message = "rag.vscode.delivery=\"managed-download\" só é suportado com edition=\"insiders\".";
+            message = "kryonix.vscode.delivery=\"managed-download\" só é suportado com edition=\"insiders\".";
           }
         ];
 
         warnings =
           lib.optionals (cfg.channel != null) [
-            "rag.vscode.channel está deprecated e agora é ignorado; use rag.vscode.edition/rag.vscode.delivery."
+            "kryonix.vscode.channel está deprecated e agora é ignorado; use kryonix.vscode.edition/kryonix.vscode.delivery."
           ]
           ++ lib.optionals (cfg.flavor != null || cfg.installMethod != null) [
-            "rag.vscode.flavor/installMethod estão deprecated; use rag.vscode.edition/rag.vscode.delivery."
+            "kryonix.vscode.flavor/installMethod estão deprecated; use kryonix.vscode.edition/kryonix.vscode.delivery."
           ];
 
         xdg.mimeApps.defaultApplications = lib.genAttrs editorMimeTypes (_: lib.mkDefault editorDesktopId);
@@ -493,7 +494,14 @@ in
           ${writeMutableJson "${configRootName}/argv.json" vscodeArgvFile}
         '';
 
-        home.activation.vscodeBootstrap = lib.hm.dag.entryAfter [ "vscodeMutableConfigFiles" ] ''
+        home.activation.vscodeKryonixStateCompat = lib.hm.dag.entryAfter [ "vscodeMutableConfigFiles" ] ''
+          if [ ! -e ${lib.escapeShellArg insidersRoot} ] && [ -e ${lib.escapeShellArg legacyInsidersRoot} ]; then
+            mkdir -p "$(dirname ${lib.escapeShellArg insidersRoot})"
+            ln -s ${lib.escapeShellArg legacyInsidersRoot} ${lib.escapeShellArg insidersRoot}
+          fi
+        '';
+
+        home.activation.vscodeBootstrap = lib.hm.dag.entryAfter [ "vscodeKryonixStateCompat" ] ''
           echo "[home-manager] vscode: sincronizando extensões"
           ${vscodeBootstrap}/bin/vscode-bootstrap || true
         '';

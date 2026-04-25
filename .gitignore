@@ -12,3 +12,7 @@ result-*
 .cache
 iso-result
 7
+.direnv/
+activation.log
+result
+*.log

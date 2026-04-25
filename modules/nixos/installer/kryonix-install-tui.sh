@@ -23,7 +23,7 @@ while true; do
     1)
       # Instalar host existente
       FLAKE_SRC="@FLAKE_SRC@"
-      WORKDIR="/tmp/ragos-nixos"
+      WORKDIR="/tmp/kryonix-nixos"
       rm -rf "$WORKDIR"
       mkdir -p "$WORKDIR"
       cp -a "$FLAKE_SRC/." "$WORKDIR/"
@@ -87,7 +87,7 @@ while true; do
       fi
 
       # Reusar o instalador CLI atual
-      rag-install --host "$HOST" --disk "$DISK"
+      kryonix-install --host "$HOST" --disk "$DISK"
       ui::pause
       ;;
 

@@ -11,15 +11,15 @@
 #
 # Como:
 # - Lista diretórios em `~/Documents/repositories` e usa `fzf` para seleção.
-# - Abre o `rag-terminal` (Tilix) e inicia `zellij` no diretório selecionado.
+# - Abre o `kryonix-terminal` (Tilix) e inicia `zellij` no diretório selecionado.
 #
 # Riscos:
-# - Depende de `fzf`, `rag-terminal` e `zellij` estarem disponíveis no PATH.
+# - Depende de `fzf`, `kryonix-terminal` e `zellij` estarem disponíveis no PATH.
 # - Se o diretório base mudar, a busca não encontra projetos.
 # =============================================================================
 
 selected=$(find ~/Documents/repositories -mindepth 1 -maxdepth 2 -type d -not -iwholename '*.git*' | fzf)
 if [ -n "$selected" ]; then
 	# Abre o Tilix via launcher do repo já no diretório selecionado
-	rag-terminal start --cwd "$selected" -- zellij || exit
+	kryonix-terminal start --cwd "$selected" -- zellij || exit
 fi

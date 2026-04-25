@@ -11,7 +11,7 @@
 #
 # Importante:
 # - Não escolhe desktop. Deve ser usado junto com Hyprland.
-# - Não é ativado automaticamente; você opta por `rag.rice.dmsUpstream.enable`.
+# - Não é ativado automaticamente; você opta por `kryonix.rice.dmsUpstream.enable`.
 # =============================================================================
 {
   config,
@@ -22,7 +22,7 @@
 }:
 
 let
-  cfg = config.rag.rice.dmsUpstream;
+  cfg = config.kryonix.rice.dmsUpstream;
   system = pkgs.stdenv.hostPlatform.system;
 
   # Pacotes providos pelo flake upstream do DMS.
@@ -44,7 +44,7 @@ in
     )
   ];
 
-  options.rag.rice.dmsUpstream = {
+  options.kryonix.rice.dmsUpstream = {
     enable = lib.mkEnableOption "Habilita DankMaterialShell usando módulos Nix upstream";
   };
 
@@ -74,7 +74,7 @@ in
       }
     ];
 
-    # Bridge: nosso toggle rag.* aciona o módulo upstream `programs.dank-material-shell`.
+    # Bridge: nosso toggle kryonix.* aciona o módulo upstream `programs.dank-material-shell`.
     programs.dank-material-shell = {
       enable = true;
       systemd.enable = lib.mkDefault true;

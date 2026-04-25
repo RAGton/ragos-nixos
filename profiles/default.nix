@@ -3,11 +3,11 @@
 # Autor: rag (via AI Maintainer)
 #
 # Importa todos os profiles disponíveis.
-# Cada profile é ativado via opções `rag.profiles.*`.
+# Cada profile é ativado via opções `kryonix.profiles.*`.
 #
 # Nota:
 # - Profiles não devem escolher desktop environment diretamente.
-# - Desktop é escolhido via `rag.desktop.environment`.
+# - Desktop é escolhido via `kryonix.desktop.environment`.
 # =============================================================================
 { ... }:
 {

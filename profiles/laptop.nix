@@ -11,20 +11,20 @@
 # - Mantém hosts finos e coerentes.
 #
 # Como usar (no host):
-#   rag.profiles.laptop.enable = true;
+#   kryonix.profiles.laptop.enable = true;
 #
 # Importante:
 # - Este profile NÃO escolhe desktop environment.
-# - O desktop continua sendo escolhido via `rag.desktop.environment`.
+# - O desktop continua sendo escolhido via `kryonix.desktop.environment`.
 # =============================================================================
 { config, lib, ... }:
 
 let
-  cfg = config.rag.profiles.laptop;
+  cfg = config.kryonix.profiles.laptop;
 
 in
 {
-  options.rag.profiles.laptop = {
+  options.kryonix.profiles.laptop = {
     enable = lib.mkEnableOption "Perfil laptop (dev + virtualização padrão; sem gaming por padrão)";
 
     virtualization = {
@@ -77,7 +77,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    rag.features = {
+    kryonix.features = {
       development.enable = lib.mkDefault cfg.development.enable;
 
       virtualization = {

@@ -1,6 +1,6 @@
 ---
 agent: "agent"
-description: "Escrever release note ou resumo de entrega alinhado ao estado validado do RagOS VE"
+description: "Escrever release note ou resumo de entrega alinhado ao estado validado do Kryonix"
 ---
 
 Leia `#file:../../AGENTS.md`, `#file:../../context/INDEX.md` e `#file:../../skills/release-engineering/SKILL.md`.

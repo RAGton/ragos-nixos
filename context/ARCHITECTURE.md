@@ -9,7 +9,7 @@
 - `modules/nixos/**`: implementação base e serviços
 - `desktop/hyprland/**`: stack desktop atual
 - `home/**`: configuração user-level por usuário/host
-- `packages/`: artefatos do projeto, incluindo `ragos`
+- `packages/`: artefatos do projeto, incluindo `kryonix` e o wrapper compat `ragos`
 
 ## Regras de modelagem
 
@@ -30,8 +30,9 @@
 
 1. bind ou drawer do Caelestia
 2. `modules/launcher/services/Apps.qml`
-3. `assets/rag-launch-desktop-entry` para apps gráficas
+3. `kryonix-launch` para apps gráficas
 4. `uwsm app -- <desktop entry resolvido>`
+5. fallback `gtk-launch`, depois fallback por `Exec=`
 
 Apps de terminal continuam usando `app2unit`.
 

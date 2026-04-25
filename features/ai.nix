@@ -3,7 +3,7 @@
 #
 # Objetivo:
 # - Evitar builds lentos por padrão (ex.: Codex), mantendo ativação simples.
-# - Tudo opt-in via `rag.features.ai.*`.
+# - Tudo opt-in via `kryonix.features.ai.*`.
 # =============================================================================
 {
   config,
@@ -14,10 +14,10 @@
 }:
 
 let
-  cfg = config.rag.features.ai;
+  cfg = config.kryonix.features.ai;
 in
 {
-  options.rag.features.ai = {
+  options.kryonix.features.ai = {
     codex = {
       enable = lib.mkEnableOption "OpenAI Codex CLI (via flake input inputs.codex)";
     };

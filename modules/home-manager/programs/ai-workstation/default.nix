@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.rag.programs.aiWorkstation;
+  cfg = config.kryonix.programs.aiWorkstation;
 
   codexWrapper = pkgs.writeShellApplication {
     name = "codex";
@@ -53,7 +53,7 @@ in
 {
   imports = [ ../obsidian ];
 
-  options.rag.programs.aiWorkstation = {
+  options.kryonix.programs.aiWorkstation = {
     enable = lib.mkEnableOption "ferramentas de estudo, IDE e IA no perfil do usuario";
 
     enableTraeLauncher = lib.mkOption {
@@ -76,7 +76,7 @@ in
       ai-claude = "claude";
       ai-launch = "caelestia shell drawers toggle launcher";
       ai-trae = "trae-launcher";
-      kb = "rag-obsidian";
+      kb = "kryonix-obsidian";
     };
 
     xdg.desktopEntries = lib.mkIf cfg.enableTraeLauncher {

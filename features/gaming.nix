@@ -8,11 +8,11 @@
 #
 # Por quê:
 # - Centraliza toda configuração de gaming em um módulo
-# - Ativa/desativa facilmente: rag.features.gaming.enable = true
+# - Ativa/desativa facilmente: kryonix.features.gaming.enable = true
 # - Mantém hosts limpos
 #
 # Como usar:
-# No host: rag.features.gaming.enable = true;
+# No host: kryonix.features.gaming.enable = true;
 #
 # Riscos:
 # - Configurações de kernel/drivers são hardware-specific
@@ -26,14 +26,14 @@
 }:
 
 let
-  cfg = config.rag.features.gaming;
+  cfg = config.kryonix.features.gaming;
   isNvidia =
     (config.hardware.nvidia.enabled or false)
     || lib.elem "nvidia" (config.services.xserver.videoDrivers or [ ]);
 
 in
 {
-  options.rag.features.gaming = {
+  options.kryonix.features.gaming = {
     enable = lib.mkEnableOption "Stack de gaming (Steam, Lutris, GameMode, etc)";
 
     steam = {

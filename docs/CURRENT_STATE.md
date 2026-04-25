@@ -1,35 +1,48 @@
-# Estado atual do RagOS VE
+# Estado atual do Kryonix
 
-**Atualizado em:** 2026-04-23
+**Atualizado em:** 2026-04-25
 
 ## Resumo
 
-O `ragos-nixos` já está operando, na prática, como **RagOS VE**: uma plataforma NixOS pessoal para workstation, gaming, virtualização, estudo e desenvolvimento.
+O projeto agora está em migração operacional de `ragos` para **Kryonix**.
 
-A base atual já entrega:
+A base atual entrega:
 
 - múltiplos hosts (`inspiron`, `inspiron-nina`, `glacier`, `iso`)
 - múltiplos usuários (`rocha`, `nina`)
-- namespace `rag.*`
+- namespace primário `kryonix.*`
+- compatibilidade temporária para `rag.*`
 - `hosts/common/default.nix` como agregador compartilhado
 - `features/` e `profiles/` reais
 - stack desktop **Hyprland** com **Caelestia** como shell principal
-- CLI operacional `ragos`
-- ferramentas de estudo e AI do usuário com Obsidian, Codex CLI, Claude Code e launcher manual do Trae
+- CLI operacional primária `kryonix`
+- alias temporário `ragos`
 - `nixosConfigurations`, `homeConfigurations`, `overlays`, `formatter` e `checks`
 
 ## Arquitetura real
 
-### Camadas principais
-
 - `hosts/`: hardware, boot e papel de cada máquina
 - `hosts/common/default.nix`: composição compartilhada
-- `lib/options.nix`: opções públicas `rag.*`
+- `lib/options.nix`: opções públicas `kryonix.*` com alias `rag.*`
 - `modules/nixos/**`: base, rede, áudio, desktop, serviços, theming
 - `features/**`: capacidades opt-in
 - `profiles/**`: composição reutilizável por papel
 - `desktop/hyprland/**`: stack desktop atual
 - `home/**`: perfis Home Manager por usuário/host
+- `packages/kryonix-cli.nix`: CLI nova
+- `packages/ragos-cli.nix`: wrapper legado de compatibilidade
+
+## Repositórios
+
+- repo principal: `https://github.com/RAGton/kryonix`
+- vault de conhecimento: `https://github.com/RAGton/kryonix-vault.git`
+
+## Compatibilidade de rename
+
+- `ragos` continua executando `kryonix` e emite aviso de depreciação
+- `/etc/kryonix` é o caminho operacional primário
+- `/etc/ragos` continua aceito como fallback
+- opções `rag.*`, `services.rag.*`, `programs.ragos.*` e `ragos.*` permanecem como aliases temporários
 
 ## Estado por host
 
@@ -58,78 +71,18 @@ A base atual já entrega:
 
 - saída de instalação/provisionamento
 
-## O que está bom
-
-- a arquitetura pública do flake está clara
-- hosts estão mais finos do que em fases antigas
-- o namespace `rag.*` já existe e é usado
-- o desktop principal já está materializado
-- o fluxo operacional já pode convergir para `ragos`
-- Caelestia já está integrado no nível de sistema sem ativação principal via Home Manager
-- o fluxo diário do shell já é Caelestia-first: launcher, control center, dashboard, sessão, lock, notificações e wallpapers
-- os perfis `rocha@inspiron` e `rocha@glacier` expõem Obsidian como app canônico de notas e wrappers npm-backed para Codex/Claude
-- a galeria de wallpapers do shell usa `~/.local/share/wallpapers` como fonte declarativa
-
-## O que ainda precisa de atenção
-
-### 1. Documentação desencontrada
-
-Parte da documentação ainda descreve o projeto como se a arquitetura atual não existisse.
-
-### 2. Home Manager ainda parcialmente v1
-
-Alguns homes ainda importam desktop/rice diretamente, o que impede a consolidação completa do modelo por opções.
-
-### 3. Legado de shell ainda precisa de poda final
-
-Hoje a direção arquitetural já está fechada, mas ainda existem resíduos legados de DMS no repositório que não devem voltar ao caminho ativo.
-
-### 4. Duplicação no stack Hyprland
-
-Wrappers e helpers ainda aparecem em mais de um lugar.
-
-### 5. Módulos grandes
-
-`desktop/hyprland/user.nix` e outros arquivos ainda concentram responsabilidade demais.
-
-### 6. Resíduos de migração
-
-Ainda existem trechos, nomes e documentos legados de uma fase anterior da arquitetura.
-
-### 7. Naming público ainda parcial
-
-O branding público já pode ser tratado como **RagOS VE**, mas o nome do repositório e alguns documentos históricos ainda carregam `ragos-nixos`.
-
 ## Decisões atuais
 
 - o desktop real do projeto hoje é `hyprland`
 - os hosts Hyprland ativos usam Caelestia como shell principal em nível de sistema
-- os atalhos principais do shell priorizam os drawers nativos do Caelestia e deixam rofi/wlogout só como fallback
-- documentação histórica deve continuar existindo, mas claramente marcada como histórica
+- documentação histórica deve continuar existindo, mas não é fonte de verdade ativa
 - notebook principal não deve auto-bloquear nem auto-suspender por padrão
 - `glacier` deve ser tratado como host principal para virtualização e gaming
-- `RagOS` continua sendo o nome base do sistema; `VE` identifica a edição/workstation atual
+- `Kryonix` é o nome público atual
 
-## Prioridades imediatas
+## Atenções abertas
 
-1. alinhar documentação canônica com o estado real
-2. podar os resíduos finais de DMS sem reintroduzir ativação via Home Manager
-3. simplificar a modelagem desktop/rice/features
-4. reduzir duplicação no stack Hyprland
-5. quebrar módulos grandes
-6. melhorar energia/idle no notebook principal
-7. refinar `glacier` como workstation principal
-
-## Desenvolvimento local do Caelestia
-
-- input padrão do shell: `github:caelestia-dots/shell` pinado no `flake.lock`
-- clone local de desenvolvimento recomendado no `inspiron`: `/home/rocha/src/caelestia-shell`
-- para testar o clone local sem vazar esse path para os outros hosts, usar override explícito:
-
-```bash
-nixos-rebuild test --flake .#inspiron \
-  --override-input caelestia-shell path:/home/rocha/src/caelestia-shell
-```
-
-- RustDesk no `inspiron`: pacote nativo do nixpkgs, sem Flatpak.
-- GDM no `inspiron`: permanece em Wayland; a sessão do usuário também continua em Hyprland/Wayland.
+- remover aliases `rag.*` e `ragos` só depois de uma janela de migração validada
+- revisar docs históricas fora da trilha canônica em uma etapa separada
+- `desktop/hyprland/user.nix` ainda concentra responsabilidade demais
+- resíduos legados de DMS não devem receber novos acoplamentos

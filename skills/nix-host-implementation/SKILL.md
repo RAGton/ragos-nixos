@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Aplicar mudanças de host NixOS respeitando a arquitetura atual do RagOS VE.
+Aplicar mudanças de host NixOS respeitando a arquitetura atual do Kryonix.
 
 ## Quando usar
 

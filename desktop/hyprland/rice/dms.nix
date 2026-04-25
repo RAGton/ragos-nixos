@@ -14,7 +14,7 @@
 #
 # Como usar:
 # 1. No flake.nix, o input DMS já está configurado
-# 2. No Home Manager: rag.rice.dms.enable = true;
+# 2. No Home Manager: kryonix.rice.dms.enable = true;
 # 3. Este módulo faz links dos configs do DMS para ~/.config
 #
 # Riscos:
@@ -30,7 +30,7 @@
 }:
 
 let
-  cfg = config.rag.rice.dms;
+  cfg = config.kryonix.rice.dms;
 
   # Source do DMS (flake input)
   dmsSource = inputs.dms;
@@ -38,7 +38,7 @@ let
 
 in
 {
-  options.rag.rice.dms = {
+  options.kryonix.rice.dms = {
     enable = lib.mkEnableOption "DankMaterialShell rice para Hyprland";
 
     variant = lib.mkOption {

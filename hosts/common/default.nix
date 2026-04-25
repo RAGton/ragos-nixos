@@ -13,7 +13,7 @@
 #
 # Como:
 # - Encadeia opções, módulos de base/sistema, features e profiles.
-# - Expõe a seleção de desktop via `rag.desktop.environment`.
+# - Expõe a seleção de desktop via `kryonix.desktop.environment`.
 # ==============================================================================
 { ... }:
 {
@@ -24,7 +24,7 @@
     ../../modules/nixos/input
     ../../modules/nixos/audio
     ../../modules/nixos/network
-    ../../modules/nixos/programs/ragos
+    ../../modules/nixos/programs/kryonix
     ../../modules/nixos/theming
     ../../modules/nixos/services
     ../../modules/nixos/desktop

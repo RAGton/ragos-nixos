@@ -2,7 +2,7 @@
 {
   # Arquivo canônico do Caelestia no inspiron.
   # Edite aqui quando quiser ajustar manualmente launcher, apps e comportamento do shell.
-  rag.shell.caelestia.scheme = {
+  kryonix.shell.caelestia.scheme = {
     name = "rag-atlas";
     flavour = "atlas";
     deformScale = 1.14;
@@ -80,7 +80,7 @@
     };
   };
 
-  rag.shell.caelestia.settings = {
+  kryonix.shell.caelestia.settings = {
     appearance = {
       deformScale = 1.14;
       anim.durations.scale = 1.08;
@@ -203,7 +203,7 @@
       maxWallpapers = 9;
       specialPrefix = "@";
       useFuzzy = {
-        apps = true;
+        apps = false;
         actions = true;
         schemes = true;
         variants = true;

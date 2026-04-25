@@ -7,24 +7,24 @@
 # - Agrupa um conjunto de features típicas (virtualização, desenvolvimento, opcionalmente gaming).
 #
 # Por quê:
-# - Evita repetir o mesmo bloco `rag.features.*` em múltiplos hosts.
+# - Evita repetir o mesmo bloco `kryonix.features.*` em múltiplos hosts.
 # - Mantém hosts finos e expressivos.
 #
 # Como usar (no host):
-#   rag.profiles.desktop.enable = true;
+#   kryonix.profiles.desktop.enable = true;
 #
 # Importante:
 # - Este profile NÃO escolhe desktop environment.
-# - O desktop continua sendo escolhido via `rag.desktop.environment`.
+# - O desktop continua sendo escolhido via `kryonix.desktop.environment`.
 # =============================================================================
 { config, lib, ... }:
 
 let
-  cfg = config.rag.profiles.desktop;
+  cfg = config.kryonix.profiles.desktop;
 
 in
 {
-  options.rag.profiles.desktop = {
+  options.kryonix.profiles.desktop = {
     enable = lib.mkEnableOption "Perfil desktop (virtualização + desenvolvimento + gaming opcional)";
 
     gaming = {
@@ -37,7 +37,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    rag.features = {
+    kryonix.features = {
       virtualization.enable = lib.mkDefault true;
       development.enable = lib.mkDefault true;
 

@@ -5,7 +5,7 @@
     ./hyprland/system.nix
   ];
 
-  config = lib.mkIf (config.rag.desktop.wayland) {
+  config = lib.mkIf (config.kryonix.desktop.wayland) {
     hardware.graphics = {
       enable = true;
       enable32Bit = true;

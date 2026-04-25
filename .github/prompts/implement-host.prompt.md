@@ -1,6 +1,6 @@
 ---
 agent: "agent"
-description: "Implementar mudança de host NixOS no RagOS VE sem quebrar a arquitetura atual"
+description: "Implementar mudança de host NixOS no Kryonix sem quebrar a arquitetura atual"
 ---
 
 Leia `#file:../../AGENTS.md`, `#file:../../context/INDEX.md` e `#file:../../skills/nix-host-implementation/SKILL.md`.

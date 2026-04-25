@@ -10,8 +10,8 @@
     ../shared/vscode.nix
   ];
 
-  rag.shell.backend = "caelestia";
-  rag.programs.aiWorkstation.enable = true;
+  kryonix.shell.backend = "caelestia";
+  kryonix.programs.aiWorkstation.enable = true;
 
   home.packages = with pkgs; [
     atlauncher

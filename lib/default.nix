@@ -1,5 +1,5 @@
 # =============================================================================
-# Lib: Helper functions para o RagOS
+# Lib: Helper functions para o Kryonix
 # Autor: rag (via AI Maintainer)
 #
 # O que é:

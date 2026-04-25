@@ -13,8 +13,8 @@
 #
 # Como usar:
 # No host:
-#   rag.features.development.enable = true;
-#   rag.features.development.languages.rust.enable = true;
+#   kryonix.features.development.enable = true;
+#   kryonix.features.development.languages.rust.enable = true;
 #
 # Riscos:
 # - Muitos language servers podem usar bastante RAM
@@ -29,7 +29,7 @@
 }:
 
 let
-  cfg = config.rag.features.development;
+  cfg = config.kryonix.features.development;
   winePackage =
     if pkgs ? wineWow64Packages && pkgs.wineWow64Packages ? waylandFull then
       pkgs.wineWow64Packages.waylandFull
@@ -146,16 +146,16 @@ in
 {
   imports = [
     (lib.mkRemovedOptionModule [
-      "rag"
+      "kryonix"
       "features"
       "development"
       "editors"
       "vscode"
       "enable"
-    ] "Use rag.vscode instead.")
+    ] "Use kryonix.vscode instead.")
   ];
 
-  options.rag.features.development = {
+  options.kryonix.features.development = {
     enable = lib.mkEnableOption "Ambiente de desenvolvimento";
 
     git = {
@@ -249,7 +249,7 @@ in
     assertions = [
       {
         assertion = cfg.tools.psim.enable -> cfg.tools.wine.enable;
-        message = "rag.features.development.tools.psim.enable exige rag.features.development.tools.wine.enable.";
+        message = "kryonix.features.development.tools.psim.enable exige kryonix.features.development.tools.wine.enable.";
       }
     ];
 
@@ -448,8 +448,8 @@ in
     # =========================
     environment.variables = {
       # Editor
-      EDITOR = lib.mkIf cfg.editors.neovim.enable "nvim";
-      VISUAL = lib.mkIf cfg.editors.neovim.enable "nvim";
+      EDITOR = lib.mkIf cfg.editors.neovim.enable (lib.mkDefault "nvim");
+      VISUAL = lib.mkIf cfg.editors.neovim.enable (lib.mkDefault "nvim");
 
       # Go
       GOPATH = lib.mkIf cfg.languages.go.enable "$HOME/go";
