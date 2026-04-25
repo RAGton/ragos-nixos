@@ -52,10 +52,24 @@
     name = "nix/path/${name}";
     value.source = value.flake;
   }) config.nix.registry;
+  # `/etc/ragos` é o checkout Git operacional do sistema. Mantemos `/etc/nixos`
+  # apontando para ele por compatibilidade com ferramentas NixOS tradicionais.
+  users.groups.ragos = { };
   systemd.tmpfiles.rules = [
-    "L+ /etc/ragos - - - - /home/${userConfig.name}/dotfiles-nixos"
-    "L+ /etc/nixos - - - - /home/${userConfig.name}/dotfiles-nixos"
+    "L+ /etc/nixos - - - - /etc/ragos"
   ];
+
+  system.activationScripts.ragosGitRepoPermissions = {
+    text = ''
+      if [ -L /etc/ragos ]; then
+        ${pkgs.coreutils}/bin/chgrp -h ragos /etc/ragos || true
+      elif [ -d /etc/ragos ]; then
+        ${pkgs.coreutils}/bin/chown -R ${userConfig.name}:ragos /etc/ragos || true
+        ${pkgs.findutils}/bin/find /etc/ragos -type d -exec ${pkgs.coreutils}/bin/chmod 2775 {} +
+        ${pkgs.findutils}/bin/find /etc/ragos -type f -exec ${pkgs.coreutils}/bin/chmod g+rw {} +
+      fi
+    '';
+  };
 
   # Nix: ajustes globais.
   nix.package = pkgs.nixVersions.latest;
@@ -69,6 +83,11 @@
     # - auto = deixa Nix decidir baseado em RAM/CPU disponíveis
     max-jobs = lib.mkDefault "auto";
     cores = lib.mkDefault 0;
+  };
+
+  programs.git = {
+    enable = lib.mkDefault true;
+    config.safe.directory = "/etc/ragos";
   };
 
   # Boot: defaults genéricos de silêncio/recovery.
@@ -294,6 +313,7 @@
     description = userConfig.fullName;
     extraGroups = [
       "networkmanager"
+      "ragos"
       "wheel"
     ]
     ++ lib.optionals config.programs.wireshark.enable [ "wireshark" ];

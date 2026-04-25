@@ -116,6 +116,16 @@ writeShellApplication {
           "$@"
         }
 
+        run_repo_command() {
+          local repo_path="$1"
+          shift
+
+          (
+            cd "$repo_path"
+            run_command "$@"
+          )
+        }
+
         resolve_bootstrap_repo_source() {
           if [[ -n "''${RAGOS_BOOTSTRAP_REPO:-}" ]]; then
             printf '%s\n' "$RAGOS_BOOTSTRAP_REPO"
@@ -293,6 +303,206 @@ writeShellApplication {
           printf '%s\n' "$candidate"
         }
 
+        ragos_git_repo_path() {
+          printf '%s\n' "''${RAGOS_SYSTEM_REPO:-/etc/ragos}"
+        }
+
+        is_git_repo() {
+          local repo_path="$1"
+
+          git -C "$repo_path" rev-parse --is-inside-work-tree >/dev/null 2>&1
+        }
+
+        git_current_branch() {
+          local repo_path="$1"
+
+          git -C "$repo_path" branch --show-current 2>/dev/null || true
+        }
+
+        git_origin_url() {
+          local repo_path="$1"
+
+          git -C "$repo_path" remote get-url origin 2>/dev/null || true
+        }
+
+        git_short_changes() {
+          local repo_path="$1"
+
+          git -C "$repo_path" status --short 2>/dev/null || true
+        }
+
+        git_absolute_dir() {
+          local repo_path="$1"
+
+          git -C "$repo_path" rev-parse --absolute-git-dir 2>/dev/null || true
+        }
+
+        git_has_conflict_state() {
+          local repo_path="$1"
+          local git_dir
+
+          git_dir="$(git_absolute_dir "$repo_path")"
+          [[ -n "$git_dir" ]] || return 1
+
+          [[ -d "$git_dir/rebase-merge" ]] \
+            || [[ -d "$git_dir/rebase-apply" ]] \
+            || [[ -f "$git_dir/MERGE_HEAD" ]] \
+            || [[ -f "$git_dir/CHERRY_PICK_HEAD" ]]
+        }
+
+        git_has_tracked_changes() {
+          local repo_path="$1"
+
+          ! git -C "$repo_path" diff --quiet --no-ext-diff --cached \
+            || ! git -C "$repo_path" diff --quiet --no-ext-diff
+        }
+
+        ensure_ragos_git_repo() {
+          local repo_path="$1"
+
+          if ! is_git_repo "$repo_path"; then
+            printf '%s\n' "ERRO: $repo_path não é um git repo válido." >&2
+            return 1
+          fi
+
+          if [[ ! -e "$repo_path/flake.nix" ]]; then
+            printf '%s\n' "ERRO: $repo_path não contém flake.nix." >&2
+            return 1
+          fi
+        }
+
+        ensure_ragos_git_state() {
+          local repo_path="$1"
+          local branch
+          local origin
+
+          ensure_ragos_git_repo "$repo_path" || return 1
+
+          branch="$(git_current_branch "$repo_path")"
+          origin="$(git_origin_url "$repo_path")"
+
+          if [[ -z "$origin" ]]; then
+            printf '%s\n' "ERRO: $repo_path não possui remote origin configurado." >&2
+            return 1
+          fi
+
+          if [[ "$branch" != "main" ]]; then
+            printf '%s\n' "ERRO: branch ativa '$branch' inválida; esperado 'main'." >&2
+            return 1
+          fi
+
+          if git_has_conflict_state "$repo_path"; then
+            printf '%s\n' "ERRO: $repo_path já está com merge/rebase em andamento." >&2
+            return 1
+          fi
+        }
+
+        validate_ragos_flake() {
+          local repo_path="$1"
+
+          ensure_ragos_git_repo "$repo_path" || return 1
+          run_repo_command "$repo_path" nix flake check path:. --keep-going
+        }
+
+        print_git_changes() {
+          local repo_path="$1"
+          local changes
+
+          changes="$(git_short_changes "$repo_path")"
+          if [[ -z "$changes" ]]; then
+            blue_line '  mudanças locais : nenhuma'
+            return 0
+          fi
+
+          blue_line '  mudanças locais :'
+          printf '%s\n' "$changes"
+        }
+
+        print_ragos_git_status() {
+          local repo_path repo_root branch origin
+
+          repo_path="$(ragos_git_repo_path)"
+          blue_line 'RagOS VE git-status'
+          blue_line "  path            : $repo_path"
+          if [[ -L "$repo_path" ]]; then
+            blue_line "  symlink         : $(readlink "$repo_path")"
+          fi
+
+          if ! is_git_repo "$repo_path"; then
+            blue_line '  status          : ERRO'
+            printf '%s\n' "ERRO: $repo_path não é um git repo válido." >&2
+            return 1
+          fi
+
+          repo_root="$(git -C "$repo_path" rev-parse --show-toplevel)"
+          branch="$(git_current_branch "$repo_path")"
+          origin="$(git_origin_url "$repo_path")"
+          blue_line "  repo root       : $repo_root"
+          blue_line "  branch          : ''${branch:-desconhecida}"
+          blue_line "  remoto origin   : ''${origin:-ausente}"
+
+          if [[ "$branch" != "main" ]]; then
+            blue_line '  ATENÇÃO         : branch ativa não é main'
+          fi
+          if [[ -z "$origin" ]]; then
+            blue_line '  ATENÇÃO         : remote origin ausente'
+          fi
+
+          print_git_changes "$repo_path"
+          [[ "$branch" == "main" && -n "$origin" ]]
+        }
+
+        ragos_pull_repo() {
+          local repo_path
+
+          repo_path="$(ragos_git_repo_path)"
+          ensure_ragos_git_state "$repo_path" || return 1
+
+          if git_has_tracked_changes "$repo_path"; then
+            printf '%s\n' "ERRO: $repo_path possui mudanças locais versionadas; revise com 'ragos git-status' antes de puxar." >&2
+            return 1
+          fi
+
+          run_repo_command "$repo_path" git fetch origin
+
+          if ! run_repo_command "$repo_path" git pull --rebase origin main; then
+            if git_has_conflict_state "$repo_path"; then
+              printf '%s\n' "ERRO: conflito detectado em $repo_path durante git pull --rebase." >&2
+              printf '%s\n' "Resolva manualmente e use 'git rebase --continue' ou 'git rebase --abort'." >&2
+              return 1
+            fi
+
+            printf '%s\n' "ERRO: git pull --rebase falhou em $repo_path." >&2
+            return 1
+          fi
+
+          if git_has_conflict_state "$repo_path"; then
+            printf '%s\n' "ERRO: conflito detectado em $repo_path após git pull --rebase." >&2
+            return 1
+          fi
+        }
+
+        ragos_deploy_repo() {
+          local repo_path
+          local cmd
+
+          repo_path="$(ragos_git_repo_path)"
+          ensure_ragos_git_state "$repo_path" || return 1
+          validate_ragos_flake "$repo_path" || {
+            printf '%s\n' "ERRO: flake inválida em $repo_path; deploy abortado." >&2
+            return 1
+          }
+
+          cmd=(nh os switch "$repo_path" -H "$flake_host")
+          cmd+=("''${verbose_args[@]}" "''${dry_args[@]}" "''${extra_args[@]}")
+          run_command "''${cmd[@]}"
+        }
+
+        ragos_sync_repo() {
+          ragos_pull_repo || return 1
+          ragos_deploy_repo
+        }
+
         print_usage() {
           while IFS= read -r line; do
             blue_line "$line"
@@ -306,10 +516,14 @@ writeShellApplication {
       test      Testa a geracao atual com nh os test
       home      Aplica o Home Manager do usuario atual
       update    Atualiza os inputs da flake
+      pull      Atualiza /etc/ragos com git fetch + git pull --rebase
+      deploy    Valida a flake e aplica /etc/ragos no host atual
+      sync      Pull + validação + deploy do checkout /etc/ragos
       clean     Limpa geracoes antigas com nh clean all
       diff      Compara /run/current-system com o proximo toplevel
       repl      Abre nix repl na flake
       doctor    Mostra diagnostico rapido do host e do repositorio
+      git-status Mostra branch, origin e mudanças locais de /etc/ragos
       vm        Lista VMs via libvirt
       iso       Builda a ISO publica do RagOS VE
       fmt       Roda o formatter da flake
@@ -324,11 +538,15 @@ writeShellApplication {
       --help           Mostra esta ajuda
     Exemplos:
       ragos switch
+      ragos pull
+      ragos deploy
+      ragos sync
       ragos switch --update --verbose
       ragos boot --update
       ragos home --user rocha
       ragos diff
       ragos doctor
+      ragos git-status
       ragos iso
     EOF
         }
@@ -478,7 +696,7 @@ writeShellApplication {
             exit 0
             ;;
 
-          clean|vm)
+          clean|vm|git-status|pull|deploy|sync)
             needs_flake=0
             ;;
 
@@ -537,6 +755,18 @@ writeShellApplication {
             run_command "''${cmd[@]}"
             ;;
 
+          pull)
+            ragos_pull_repo
+            ;;
+
+          deploy)
+            ragos_deploy_repo
+            ;;
+
+          sync)
+            ragos_sync_repo
+            ;;
+
           clean)
             cmd=(nh clean all "''${verbose_args[@]}" "''${extra_args[@]}")
             run_command "''${cmd[@]}"
@@ -585,6 +815,10 @@ writeShellApplication {
             else
               blue_line '  toplevel drv : falhou na avaliacao'
             fi
+            ;;
+
+          git-status)
+            print_ragos_git_status
             ;;
 
           vm)

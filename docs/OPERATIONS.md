@@ -24,12 +24,16 @@ No uso diário, o checkout local do projeto tem precedência sobre `/etc/ragos`.
 
 ```sh
 ragos switch
+ragos pull
+ragos deploy
+ragos sync
 ragos switch --update
 ragos boot --update
 ragos test
 ragos home
 ragos diff
 ragos doctor
+ragos git-status
 ragos check
 ragos fmt
 ragos iso
@@ -38,6 +42,9 @@ ragos iso
 ## O que cada comando faz
 
 - `ragos switch`: aplica a configuração do host atual com `nh os switch`
+- `ragos pull`: entra em `/etc/ragos`, faz `git fetch` e `git pull --rebase`, abortando em Git quebrado, branch incorreta ou conflito
+- `ragos deploy`: valida a flake de `/etc/ragos` e roda `nh os switch /etc/ragos -H <host>`
+- `ragos sync`: executa `ragos pull` e, se o Git estiver íntegro, valida a flake e faz o deploy
 - `ragos switch --update`: atualiza inputs e aplica
 - `ragos boot`: prepara a próxima geração para o próximo boot
 - `ragos test`: testa a geração sem persistir como default
@@ -47,6 +54,7 @@ ragos iso
 - `ragos diff`: compara `/run/current-system` com a próxima geração
 - `ragos repl`: abre `nix repl` na flake
 - `ragos doctor`: mostra host, flake, mount de storage e avaliação rápida
+- `ragos git-status`: mostra branch, `origin` e mudanças locais de `/etc/ragos`
 - `ragos vm`: lista VMs via `virsh`
 - `ragos iso`: builda a ISO pública do projeto
 - `ragos fmt`: roda o formatter da flake
@@ -56,10 +64,14 @@ ragos iso
 
 ```sh
 ragos switch --verbose
+ragos pull
+ragos deploy
+ragos sync
 ragos switch --host glacier
 ragos home --user rocha
 ragos diff
 ragos doctor
+ragos git-status
 ```
 
 ## Fluxo recomendado no `glacier`
@@ -77,3 +89,6 @@ Use `ragos switch` quando a mudança já estiver segura para ativação imediata
 - o hostname em runtime do host principal pode ser `RVE-GLACIER`, mas o target da flake continua `glacier`
 - a CLI já faz esse mapeamento automaticamente
 - fora do checkout local, a CLI usa `/etc/ragos` como origem padrão instalada
+- `/etc/ragos` deve ser um checkout Git em `main` com `origin`; `ragos git-status` é o preflight rápido antes de aplicar mudanças
+- `ragos pull` aborta quando encontra mudanças locais versionadas, merge/rebase em andamento ou conflito no `git pull --rebase`
+- `ragos deploy` e `ragos sync` abortam quando `nix flake check` falha
