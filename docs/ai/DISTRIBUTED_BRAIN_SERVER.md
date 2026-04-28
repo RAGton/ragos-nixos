@@ -24,8 +24,12 @@ Ou via `rag.bat`:
 ```
 
 ## Persistência
-Para que a API inicie com o Windows, você pode criar uma tarefa agendada que executa:
-`powershell.exe -ExecutionPolicy Bypass -File C:\Users\aguia\Documents\kryonix\scripts\start-brain-api.ps1`
+Para que a API inicie com o Windows, execute como Administrador:
+```powershell
+SchTasks /Create /SC ONLOGON /TN "KryonixBrainAPI" /TR "powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -File C:\Users\aguia\Documents\kryonix\scripts\start-brain-api.ps1"
+```
+
+Ou use o atalho de inicialização do Windows (Win+R > shell:startup) e coloque um atalho para o script.
 
 ## Firewall
 O Inspiron (ou qualquer cliente na LAN) precisa de acesso às portas 11434 e 8000.
