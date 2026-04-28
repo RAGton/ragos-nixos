@@ -883,34 +883,47 @@ writeShellApplication {
             brain_sub="''${1:-help}"
             shift || true
             case "$brain_sub" in
-              search|ask)
-                query="''${*:-}"
-                if [[ -z "$query" ]]; then echo "Uso: kryonix brain search \"pergunta\""; exit 1; fi
-                if [[ -n "''${KRYONIX_BRAIN_URL:-}" ]]; then
-                   curl -s -X POST "$KRYONIX_BRAIN_URL/search" \
-                     -H "Content-Type: application/json" \
-                     -H "X-API-Key: ''${KRYONIX_BRAIN_KEY:-}" \
-                     -d "{\"query\": \"$query\"}" | jq -r '.answer'
-                else
-                   echo "Erro: KRYONIX_BRAIN_URL não definida. Host não está em modo CLIENTE."
-                   exit 1
+              search|ask|stats|health)
+                # Tenta ler a key do ambiente, se não existir tenta do arquivo env
+                API_KEY="''${KRYONIX_BRAIN_KEY:-}"
+                if [[ -z "$API_KEY" ]] && [[ -f "/etc/kryonix/brain.env" ]]; then
+                  API_KEY=$(grep KRYONIX_BRAIN_KEY /etc/kryonix/brain.env | cut -d= -f2 | tr -d '"' | tr -d "'")
                 fi
-                ;;
-              stats)
-                if [[ -n "''${KRYONIX_BRAIN_URL:-}" ]]; then
-                   curl -s -H "X-API-Key: ''${KRYONIX_BRAIN_KEY:-}" "$KRYONIX_BRAIN_URL/stats" | jq .
-                else
-                   echo "Erro: KRYONIX_BRAIN_URL não definida."
-                   exit 1
-                fi
-                ;;
-              health)
-                if [[ -n "${KRYONIX_BRAIN_URL:-}" ]]; then
-                   curl -s "$KRYONIX_BRAIN_URL/health" | jq .
-                else
-                   echo "Erro: KRYONIX_BRAIN_URL não definida."
-                   exit 1
-                fi
+
+                case "$brain_sub" in
+                  search|ask)
+                    query="''${*:-}"
+                    if [[ -z "$query" ]]; then echo "Uso: kryonix brain search \"pergunta\""; exit 1; fi
+                    if [[ -z "$API_KEY" ]]; then echo "Erro: KRYONIX_BRAIN_KEY não encontrada."; exit 1; fi
+                    
+                    if [[ -n "''${KRYONIX_BRAIN_URL:-}" ]]; then
+                       curl -s -X POST "$KRYONIX_BRAIN_URL/search" \
+                         -H "Content-Type: application/json" \
+                         -H "X-API-Key: $API_KEY" \
+                         -d "{\"query\": \"$query\"}" | jq -r '.answer'
+                    else
+                       echo "Erro: KRYONIX_BRAIN_URL não definida. Host não está em modo CLIENTE."
+                       exit 1
+                    fi
+                    ;;
+                  stats)
+                    if [[ -z "$API_KEY" ]]; then echo "Erro: KRYONIX_BRAIN_KEY não encontrada."; exit 1; fi
+                    if [[ -n "''${KRYONIX_BRAIN_URL:-}" ]]; then
+                       curl -s -H "X-API-Key: $API_KEY" "$KRYONIX_BRAIN_URL/stats" | jq .
+                    else
+                       echo "Erro: KRYONIX_BRAIN_URL não definida."
+                       exit 1
+                    fi
+                    ;;
+                  health)
+                    if [[ -n "''${KRYONIX_BRAIN_URL:-}" ]]; then
+                       curl -s "$KRYONIX_BRAIN_URL/health" | jq .
+                    else
+                       echo "Erro: KRYONIX_BRAIN_URL não definida."
+                       exit 1
+                    fi
+                    ;;
+                esac
                 ;;
                *)
                  echo "Uso: kryonix brain <search|stats|health>"

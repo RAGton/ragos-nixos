@@ -58,20 +58,43 @@ in
       environment.systemPackages = [
         (pkgs.writeShellScriptBin "kryonix-search" ''
           set -euo pipefail
+          
+          # Tenta ler a key do ambiente, se não existir tenta do arquivo env
+          API_KEY="''${KRYONIX_BRAIN_KEY:-}"
+          if [ -z "$API_KEY" ] && [ -f "/etc/kryonix/brain.env" ]; then
+            API_KEY=$(grep KRYONIX_BRAIN_KEY /etc/kryonix/brain.env | cut -d= -f2 | tr -d '"' | tr -d "'")
+          fi
+
           query="''${1:-}"
           if [ -z "$query" ]; then
             echo "Uso: kryonix-search \"pergunta\""
             exit 1
           fi
+
+          if [ -z "$API_KEY" ]; then
+            echo "Erro: KRYONIX_BRAIN_KEY não encontrada no ambiente nem em /etc/kryonix/brain.env"
+            exit 1
+          fi
+
           ${pkgs.curl}/bin/curl -s -X POST "$KRYONIX_BRAIN_URL/search" \
             -H "Content-Type: application/json" \
-            -H "X-API-Key: ''${KRYONIX_BRAIN_KEY:-}" \
+            -H "X-API-Key: $API_KEY" \
             -d "{\"query\": \"$query\", \"lang\": \"pt-BR\"}" \
             | ${pkgs.jq}/bin/jq -r '.answer'
         '')
 
         (pkgs.writeShellScriptBin "kryonix-stats" ''
-          ${pkgs.curl}/bin/curl -s -H "X-API-Key: ''${KRYONIX_BRAIN_KEY:-}" "$KRYONIX_BRAIN_URL/stats" | ${pkgs.jq}/bin/jq .
+          API_KEY="''${KRYONIX_BRAIN_KEY:-}"
+          if [ -z "$API_KEY" ] && [ -f "/etc/kryonix/brain.env" ]; then
+            API_KEY=$(grep KRYONIX_BRAIN_KEY /etc/kryonix/brain.env | cut -d= -f2 | tr -d '"' | tr -d "'")
+          fi
+          
+          if [ -z "$API_KEY" ]; then
+            echo "Erro: KRYONIX_BRAIN_KEY não encontrada."
+            exit 1
+          fi
+
+          ${pkgs.curl}/bin/curl -s -H "X-API-Key: $API_KEY" "$KRYONIX_BRAIN_URL/stats" | ${pkgs.jq}/bin/jq .
         '')
         
         (pkgs.writeShellScriptBin "kryonix-brain-health" ''
