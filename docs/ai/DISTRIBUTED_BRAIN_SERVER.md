@@ -39,6 +39,21 @@ netsh advfirewall firewall add rule name="Kryonix_Ollama" dir=in action=allow pr
 netsh advfirewall firewall add rule name="Kryonix_Brain_API" dir=in action=allow protocol=TCP localport=8000
 ```
 
+## Acesso Público (Internet)
+
+Para acessar o Ollama e o Brain de fora da sua rede local:
+
+1. **Roteador**: O Port Forwarding (Portas 11434 e 8000) deve apontar para o IP local do Glacier (`10.0.0.2`).
+2. **Configuração Automática**: Execute o script de setup como Administrador:
+   ```powershell
+   .\scripts\setup-public-exposure.ps1
+   ```
+3. **Segurança (IMPORTANTE)**: 
+   - Ao expor publicamente, defina uma chave secreta para a Brain API:
+     `[Environment]::SetEnvironmentVariable("KRYONIX_BRAIN_KEY", "sua-chave-secreta", "Machine")`
+   - Clientes deverão enviar o header `X-API-Key: sua-chave-secreta`.
+   - O Ollama não possui autenticação nativa. Considere usar um túnel (Tailscale/Cloudflare) em vez de abrir porta direta no roteador para o Ollama.
+
 ## Logs
 A API emite logs estruturados no console onde for iniciada.
 Storage em: `C:\Users\aguia\Documents\kryonix-vault\11-LightRAG\rag_storage`
