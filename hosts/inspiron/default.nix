@@ -239,6 +239,12 @@
   # Flatpak: mantém a lista comum vinda do módulo shared.
   # (Removemos as extensões NVIDIA do common.)
 
+  environment.systemPackages = with pkgs; [
+    kdePackages.kcmutils
+    kdePackages.systemsettings
+    kdePackages.kde-cli-tools
+  ];
+
   # Gaming/estabilidade: evita serviços que brigam por perfil de energia.
   # (PPD já está habilitado acima; mantemos apenas TLP desligado.)
 

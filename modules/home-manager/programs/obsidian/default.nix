@@ -9,6 +9,7 @@ let
     text = ''
       export NIXOS_OZONE_WL="''${NIXOS_OZONE_WL:-1}"
       export ELECTRON_OZONE_PLATFORM_HINT="''${ELECTRON_OZONE_PLATFORM_HINT:-auto}"
+      unset ELECTRON_RUN_AS_NODE ELECTRON_NO_ATTACH_CONSOLE
 
       # NVIDIA + Wayland + Electron pode congelar em alguns hosts; este launcher
       # prioriza estabilidade ao abrir o Obsidian com aceleração GPU desativada.

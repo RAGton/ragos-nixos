@@ -21,7 +21,11 @@ in
     brain = {
       enable = lib.mkEnableOption "Kryonix Brain (LightRAG + Ollama)";
       role = lib.mkOption {
-        type = lib.types.enum [ "server" "client" "standalone" ];
+        type = lib.types.enum [
+          "server"
+          "client"
+          "standalone"
+        ];
         default = "standalone";
         description = "Papel do host no ecossistema Brain.";
       };
@@ -62,7 +66,7 @@ in
       environment.systemPackages = [
         (pkgs.writeShellScriptBin "kryonix-search" ''
           set -euo pipefail
-          
+
           # Tenta ler a key do ambiente, se não existir tenta do arquivo env
           API_KEY="''${KRYONIX_BRAIN_KEY:-}"
           if [ -z "$API_KEY" ] && [ -f "/etc/kryonix/brain.env" ]; then
@@ -92,7 +96,7 @@ in
           if [ -z "$API_KEY" ] && [ -f "/etc/kryonix/brain.env" ]; then
             API_KEY=$(grep KRYONIX_BRAIN_KEY /etc/kryonix/brain.env | cut -d= -f2 | tr -d '"' | tr -d "'")
           fi
-          
+
           if [ -z "$API_KEY" ]; then
             echo "Erro: KRYONIX_BRAIN_KEY não encontrada."
             exit 1
@@ -100,7 +104,7 @@ in
 
           ${pkgs.curl}/bin/curl -s -H "X-API-Key: $API_KEY" "$KRYONIX_BRAIN_URL/stats" | ${pkgs.jq}/bin/jq .
         '')
-        
+
         (pkgs.writeShellScriptBin "kryonix-brain-health" ''
           ${pkgs.curl}/bin/curl -s "$KRYONIX_BRAIN_URL/health" | ${pkgs.jq}/bin/jq .
         '')

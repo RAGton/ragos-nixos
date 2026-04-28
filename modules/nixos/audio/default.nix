@@ -10,7 +10,11 @@
 # - Corrige consistência de volume/dispositivos e perfis BT em todos os hosts.
 # - Mantém ferramentas práticas para seleção e debug de áudio.
 # ==============================================================================
-{ pkgs, ... }:
+{
+  lib,
+  pkgs,
+  ...
+}:
 {
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
@@ -59,6 +63,11 @@
 
   hardware.bluetooth.enable = true;
   services.blueman.enable = true;
+
+  systemd.user.services.blueman-applet.serviceConfig.ExecStart = lib.mkForce [
+    ""
+    "${pkgs.blueman}/bin/blueman-applet"
+  ];
 
   environment.systemPackages = with pkgs; [
     pavucontrol

@@ -16,6 +16,7 @@ let
     name = "kryonix-launch";
     runtimeInputs = with pkgs; [
       coreutils
+      flatpak
       gawk
       gnused
       gtk3
@@ -154,6 +155,13 @@ let
       exec kryonix-launch "$@"
     '';
   };
+  gtkLaunch = pkgs.writeShellApplication {
+    name = "gtk-launch";
+    runtimeInputs = [ pkgs.gtk3 ];
+    text = ''
+      exec ${pkgs.gtk3}/bin/gtk-launch "$@"
+    '';
+  };
   effectivePackage = cfg.package.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ launcherPatch ];
   });
@@ -197,6 +205,7 @@ in
         pkgs.brightnessctl
         pkgs.coreutils
         pkgs.ddcutil
+        pkgs.flatpak
         pkgs.findutils
         pkgs.gnugrep
         pkgs.gnused
@@ -231,6 +240,7 @@ in
     environment.systemPackages = [
       effectivePackage
       cliPackage
+      gtkLaunch
       kryonixLaunch
       legacyLauncherHelper
     ];
@@ -252,7 +262,8 @@ in
         Environment = [
           "USER=%u"
           "LOGNAME=%u"
-        ] ++ cfg.environment;
+        ]
+        ++ cfg.environment;
       };
     };
   };

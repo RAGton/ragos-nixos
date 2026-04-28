@@ -75,6 +75,9 @@
   # Recarrega unidades do systemd de forma suave ao mudar configs.
   systemd.user.startServices = "sd-switch";
 
+  # Mantém a CLI do Home Manager disponível depois que o próprio perfil é ativado.
+  programs.home-manager.enable = true;
+
   # Identidade do usuário (paths variam entre Linux e macOS).
   home = {
     username = "${userConfig.name}";
