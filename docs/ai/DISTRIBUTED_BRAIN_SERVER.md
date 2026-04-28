@@ -41,10 +41,15 @@ netsh advfirewall firewall add rule name="Kryonix_Brain_API" dir=in action=allow
 
 ## Acesso Público (Internet)
 
-Para acessar o Ollama e o Brain de fora da sua rede local:
+Para acessar o Glacier de fora da sua rede local:
 
-1. **Roteador**: O Port Forwarding (Portas 11434 e 8000) deve apontar para o IP local do Glacier (`10.0.0.2`).
-2. **Configuração Automática**: Execute o script de setup como Administrador:
+1. **Roteador**: O Port Forwarding deve apontar estas portas para o IP local `10.0.0.2`:
+   - **Ollama**: `11434` (TCP)
+   - **Brain API**: `8000` (TCP)
+   - **SSH**: `22` (TCP)
+   - **RustDesk**: `21115-21119` (TCP) e `21116` (UDP)
+
+2. **Configuração Automática**: Execute o script de setup como **Administrador**:
    ```powershell
    .\scripts\setup-public-exposure.ps1
    ```
