@@ -1,5 +1,7 @@
 { pkgs, ... }:
 {
+  kryonix.vscode.enable = true;
+  kryonix.vscode.edition = "vscodium"; # Preferimos vscodium por padrão
   kryonix.vscode.extraSettings = {
     "symbols.hidesExplorerArrows" = false;
     "workbench.iconTheme" = "material-icon-theme";
