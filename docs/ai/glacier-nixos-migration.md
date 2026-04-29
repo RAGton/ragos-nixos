@@ -8,8 +8,8 @@ Este documento descreve o plano de migração do servidor Glacier do Windows 11 
 - Validação via `nix flake check`.
 
 ## Fase 2: Backup e Preparação
-1. **Backup do Brain**: Copiar `C:\Users\aguia\Documents\kryonix-vault\11-LightRAG\rag_storage` para um drive externo ou cloud.
-2. **Backup do Vault**: Sincronizar o Obsidian Vault completamente.
+1. **Backup do Brain**: Executar `.\scripts\backup-glacier-brain.ps1` no Windows.
+2. **Local de Backup**: O backup será salvo em `C:\Users\aguia\Documents\kryonix-backups\`.
 3. **Mapeamento de HW**: Confirmar UUIDs dos discos e nomes de interfaces de rede (`ip link`).
 
 ## Fase 3: Instalação
@@ -20,9 +20,10 @@ Este documento descreve o plano de migração do servidor Glacier do Windows 11 
 3. **Instalação**: `nixos-install --flake .#glacier`.
 
 ## Fase 4: Restauração de Dados
-1. **Vault**: Montar o storage no caminho `/var/lib/kryonix/vault`.
-2. **Brain Storage**: Restaurar o `rag_storage` em `/var/lib/kryonix/brain/storage`.
-3. **Permissões**: `chown -R kryonix-brain:kryonix-brain /var/lib/kryonix/brain`.
+1. **Transferência**: Mover o backup para o novo Glacier NixOS (via USB ou rede).
+2. **Execução**: Rodar `./scripts/restore-brain-nixos.sh /caminho/do/backup`.
+3. **Configuração**: Criar `/etc/kryonix/brain.env` com a `KRYONIX_BRAIN_KEY`.
+4. **Permissões**: O script já ajusta para o usuário `kryonix-brain`.
 
 ## Fase 5: Validação Pós-Migração
 1. **Local**: Rodar `kryonix brain stats` no novo Glacier.
@@ -30,7 +31,7 @@ Este documento descreve o plano de migração do servidor Glacier do Windows 11 
 3. **Gaming**: Testar drivers NVIDIA e Steam.
 
 ## Riscos e Mitigação
-- **Perda de Dados**: Mitigado por múltiplos backups do Vault e Storage.
+- **Perda de Dados**: Mitigado pelo uso de scripts de backup automatizados e verificação de checksum.
 - **Incompatibilidade NVIDIA**: Mitigado pelo uso de perfis testados com `modesetting` e Wayland.
 - **Downtime**: O Inspiron continuará funcional, mas sem IA durante a migração (algumas horas).
 
