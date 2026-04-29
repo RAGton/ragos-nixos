@@ -226,12 +226,8 @@
           system = "x86_64-linux";
           specialArgs = {
             inherit inputs outputs;
-            hostname = "glacier-live";
-            isDarwin = false;
-            userConfig = users.rocha;
-            nixosModules = "${self}/modules/nixos";
           };
-          modules = [ ./hosts/glacier-live ];
+          modules = [ ./hosts/glacier/live.nix ];
         };
         iso = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
