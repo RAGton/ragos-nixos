@@ -222,6 +222,16 @@
         inspiron = mkNixosConfiguration "inspiron" "rocha";
         inspiron-nina = mkNixosConfiguration "inspiron-nina" "nina";
         glacier = mkNixosConfiguration "glacier" "rocha";
+        glacier-live = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = {
+            inherit inputs outputs;
+            hostname = "glacier-live";
+            isDarwin = false;
+            nixosModules = "${self}/modules/nixos";
+          };
+          modules = [ ./hosts/glacier-live ];
+        };
         iso = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = {

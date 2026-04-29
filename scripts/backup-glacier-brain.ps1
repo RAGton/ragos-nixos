@@ -17,19 +17,31 @@ New-Item -ItemType Directory -Force -Path "$BackupDir\config"
 
 # 1. Backup do Vault (Obsidian)
 Write-Host "Backup do Vault..."
-Copy-Item -Path "$VaultDir\*" -Destination "$BackupDir\vault" -Recurse -Force -Exclude ".git", ".obsidian"
+if (Test-Path $VaultDir) {
+    Copy-Item -Path "$VaultDir\*" -Destination "$BackupDir\vault" -Recurse -Force -Exclude ".git", ".obsidian"
+} else {
+    Write-Warning "Vault directory not found: $VaultDir"
+}
 
 # 2. Backup do rag_storage (LightRAG)
 Write-Host "Backup do rag_storage..."
-Copy-Item -Path "$StorageDir\*" -Destination "$BackupDir\storage" -Recurse -Force
+if (Test-Path $StorageDir) {
+    Copy-Item -Path "$StorageDir\*" -Destination "$BackupDir\storage" -Recurse -Force
+} else {
+    Write-Warning "Storage directory not found: $StorageDir"
+}
 
 # 3. Backup de Config e Env (sem secrets brutos)
 Write-Host "Backup de Configurações..."
-Copy-Item -Path "$ConfigDir\brain.env.example" -Destination "$BackupDir\config\brain.env.example" -Force
-# Nota: KRYONIX_BRAIN_KEY deve ser salvo manualmente em local seguro (Bitwarden/Vault)
+if (Test-Path "$ConfigDir\brain.env.example") {
+    Copy-Item -Path "$ConfigDir\brain.env.example" -Destination "$BackupDir\config\brain.env.example" -Force
+}
+# Backup de modelos Ollama (lista)
+ollama list > "$BackupDir\config\ollama-models.txt"
 
-# 4. Gerar Checksum
+# 4. Gerar Checksum (excluindo o próprio manifest)
 Write-Host "Gerando Checksums..."
-Get-ChildItem -Path $BackupDir -Recurse | Get-FileHash | Export-Csv -Path "$BackupDir\manifest.csv" -NoTypeInformation
+$ManifestPath = "$BackupDir\manifest.csv"
+Get-ChildItem -Path $BackupDir -Recurse -File | Where-Object { $_.FullName -ne $ManifestPath } | Get-FileHash | Export-Csv -Path $ManifestPath -NoTypeInformation
 
 Write-Host "Backup concluído com sucesso em: $BackupDir" -ForegroundColor Green
