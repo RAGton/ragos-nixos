@@ -96,6 +96,49 @@ let
         return 1
       }
 
+      add_path_entry() {
+        local path_entry="$1"
+        [ -d "$path_entry" ] || return 0
+        case ":''${PATH-}:" in
+          *:"$path_entry":*) ;;
+          *) PATH="$path_entry''${PATH:+:$PATH}" ;;
+        esac
+      }
+
+      ensure_launcher_path() {
+        local desktop_file="''${1-}"
+        local desktop_dir=""
+        local package_root=""
+        local path_entry=""
+
+        for path_entry in \
+          "$HOME/.local/bin" \
+          "/run/wrappers/bin" \
+          "$HOME/.local/share/flatpak/exports/bin" \
+          "/var/lib/flatpak/exports/bin" \
+          "$HOME/.nix-profile/bin" \
+          "$HOME/.local/state/nix/profile/bin" \
+          "/etc/profiles/per-user/$(id -un)/bin" \
+          "/nix/var/nix/profiles/default/bin" \
+          "/run/current-system/sw/bin"
+        do
+          add_path_entry "$path_entry"
+        done
+
+        if [ -n "$desktop_file" ]; then
+          desktop_dir="$(dirname "$desktop_file")"
+          case "$desktop_dir" in
+            */share/applications)
+              package_root="''${desktop_dir%/share/applications}"
+              add_path_entry "$package_root/bin"
+              add_path_entry "$package_root/sbin"
+              ;;
+          esac
+        fi
+
+        export PATH
+      }
+
       run_exec_fallback() {
         local desktop_file="$1"
         local exec_line=""
@@ -122,6 +165,7 @@ let
       }
 
       desktop_file="$(find_desktop_file "$desktop_id" || true)"
+      ensure_launcher_path "$desktop_file"
 
       uwsm_target="''${desktop_id}''${action_suffix}"
 

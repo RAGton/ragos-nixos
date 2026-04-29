@@ -286,6 +286,7 @@
       "app.zen_browser.zen"
       "io.github.shonebinu.Brief"
       "com.anydesk.Anydesk"
+      "com.rustdesk.RustDesk"
       "com.ranfdev.DistroShelf"
       "com.github.tchx84.Flatseal"
       "io.github.flattool.Warehouse"
@@ -388,9 +389,15 @@
       jetbrains.pycharm-oss
       jetbrains.rust-rover
 
-      # RustDesk nativo: evita os limites do Flatpak com Wayland e mantém um
-      # binário único e previsível no host gráfico.
-      rustdesk
+      # RustDesk via Flatpak: evita builds locais pesados do pacote RustDesk
+      # nativo e mantém um comando previsível para terminal/scripts.
+      (writeShellApplication {
+        name = "rustdesk";
+        runtimeInputs = [ flatpak ];
+        text = ''
+          exec flatpak run com.rustdesk.RustDesk "$@"
+        '';
+      })
 
       # Ferramentas KDE úteis sem precisar do Plasma completo.
       kdePackages.dolphin

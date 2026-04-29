@@ -1,7 +1,7 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 {
-  kryonix.vscode.enable = true;
-  kryonix.vscode.edition = "codium"; # Preferimos vscodium por padrão
+  kryonix.vscode.enable = lib.mkDefault true;
+  kryonix.vscode.edition = lib.mkDefault "insiders";
   kryonix.vscode.extraSettings = {
     "symbols.hidesExplorerArrows" = false;
     "workbench.iconTheme" = "material-icon-theme";
