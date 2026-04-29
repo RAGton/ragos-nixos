@@ -21,3 +21,8 @@ result
 .env
 .env.local
 .env.*
+
+# Temporary / Local diagnostics
+diagnostics-lightrag/
+scratch/
+
