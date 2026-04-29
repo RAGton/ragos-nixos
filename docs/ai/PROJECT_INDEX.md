@@ -35,7 +35,8 @@
 - CLI operacional: `packages/kryonix-cli.nix`; manter compatibilidade em `packages/ragos-cli.nix` quando necessario.
 - Overlay/patch de pacote: `overlays/default.nix` e `overlays/patches/`.
 - CI: `.github/workflows/ci.yml`.
-- Contexto para IA: `AGENTS.md`, `context/`, `docs/ai/`, `skills/`.
+- Contexto para IA: `AGENTS.md`, `AGENTS_KRYONIX_EVOLUTION.md`, `context/`, `docs/ai/`, `skills/`.
+- Arquitetura Brain: `docs/ai/BRAIN_SERVER_ARCHITECTURE.md`.
 - Documentacao humana: `README.md`, `docs/INDEX.md`, `docs/CURRENT_STATE.md`, docs tematicas.
 
 ## Arquivos sensiveis
