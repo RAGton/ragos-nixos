@@ -44,7 +44,7 @@ in
 
     # Otimização de performance para servidor de alta carga
     powerManagement.cpuFreqGovernor = "performance";
-    
+
     # Monitoramento básico
     environment.systemPackages = with pkgs; [
       htop

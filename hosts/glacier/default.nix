@@ -38,14 +38,20 @@
   networking = {
     hostName = hostname;
     # Configuração de IP estático para o servidor LAN
-    interfaces.enp14s0 = { # Nome da interface ajustado para o hardware alvo (exemplo)
-      ipv4.addresses = [{
-        address = "10.0.0.2";
-        prefixLength = 24;
-      }];
+    interfaces.enp14s0 = {
+      # Nome da interface ajustado para o hardware alvo (exemplo)
+      ipv4.addresses = [
+        {
+          address = "10.0.0.2";
+          prefixLength = 24;
+        }
+      ];
     };
     defaultGateway = "10.0.0.1";
-    nameservers = [ "1.1.1.1" "8.8.8.8" ];
+    nameservers = [
+      "1.1.1.1"
+      "8.8.8.8"
+    ];
   };
 
   # =========================
@@ -71,7 +77,12 @@
       "rootflags=subvol=@,compress=zstd,noatime"
     ];
 
-    initrd.kernelModules = [ "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm" ];
+    initrd.kernelModules = [
+      "nvidia"
+      "nvidia_modeset"
+      "nvidia_uvm"
+      "nvidia_drm"
+    ];
     kernelModules = [ "kvm-amd" ];
     initrd.systemd.enable = true;
   };

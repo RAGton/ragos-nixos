@@ -15,7 +15,10 @@ in
     enable = mkEnableOption "Kryonix Brain AI services";
 
     role = mkOption {
-      type = types.enum [ "server" "client" ];
+      type = types.enum [
+        "server"
+        "client"
+      ];
       default = "client";
       description = "Papel do host no ecossistema Brain (server = hospeda Ollama/LightRAG, client = acessa remoto)";
     };
@@ -39,7 +42,12 @@ in
         description = "Habilita o servidor Ollama localmente";
       };
       acceleration = mkOption {
-        type = types.nullOr (types.enum [ "cuda" "rocm" ]);
+        type = types.nullOr (
+          types.enum [
+            "cuda"
+            "rocm"
+          ]
+        );
         default = "cuda";
         description = "Aceleração de hardware para o Ollama";
       };
@@ -76,14 +84,17 @@ in
 
     # Firewall: Abrir portas para Tailscale e LAN segura
     networking.firewall.allowedTCPPorts = mkIf (cfg.role == "server") [
-      cfg.port      # Brain API
-      11434         # Ollama
+      cfg.port # Brain API
+      11434 # Ollama
     ];
 
     # Unidades de sistema para Brain API e LightRAG (Blueprint)
     systemd.services.kryonix-brain-api = mkIf (cfg.role == "server") {
       description = "Kryonix Brain API Service";
-      after = [ "network.target" "ollama.service" ];
+      after = [
+        "network.target"
+        "ollama.service"
+      ];
       wantedBy = [ "multi-user.target" ];
 
       serviceConfig = {
