@@ -10,6 +10,7 @@
   imports = [
     (modulesPath + "/installer/cd-dvd/installation-cd-minimal.nix")
     ../glacier
+    ../common
   ];
 
   # Sobrescrever partes do glacier que não fazem sentido no live
@@ -20,9 +21,6 @@
 
   # Garantir Tailscale no live para teste de rede
   services.tailscale.enable = true;
-
-  # Desabilitar persistência se houver, pois é Live
-  # kryonix.persistence.enable = lib.mkForce false;
 
   # Branding e customização
   networking.hostName = "glacier-live";

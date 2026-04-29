@@ -228,6 +228,7 @@
             inherit inputs outputs;
             hostname = "glacier-live";
             isDarwin = false;
+            userConfig = users.rocha;
             nixosModules = "${self}/modules/nixos";
           };
           modules = [ ./hosts/glacier-live ];
