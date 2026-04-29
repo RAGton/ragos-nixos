@@ -35,17 +35,17 @@
     nvtopPackages.nvidia
     btop
     lsof
-    
+
     # Disco/FS
     parted
     gptfdisk
     btrfs-progs
-    
+
     # Rede/Transferência
     tailscale
     rsync
     rclone
-    
+
     # Utilidades
     git
     curl
