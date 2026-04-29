@@ -70,8 +70,8 @@ in
     # =========================
     services.ollama = mkIf cfg.ollama.enable {
       enable = true;
-      acceleration = cfg.ollama.acceleration;
-      listenAddress = "0.0.0.0"; # Permite acesso via Tailscale/LAN
+      package = if cfg.ollama.acceleration == "cuda" then pkgs.ollama-cuda else pkgs.ollama;
+      host = "0.0.0.0"; # Permite acesso via Tailscale/LAN
     };
 
     # Firewall: Abrir portas para Tailscale e LAN segura

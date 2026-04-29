@@ -33,6 +33,10 @@ in
       modesetting.enable = true;
       open = false; # Usa o driver proprietário para melhor suporte a gaming/CUDA
       package = config.boot.kernelPackages.nvidiaPackages.stable;
+      prime = {
+        sync.enable = lib.mkForce false;
+        offload.enable = lib.mkForce false;
+      };
     };
 
     # OpenGL e Vulkan
