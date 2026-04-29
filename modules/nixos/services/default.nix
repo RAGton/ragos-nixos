@@ -12,6 +12,13 @@
 # ==============================================================================
 { pkgs, ... }:
 {
+  imports = [
+    ./tailscale
+    ./snapper
+    ./tlp
+    ./brain.nix
+  ];
+
   services.udisks2.enable = true;
   services.gvfs.enable = true;
 

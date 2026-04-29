@@ -23,28 +23,29 @@
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
 
+  # DISCOS (Blueprint - UUIDs reais serão gerados na instalação)
   fileSystems."/" = {
-    device = "/dev/disk/by-uuid/97220a34-6352-40eb-87eb-7a64c9e8b1ea";
+    device = "/dev/disk/by-label/nixos";
     fsType = "btrfs";
-    options = [ "subvol=@" ];
+    options = [ "subvol=@" "compress=zstd" "noatime" ];
   };
 
   fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/97220a34-6352-40eb-87eb-7a64c9e8b1ea";
+    device = "/dev/disk/by-label/nixos";
     fsType = "btrfs";
-    options = [ "subvol=@home" ];
+    options = [ "subvol=@home" "compress=zstd" "noatime" ];
   };
 
   fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/33BA-62B9";
+    device = "/dev/disk/by-label/boot";
     fsType = "vfat";
-    options = [
-      "fmask=0077"
-      "dmask=0077"
-    ];
+    options = [ "fmask=0077" "dmask=0077" ];
   };
 
   swapDevices = [ ];
+
+  # REDE (Target 2.5Gb)
+  networking.useDHCP = lib.mkDefault true;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

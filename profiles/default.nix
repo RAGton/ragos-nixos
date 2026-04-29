@@ -18,5 +18,7 @@
     ./dev
     ./university
     ./ti
+    ./server-ai.nix
+    ./workstation-gamer.nix
   ];
 }
