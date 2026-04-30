@@ -64,6 +64,10 @@
   # Remote access baseline.
   services.openssh.enable = true;
   services.tailscale.enable = true;
+  services.kryonix.tailscale = {
+    advertiseExitNode = true;
+    authKeyFile = /root/tailscale-authkey.secret;
+  };
 
   security.sudo.wheelNeedsPassword = false;
 
