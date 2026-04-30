@@ -20,6 +20,7 @@
   userConfig,
   pkgs,
   lib,
+  inputs,
   ...
 }:
 {
@@ -133,5 +134,6 @@
     python3Packages.virtualenv
 
     ripgrep
+    inputs.antigravity-nix.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 }

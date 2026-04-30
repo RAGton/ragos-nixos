@@ -51,6 +51,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Google Antigravity (pacote Nix mantido em repositório externo)
+    antigravity-nix = {
+      url = "github:jacopone/antigravity-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # DankMaterialShell (DMS) - Rice para Hyprland (assets/configs)
     # Repo: https://github.com/AvengeMedia/DankMaterialShell
     # Obs.: flake=false porque é um repositório de dotfiles/configs, não um flake Nix.
