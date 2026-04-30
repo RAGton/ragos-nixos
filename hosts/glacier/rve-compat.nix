@@ -14,6 +14,11 @@ in
   networking.networkmanager.enable = lib.mkForce false;
   programs.nm-applet.enable = lib.mkForce false;
 
+  networking.interfaces.enp6s0 = {
+    useDHCP = false;
+    ipv4.addresses = [ ];
+  };
+
   networking.bridges.br0.interfaces = [ "enp6s0" ];
   networking.interfaces.br0.ipv4.addresses = [
     {
@@ -25,7 +30,7 @@ in
   networking.defaultGateway = "10.0.0.1";
   networking.nameservers = [
     "1.1.1.1"
-    "1.0.0.1"
+    "8.8.8.8"
   ];
   networking.enableIPv6 = true;
 

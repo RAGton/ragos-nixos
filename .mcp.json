@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "kryonix-brain": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "packages/kryonix-brain-lightrag",
+        "python",
+        "-m",
+        "kryonix_brain_lightrag.server"
+      ],
+      "cwd": "/etc/kryonix"
+    },
+    "mcp-nixos": {
+      "command": "uvx",
+      "args": [
+        "mcp-nixos"
+      ]
+    }
+  }
+}

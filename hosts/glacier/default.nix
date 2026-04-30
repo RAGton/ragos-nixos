@@ -82,6 +82,7 @@
     wget
     vim
     htop
+    efibootmgr
     pciutils
     usbutils
     tailscale
