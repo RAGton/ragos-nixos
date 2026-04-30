@@ -1,6 +1,6 @@
 # ==============================================================================
 # Módulo: Base Comum NixOS
-# Autor: rag
+# Autor: ragton
 #
 # O que é:
 # - Camada compartilhada entre hosts com defaults de sistema, serviços e pacotes.
@@ -372,6 +372,8 @@
       python3
       python3Packages.pip
       python3Packages.virtualenv
+      # uv: package manager rápido para Python (também fornece uvx para executar CLIs)
+      uv
 
       # Rust (global): `rustup` gerencia toolchains; `cargo`/`rustc` úteis para uso imediato.
       rustup

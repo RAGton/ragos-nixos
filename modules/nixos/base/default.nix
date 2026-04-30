@@ -1,6 +1,6 @@
 # ==============================================================================
 # Módulo: base (compat layer para common)
-# Autor: Gabriel Rocha (rag) + Codex
+# Autor: Gabriel Rocha (ragton) + Codex
 # Data: 2026-03-12
 #
 # O que é:
