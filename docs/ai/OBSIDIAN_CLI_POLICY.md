@@ -37,7 +37,7 @@ The agent must not read the entire vault.
 
 Start with:
 
-1. VAULT_INDEX.md
+1. README.md
 2. 01-MOCs/
 3. 03-Projetos/Kryonix.md
 4. 06-Playbooks/

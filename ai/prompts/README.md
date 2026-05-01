@@ -4,11 +4,12 @@ Prompts desta pasta são curtos, práticos e reutilizáveis.
 
 Uso recomendado:
 
-- começar do prompt mais específico
-- complementar com `ai/context/`
-- abrir a skill do domínio antes de editar código
+- Começar do prompt mais específico.
+- Complementar com a documentação em `docs/` e o Vault em `ai/kryonix-vault/`.
+- Abrir a Skill do domínio antes de editar código.
 
-Objetivo:
+## Objetivo
 
-- ajudar Copilot agora em tarefas incrementais
-- deixar pontos de partida claros para Codex em rodadas mais profundas
+- Manter a consistência na execução de tarefas recorrentes.
+- Garantir que o agente siga as regras de governança do Kryonix.
+- Facilitar a entrada em novos contextos técnicos.

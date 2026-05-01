@@ -10,7 +10,7 @@ obsidian vault info=path vault=kryonix-vault
 obsidian files ext=md vault=kryonix-vault
 obsidian files folder="01-MOCs" ext=md vault=kryonix-vault
 obsidian files folder="03-Projetos" ext=md vault=kryonix-vault
-obsidian read path="VAULT_INDEX.md" vault=kryonix-vault
+obsidian read path="README.md" vault=kryonix-vault
 obsidian read path="03-Projetos/Kryonix.md" vault=kryonix-vault
 obsidian search query="Kryonix" limit=10 vault=kryonix-vault
 obsidian search:context query="NixOS" path="01-MOCs" limit=10 vault=kryonix-vault

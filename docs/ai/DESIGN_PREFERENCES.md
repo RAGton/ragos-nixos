@@ -23,7 +23,7 @@ Este repositorio nao possui frontend web tradicional. As preferencias de design 
 ## Branding
 
 - Nome publico atual: Kryonix.
-- Compatibilidade RagOS/RAGOS deve aparecer apenas onde necessaria para migracao.
+- Compatibilidade Kryonix/KRYONIX deve aparecer apenas onde necessaria para migracao.
 - Remocoes de branding legado devem ser incrementais e testadas.
 
 ## Validacao visual/operacional

@@ -1,31 +1,44 @@
 # Host: Glacier
 
-## Visão Geral
-Glacier é o servidor principal do ecossistema Kryonix, atuando como o "Cérebro" (Brain Server) e workstation de alto desempenho/gaming.
+Este documento detalha o papel e infraestrutura canônica do servidor `glacier`.
 
-## Hardware
-- **CPU**: Ryzen 7 9700X (8 Cores / 16 Threads)
-- **GPU**: NVIDIA RTX 4060 8GB
-- **RAM**: 16GB DDR5
-- **Rede**: 2.5Gb Ethernet
-- **IP Fixo (LAN)**: `10.0.0.2`
-- **Tailscale IP**: `100.108.71.36`
+## Fonte de Verdade (Serviços Autônomos Ativos)
+- **Serviço:** `ollama.service`
+- **Porta:** `11434`
+- **Comando:** `systemctl status ollama.service --no-pager`
+- **Validação:** `ss -ltnp | grep 11434`
 
-## Papéis (Profiles)
-- **Server AI**: Hospeda Ollama, Brain API e Knowledge Graph.
-- **Workstation**: Hyprland/Caelestia e aplicativos gráficos, controlado por `kryonix.features.workstation.enable`.
-- **Gaming**: Steam, GameMode, MangoHud e Gamescope, controlado por `kryonix.features.gaming.enable`.
-- **OpenRGB**: RGB declarado por `kryonix.features.openrgb.enable`.
+> [!WARNING]
+> Quaisquer outros serviços prometidos de IA ou Graph (API na porta 8000, MCP Server contínuo) não estão validados em runtime e foram movidos para o ROADMAP.
 
-## Serviços
-- **Ollama**: Backend de LLM e Embeddings.
-- **Kryonix Brain API**: Interface RAG para o projeto.
-- **LightRAG Server**: Gerenciamento do Knowledge Graph.
-- **Vault Storage**: Armazenamento do conhecimento técnico (Obsidian).
-- **SSH**: Acesso remoto seguro.
-- **Tailscale**: VPN mesh para integração com o host Inspiron.
+## Perfil Base
 
-## Configuração Declarativa
-A configuração está localizada em `hosts/glacier/default.nix`.
+- **Tipo:** Servidor IA / Workstation / Datacenter Pessoal
+- **Hardware:** AMD CPU + NVIDIA RTX 4060
+- **Ambiente Desktop (se habilitado):** Hyprland + Caelestia
+- **Sistema Base:** NixOS declarativo
 
-O perfil `server-ai` é obrigatório no Glacier. Workstation, gaming e OpenRGB são features separadas. Lutris e ferramentas Wine/Proton ficam desligadas por padrão para não puxar `openldap-i686-linux`; habilite explicitamente apenas quando esse caminho estiver buildável. O `nvtop` NVIDIA também fica opt-in porque puxa o CUDA toolkit completo e não é necessário para o servidor IA bootar.
+## Papel no Ecossistema
+
+O Glacier é o servidor principal do projeto Kryonix. O repositório o consolida como a fonte de processamento pesado, Virtualização e eventual base de Gaming de performance.
+
+### 1. Centro de Inteligência Artificial (Kryonix Brain)
+- **Ollama**: Roda nativamente para expor modelos locais na porta `11434`.
+- **LightRAG e Grafo**: Operacional via chamadas diretas pela CLI `kryonix` (não autônomo).
+- **Vault Index**: Processa o Vault Obsidian para pesquisa semântica através de comandos invocados manualmente.
+
+### 2. Infraestrutura e Redes
+- Possui o repositório instalado em `/etc/kryonix`.
+- Mantém IP fixo interno alvo (`10.0.0.2`).
+- Expõe porta segura `2224` para acessos SSH (LAN ou Tailscale).
+
+### 3. Workstation e Virtualização
+- Armazena imagens base e templates de hipervisores KVM no diretório central: `/srv/ragenterprise`.
+- Pode assumir um perfil gamer completo opt-in sem afetar os serviços de servidor.
+
+## Validação e Gerenciamento
+Para testar a vitalidade de runtime autônomo no `glacier`, execute:
+```sh
+kryonix test server
+systemctl status ollama.service --no-pager
+```

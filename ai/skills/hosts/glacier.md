@@ -1,6 +1,6 @@
 # Host Skill: Glacier
 
-`glacier` é o host principal do RagOS VE.
+`glacier` é o host principal do Kryonix VE.
 
 Papel:
 

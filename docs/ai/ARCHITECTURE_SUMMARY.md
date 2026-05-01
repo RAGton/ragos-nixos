@@ -37,7 +37,7 @@ flake.nix
 - Shell/rice principal: Caelestia.
 - DMS: legado em transicao.
 - CLI primaria: `kryonix`.
-- CLI legada: `ragos`.
+- CLI legada: `kryonix`.
 - Host principal de produto: `glacier`.
 - ISO: output de instalacao/provisionamento.
 
@@ -61,4 +61,4 @@ flake.nix
 - Reduzir docs historicas divergentes em favor de `docs/CURRENT_STATE.md`, `context/` e `docs/ai/`.
 - Quebrar mudancas grandes em PRs pequenos.
 - Separar responsabilidades de `desktop/hyprland/user.nix`.
-- Manter compatibilidade `ragos` ate janela de migracao explicita.
+- Manter compatibilidade `kryonix` ate janela de migracao explicita.

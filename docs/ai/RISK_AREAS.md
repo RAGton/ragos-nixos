@@ -19,7 +19,7 @@
 ## Migrations e rename
 
 - `kryonix.*` e ativo; `rag.*` e alias temporario.
-- `kryonix` e CLI primaria; `ragos` e wrapper legado.
+- `kryonix` e CLI primaria; `kryonix` e wrapper legado.
 - Remover compatibilidade cedo pode quebrar hosts instalados, scripts e docs.
 
 ## Deploy e aplicacao
@@ -78,5 +78,5 @@ rm -rf /
 
 - `desktop/hyprland/user.nix`
 - `packages/kryonix-cli.nix`
-- docs historicas divergentes de Kryonix/RagOS
+- docs historicas divergentes de Kryonix/Kryonix
 - overlays temporarios que dependem de estado upstream

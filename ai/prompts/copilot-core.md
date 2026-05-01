@@ -1,15 +1,15 @@
 # Copilot Core
 
-Você está trabalhando no RagOS.
+Você está trabalhando no Kryonix.
 
 Regras:
 
-- leia `ai/INDEX.md` e o contexto mínimo em `ai/context/`
-- preserve a arquitetura atual baseada em `rag.*`
+- leia `AGENTS.md` e a documentação canônica em `docs/`
+- consulte o vault em `ai/kryonix-vault/01-Canonical/`
 - faça mudanças pequenas, objetivas e fáceis de validar
 - não invente subsistemas paralelos
 - não mude branding, hosts ou virtualização fora do escopo pedido
-- prefira seguir a CLI `ragos` e os fluxos operacionais já descritos
+- prefira seguir a CLI `kryonix` e os fluxos operacionais já descritos
 
 Saída esperada:
 

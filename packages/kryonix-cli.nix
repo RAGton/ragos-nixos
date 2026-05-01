@@ -1141,6 +1141,81 @@ writeShellApplication {
               fi
             }
 
+            kryonix_doctor_full() {
+              local repo_path
+              repo_path="$(kryonix_git_repo_path)"
+              local has_error=0
+
+              blue_line "======================================"
+              blue_line "    KRYONIX DOCTOR FULL"
+              blue_line "======================================"
+
+              blue_line ""
+              blue_line "--- [1] doctor docs ---"
+              if [[ -x "$repo_path/scripts/doc-audit.sh" ]]; then
+                if ! "$repo_path/scripts/doc-audit.sh"; then
+                  has_error=1
+                fi
+              else
+                blue_line "ERRO: scripts/doc-audit.sh não encontrado."
+                has_error=1
+              fi
+
+              blue_line ""
+              blue_line "--- [2] doctor system ---"
+              blue_line "  host atual   : $(current_hostname)"
+              blue_line "  modo detectado: $flake_mode"
+              blue_line "  flake resolvida: $flake_ref"
+              
+              if command -v systemctl >/dev/null 2>&1; then
+                blue_line "  libvirtd     : $(systemctl is-enabled libvirtd 2>/dev/null || printf 'unknown')"
+                blue_line "  tailscaled   : $(systemctl is-active tailscaled 2>/dev/null || printf 'inactive')"
+              fi
+
+              if ss -ltnp 2>/dev/null | grep -q 11434; then
+                  blue_line "  ollama       : ativo"
+              else
+                  blue_line "  ollama       : inativo"
+              fi
+
+              blue_line ""
+              blue_line "--- [3] doctor architecture ---"
+              for doc in ARCHITECTURE.md ROADMAP.md USAGE.md TESTING.md; do
+                if [[ -f "$repo_path/docs/$doc" ]]; then
+                  blue_line "  ✓ docs/$doc encontrado."
+                else
+                  blue_line "  ERRO: docs/$doc ausente."
+                  has_error=1
+                fi
+              done
+
+              blue_line ""
+              blue_line "--- [4] doctor brain ---"
+              brain_url="$(brain_api_url)"
+              if [[ -n "$brain_url" ]]; then
+                blue_line "  brain url    : $brain_url"
+                if curl -s --connect-timeout 2 "$brain_url/health" >/dev/null; then
+                  blue_line '  brain health : OK'
+                else
+                  blue_line '  brain health : FAIL'
+                fi
+              elif [[ "$(kryonix_brain_role)" == "client" ]]; then
+                blue_line '  brain remoto : WARN: KRYONIX_BRAIN_API ausente'
+              else
+                blue_line '  brain remoto : inativo (server)'
+              fi
+
+              blue_line ""
+              blue_line "--- [5] doctor summary ---"
+              if [[ "$has_error" -eq 1 ]]; then
+                blue_line "ERRO CRÍTICO: kryonix doctor full encontrou falhas."
+                return 1
+              else
+                blue_line "✓ kryonix doctor full concluído sem erros críticos."
+                return 0
+              fi
+            }
+
             accepts_positional_host() {
               case "$subcommand" in
                 switch|boot|test|home|rebuild|diff|doctor)
@@ -1354,6 +1429,11 @@ writeShellApplication {
                 ;;
 
               doctor)
+                if [[ "''${extra_args[0]:-}" == "full" ]]; then
+                  kryonix_doctor_full
+                  exit $?
+                fi
+
                 blue_line 'Kryonix doctor'
                 blue_line "  host atual   : $(current_hostname)"
                 blue_line "  modo detectado: $flake_mode"

@@ -2,7 +2,7 @@
 
 ## Escopo
 
-Virtualização do RagOS com foco em libvirt/KVM.
+Virtualização do Kryonix com foco em libvirt/KVM.
 
 ## Regras
 

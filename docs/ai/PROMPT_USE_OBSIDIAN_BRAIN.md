@@ -32,7 +32,7 @@ Rules:
 - Do not read the whole vault.
 - Do not directly modify vault Markdown files unless explicitly approved.
 - Prefer Obsidian CLI for vault operations.
-- Start from VAULT_INDEX.md, MOCs, project notes, playbooks and prompts.
+- Start from README.md, MOCs, project notes, playbooks and prompts.
 - If the CLI cannot perform the required operation, write a request to docs/ai/VAULT_ACCESS_REQUEST.md.
 - If a vault update is needed but cannot be done through CLI, write it to docs/ai/VAULT_UPDATE_PROPOSAL.md.
 - Never store secrets, tokens, private keys, sensitive logs or raw dumps in the vault.

@@ -1,15 +1,15 @@
-# Skill: RagOS CLI
+# Skill: Kryonix CLI
 
 ## Escopo
 
-Consolidar a CLI `ragos` como entrada única para operação diária do sistema.
+Consolidar a CLI `kryonix` como entrada única para operação diária do sistema.
 
 ## Responsabilidades
 
-- manter `ragos doctor` como diagnóstico rápido do host e da flake
-- consolidar `ragos snapshot` como interface operacional para snapshot seguro
-- consolidar `ragos generations` como leitura objetiva de gerações relevantes
-- consolidar `ragos rollback` como caminho claro de reversão
+- manter `kryonix doctor` como diagnóstico rápido do host e da flake
+- consolidar `kryonix snapshot` como interface operacional para snapshot seguro
+- consolidar `kryonix generations` como leitura objetiva de gerações relevantes
+- consolidar `kryonix rollback` como caminho claro de reversão
 - preservar resolução de flake, mapeamento de host e mensagens acionáveis
 
 ## Regras
@@ -23,4 +23,4 @@ Consolidar a CLI `ragos` como entrada única para operação diária do sistema.
 
 - `ai/context/OPERATING_MODEL.md`
 - `docs/OPERATIONS.md`
-- `packages/ragos-cli.nix`
+- `packages/kryonix-cli.nix`

@@ -4,7 +4,7 @@ Este guia consolida as melhores práticas para operação do ecossistema distrib
 
 ## 1. Fluxo Operacional (CLI)
 
-Use a CLI `kryonix` para todas as operações. O comando `ragos` foi descontinuado em favor do `kryonix`.
+Use a CLI `kryonix` para todas as operações. O comando `kryonix` foi descontinuado em favor do `kryonix`.
 
 ### Sincronização e Deploy
 - **`kryonix pull`**: Sincroniza o repositório local com o remoto (rebase) e atualiza submodules.

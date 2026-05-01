@@ -1,43 +1,37 @@
-# Camada de IA do RagOS
+# Camada de IA do Kryonix
 
 Esta pasta organiza o material que orienta agentes e assistentes sobre o estado real do projeto.
 
 Ela serve para:
 
-- concentrar contexto canônico curto
+- concentrar contexto canônico via Vault (Obsidian)
 - guardar prompts reutilizáveis
 - registrar skills por domínio
 - oferecer templates para novos artefatos
 
 ## Estrutura
 
-- `context/`: fonte de verdade curta sobre estado atual, hosts e modelo operacional
-- `prompts/`: prompts prontos para tarefas recorrentes
-- `skills/`: instruções operacionais por área do projeto
-- `templates/`: moldes para criar novos prompts, skills e checklists
+- `kryonix-vault/`: Base de conhecimento curada, estruturada e navegável (Obsidian).
+- `prompts/`: prompts prontos para tarefas recorrentes.
+- `skills/`: instruções operacionais por área do projeto.
+- `templates/`: moldes para criar novos prompts, skills e checklists.
 
-## Como o Copilot deve usar
+## Como o Agente deve usar
 
-Uso incremental e local:
+1. Começar por [INDEX.md](INDEX.md).
+2. Consultar o Vault em `kryonix-vault/01-Canonical/` para definições de arquitetura e uso.
+3. Abrir apenas o prompt e a skill relevantes para a tarefa.
+4. Propor mudanças pequenas, verificáveis e alinhadas ao estado atual.
 
-1. ler [INDEX.md](INDEX.md)
-2. ler o contexto mínimo em `context/`
-3. abrir apenas o prompt e a skill relevantes para a tarefa
-4. propor mudanças pequenas, verificáveis e alinhadas ao estado atual
+Os agentes devem evitar:
 
-Copilot deve evitar:
+- inventar arquitetura paralela.
+- reabrir decisões já descritas nos documentos canônicos.
+- espalhar regras operacionais em comentários soltos pelo repo.
 
-- inventar arquitetura paralela
-- reabrir decisões já descritas em `context/`
-- espalhar regras operacionais em comentários soltos pelo repo
+## Evolução do Conhecimento
 
-## Como o Codex deve usar depois
+O conhecimento deve fluir de:
+`Discussão` -> `Código/Docs` -> `Vault (Obsidian)` -> `Skills/Prompts`.
 
-Uso mais profundo e orientado a execução:
-
-1. começar por [INDEX.md](INDEX.md)
-2. tratar `context/` como base canônica curta
-3. usar `skills/` para limitar escopo e validar mudanças
-4. usar `prompts/` como ponto de partida para refactors e investigações maiores
-
-Codex deve preferir atualizar este material quando a prática operacional mudar, em vez de deixar contexto importante preso em conversa.
+O Vault é a representação navegável e curada da documentação canônica, servindo como a principal base de grounding para o RAG/Brain.

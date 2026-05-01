@@ -17,7 +17,7 @@
 - Alterar discos, particoes, bootloader, initrd ou hardware config.
 - Alterar secrets, auth, Tailscale, SSH, GPG ou CI secrets.
 - Atualizar `flake.lock` quando isso nao for o objetivo principal.
-- Remover compatibilidade `ragos`/`rag.*`.
+- Remover compatibilidade `kryonix`/`rag.*`.
 - Alterar firewall, bridges, libvirt, Tailscale ou acesso remoto.
 - Fazer deploy, sync ou switch em host real.
 

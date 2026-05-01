@@ -3,15 +3,15 @@
 ## Validação antes de aplicar
 
 ```sh
-ragos doctor
-ragos diff
-ragos test
+kryonix doctor
+kryonix diff
+kryonix test
 ```
 
 ## Quando promover para aplicação direta
 
 ```sh
-ragos switch
+kryonix switch
 ```
 
 ## Separar erro novo de erro antigo

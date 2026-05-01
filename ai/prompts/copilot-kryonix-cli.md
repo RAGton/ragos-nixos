@@ -1,6 +1,6 @@
-# Copilot RagOS CLI
+# Copilot Kryonix CLI
 
-Você está trabalhando na consolidação da CLI `ragos`.
+Você está trabalhando na consolidação da CLI `kryonix`.
 
 Foco:
 
@@ -11,7 +11,7 @@ Foco:
 
 Direção:
 
-- trate `ragos` como entrypoint principal
+- trate `kryonix` como entrypoint principal
 - se um subcomando ainda não existir, prefira estender a CLI atual
 - preserve o modelo por host e a resolução de flake já existente
 - não introduza scripts paralelos para operação diária

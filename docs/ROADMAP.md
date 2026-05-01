@@ -1,89 +1,219 @@
 # Roadmap do Kryonix
 
-**Atualizado em:** 2026-04-29
+Este documento contém o planejamento futuro do projeto Kryonix. O repositório segue rigorosamente o princípio da "Verdade Operacional". Tudo que não possui validação runtime real comprovável encontra-se aqui.
 
-## Direção
+---
 
-O roadmap atual é de **consolidação arquitetural e maturidade operacional**. A prioridade é fazer o Kryonix funcionar como plataforma NixOS/Linux real, sem abrir novas frentes frágeis.
+## Kryonix Brain API
 
-## Fase 0 — base operacional
+STATUS: NOT_IMPLEMENTED
 
-- manter `glacier` avaliando
-- manter `hardware-configuration.nix` como verdade local do host principal
-- não usar fluxos destrutivos no host instalado
-- consolidar a CLI `kryonix` como entrada padrão única
+DESCRIÇÃO:
+API central do Kryonix Brain para centralizar o processamento do LightRAG e LLM operations, abstraindo a IA do host cliente (`inspiron`).
 
-## Fase 1 — documentação canônica
+EVIDÊNCIA ATUAL:
+- Serviço systemd existente: `kryonix-brain-api.service` (atualmente inativo/morto).
 
-- promover `docs/CURRENT_STATE.md` a referência principal
-- manter `docs/INDEX.md` como hub claro para humanos e IAs
-- rebaixar documentos antigos para histórico quando não refletirem o estado atual
-- resumir `docs/STATUS.md` para refletir a fase atual do projeto
+GAPS:
+- O serviço não roda nativamente de modo persistente.
+- A porta `8000` não se encontra exposta e respondendo ativamente.
+- O daemon falha ou não tem script de `ExecStart` plenamente validado e robusto no NixOS.
 
-## Fase 2 — desktop, rice e features
+CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
+- impacto documentado em ARCHITECTURE.md ou USAGE.md
+- systemd service `kryonix-brain-api` ativo e em estado `running`.
+- porta `8000` aberta em localhost ou LAN.
+- endpoint `GET /health` respondendo 200 OK.
 
-- assumir explicitamente que o desktop atual é `hyprland`
-- remover resíduos internos de DMS na seleção de desktop
-- separar melhor os conceitos de desktop, rice e feature
-- decidir se o suporte DMS legado continua existindo ou é absorvido pelo modelo de rice
+COMANDOS DE VALIDAÇÃO:
+```sh
+systemctl status kryonix-brain-api.service --no-pager
+ss -ltnp | grep 8000
+curl -sf http://localhost:8000/health
+```
 
-## Fase 3 — Home Manager
+RISCOS:
+- Inconsistência de acesso concorrente ao banco de vetores.
+- Exposição indevida do storage via API HTTP.
 
-- reduzir imports diretos de `desktop/hyprland/user.nix` nos homes
-- criar caminho mais declarativo para seleção de desktop/rice no lado user-level
-- evitar que cada home precise editar detalhes internos do stack desktop
+---
 
-## Fase 4 — Hyprland cleanup
+## MCP Remoto Completo
 
-- extrair wrappers duplicados para ponto único
-- reduzir sobreposição entre system-level e user-level
-- quebrar arquivos grandes em submódulos menores
+STATUS: PARTIAL
 
-## Fase 5 — notebook principal
+DESCRIÇÃO:
+Suporte pleno ao Model Context Protocol conectando agentes ao Kryonix de forma remota, com discovery automático de ferramentas do servidor.
 
-- sem auto-lock
-- sem auto-suspend
-- tampa e idle tratados de forma declarativa
-- lock apenas manual por padrão
-- display pode apagar por idle, sem bloquear a sessão
+EVIDÊNCIA ATUAL:
+- `kryonix mcp` no CLI está parcialmente implementado em `.mcp.example.json`.
+- Tools locais documentadas (mcp-nixos, filesystem).
 
-## Fase 6 — glacier
+GAPS:
+- Ferramentas de servidor (como `rag_search` e `graph_heal`) não foram validadas no runtime do Glacier via MCP.
+- Sem comprovação de conexão segura persistente entre Inspiron e a sessão SSH que inicializa o MCP do Brain.
 
-- consolidar `glacier` como host principal para virtualização e gaming
-- revisar tuning de KVM/IOMMU
-- revisar governadores e política de energia
-- revisar stack NVIDIA + Wayland
-- garantir ferramentas e defaults adequados para workstation
-- manter storage de hypervisor em `/srv/ragenterprise`
+CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
+- impacto documentado em ARCHITECTURE.md ou USAGE.md
+- O CLI `kryonix mcp doctor` retornar status OK (sem falhas de timeout ou paths incorretos) validando o servidor do Glacier.
+- Retorno JSON-RPC com as `tools` ativas na interface do Claude/Cursor.
 
-## Fase 7 — branding e produto
+COMANDOS DE VALIDAÇÃO:
+```sh
+kryonix mcp doctor
+kryonix mcp check
+```
 
-- consolidar o naming público `Kryonix`
-- manter branding consistente em GRUB, Plymouth, GDM e desktop
-- organizar assets visuais em caminho canônico
-- melhorar a percepção do projeto como sistema operacional pessoal, não como dotfiles
+RISCOS:
+- Vazamento de secrets no JSON-RPC.
+- Timeout no boot-up do virtualenv/python via SSH.
 
-## Fase 8 — checks e qualidade
+---
 
-- manter `nixfmt` verde
-- manter `flake check --keep-going` útil como baseline
-- reduzir falhas locais não estruturais antes de mudanças maiores
-- separar validação cliente/servidor do Brain:
-  - `inspiron`: `kryonix test client`, `kryonix test mcp` e integração remota via `KRYONIX_BRAIN_API`
-  - `glacier`: `kryonix test server`, Ollama, storage LightRAG, GraphML, Brain API e MCP Brain
-- tratar ausência de Glacier/Ollama/índice como `WARN` no cliente, não como bloqueio de build
+## Glacier NixOS Definitivo (Autônomo)
 
-## Fase 9 — ISO futura
+STATUS: PARTIAL
 
-- manter o output `iso` como objetivo de produto
-- melhorar o fluxo de build e documentação
-- preparar a experiência de instalação sem transformar o projeto em distro genérica
+DESCRIÇÃO:
+Consolidação do Glacier como backend headless autônomo. O gerenciamento das cargas de inteligência deve inicializar automaticamente independente do login gráfico.
 
-## Resultado esperado
+EVIDÊNCIA ATUAL:
+- Host profile presente em `hosts/glacier`.
+- `ollama.service` funcional.
 
-Ao final desse roadmap, o projeto deve ficar:
+GAPS:
+- Serviços dependentes do usuário logado ao invés do boot system (falta de isolamento autônomo pleno).
 
-- mais fiel ao estado real
-- mais fácil para humanos manterem
-- mais seguro para agentes executarem refactors
-- mais previsível em desktop, energia e organização
+CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
+- impacto documentado em ARCHITECTURE.md ou USAGE.md
+- O Glacier conseguir inicializar e servir `Ollama`, `Tailscale` e `Brain API` sem necessidade de login manual (apenas boot).
+
+COMANDOS DE VALIDAÇÃO:
+```sh
+kryonix test server
+```
+
+RISCOS:
+- Dependência de montagem de drives criptografados manuais que impedem serviços no boot.
+
+---
+
+## Web Research Controlado
+
+STATUS: NOT_IMPLEMENTED
+
+DESCRIÇÃO:
+Agentes locais com acesso seguro à internet para pesquisa e ingestão, rodando sob restrições de rede e sandbox rigorosas.
+
+EVIDÊNCIA ATUAL:
+- Nenhuma ferramenta MCP de web-search ativa.
+- Nenhum container ou `bwrap` isolado para o RAG web scrape atrelado.
+
+GAPS:
+- Todo o pipeline de ingestão e parse de HTML para Markdown do LightRAG na nuvem local.
+
+CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
+- impacto documentado em ARCHITECTURE.md ou USAGE.md
+- Serviço / CLI atrelado ao `kryonix brain ingest-web <url>` funcional.
+- Sandboxing efetivo comprovado na extração.
+
+COMANDOS DE VALIDAÇÃO:
+```sh
+kryonix brain ingest-web "https://nixos.org"
+```
+
+RISCOS:
+- Scraping executado como processo não-sandbox, abrindo brechas de injeção direta no Vault/Graph.
+
+---
+
+## Geração de Pacotes com IA
+
+STATUS: NOT_IMPLEMENTED
+
+DESCRIÇÃO:
+Pipelines LLM injetando de forma autônoma receitas ou scripts Nix na flake para empacotar softwares não mantidos pelo upstream.
+
+EVIDÊNCIA ATUAL:
+- Nada presente no repositório.
+
+GAPS:
+- Infraestrutura completa de review, syntax-check automático e git-commit via agentes.
+
+CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
+- impacto documentado em ARCHITECTURE.md ou USAGE.md
+- Agente ser capaz de criar um `.nix` novo, formatar via `nix fmt` e aprovar em `nix flake check`.
+
+COMANDOS DE VALIDAÇÃO:
+```sh
+kryonix agent package-gen "nome-do-pacote"
+```
+
+RISCOS:
+- Corrupção da flake inteira por geração arbitrária de arquivos `default.nix`.
+
+---
+
+## Autocuradoria do Vault
+
+STATUS: NOT_IMPLEMENTED
+
+DESCRIÇÃO:
+Processos automáticos do Brain avaliando e reorganizando notas no Vault baseados na relevância, deletando documentação obsoleta internamente.
+
+EVIDÊNCIA ATUAL:
+- A CLI `kryonix vault scan` apenas reporta integridade básica.
+
+GAPS:
+- Nenhum job assíncrono indexando metadados de stale notes.
+
+CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
+- impacto documentado em ARCHITECTURE.md ou USAGE.md
+- Comando CLI ou timer systemd validando e listando notas marcadas para deleção via LLM.
+
+COMANDOS DE VALIDAÇÃO:
+```sh
+kryonix vault curate --dry-run
+```
+
+RISCOS:
+- Destruição de conhecimento permanente devido à alucinação de irrelevância pela LLM.
+
+---
+
+## ISO Instalável Kryonix
+
+STATUS: NOT_IMPLEMENTED
+
+DESCRIÇÃO:
+Sistema de build em CI/CD ou local para gerar uma ISO standalone (USB bootable) para deploy da distro Kryonix.
+
+EVIDÊNCIA ATUAL:
+- Declaração `iso` incompleta no flake (falha de checagem/build).
+
+GAPS:
+- O módulo de provisionamento e live-cd com o desktop básico.
+
+CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
+- impacto documentado em ARCHITECTURE.md ou USAGE.md
+- Comando CLI conseguir gerar um arquivo `kryonix.iso`.
+
+COMANDOS DE VALIDAÇÃO:
+---
+
+## Pipeline de sincronização docs → vault → Brain/RAG
+
+STATUS: NOT_IMPLEMENTED
+
+DESCRIÇÃO:
+Criação de um comando integrado na CLI `kryonix vault sync-docs` para automatizar a derivação de notas do vault a partir da documentação canônica em `docs/`, garantindo que o RAG esteja sempre atualizado com a fonte de verdade operacional.
+
+CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
+- Comando `kryonix vault sync-docs` funcional.
+- Metadados de sincronização (last_sync) inseridos automaticamente.
+- Verificação de divergências entre `docs/` e `01-Canonical/`.
+
+COMANDOS DE VALIDAÇÃO:
+```sh
+kryonix vault sync-docs
+```

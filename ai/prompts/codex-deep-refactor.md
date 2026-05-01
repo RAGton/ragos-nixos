@@ -8,7 +8,7 @@ Direção:
 - respeite a arquitetura pública atual do repo
 - consolide antes de expandir
 - remova duplicação sem reabrir naming, hosts ou branding sem necessidade
-- mantenha a CLI `ragos` e a operação real como referência
+- mantenha a CLI `kryonix` e a operação real como referência
 
 Resultado esperado:
 
