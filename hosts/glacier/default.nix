@@ -1,8 +1,22 @@
+# =============================================================================
+# Host: Glacier
+#
+# O que é:
+# - Composição declarativa do host Glacier.
+# - Toda lógica está nos perfis glacier-base/ai/gamer + rve-compat.nix.
+# - Este arquivo contém apenas: imports, enables, kernel, boot e stateVersion.
+#
+# Perfis ativos:
+# - glacier-base: NVIDIA, SSH, Tailscale, firewall, branding
+# - glacier-ai:   Ollama + Brain + LightRAG (sem autostart, keep_alive=0)
+# - glacier-gamer: Steam, Lutris, Wine, Heroic, OpenRGB, desktop
+# - dev:          git, gh, lazygit, tmux, podman, neovim
+# - ti:           nmap, tcpdump, wireshark, virt-manager, qemu
+# =============================================================================
 {
   inputs,
   hostname,
   lib,
-  pkgs,
   config,
   ...
 }:
@@ -22,103 +36,55 @@
   ];
 
   # =========================
-  # PROFILES (Blueprint)
+  # PROFILES — toda a lógica vive aqui
   # =========================
-  kryonix.profiles.server-ai.enable = true;
+  kryonix.profiles.glacier-base.enable = true;
+  kryonix.profiles.glacier-ai.enable = true;
+  kryonix.profiles.glacier-gamer.enable = true;
 
-  # Workstation/gaming ficam separados do perfil server-ai para que o Glacier
-  # continue buildando como servidor mesmo se a camada gamer for desligada.
-  kryonix.features.workstation.enable = true;
-  kryonix.features.openrgb.enable = true;
-  kryonix.features.gaming = {
-    enable = true;
-    steam.enable = true;
-    steam.gamescope = true;
-    gamemode.enable = true;
-    mangohud.enable = true;
-    lutris.enable = false;
-    wineTools.enable = false;
-    nvtop.enable = false;
-    heroic.enable = true;
-  };
-
-  # Perfis adicionais herdados
+  # Perfis funcionais
   kryonix.profiles.dev.enable = true;
-  kryonix.profiles.university.enable = true;
   kryonix.profiles.ti.enable = true;
 
-  kernelZen = {
-    enable = true;
-
-    kernel = "zen";
-    forceLocalBuild = true;
-    useLLVMStdenv = true;
-    extraMakeFlags = [ ];
-
-    # ⚠️ só recomendo isso se for desktop single-user.
-    disableMitigations = lib.mkDefault false;
-
-    # Removido: parâmetros agressivos do scheduler podem causar travamentos
-    # O kernel Zen já vem otimizado para desktop
-    extraKernelParams = [ ];
-  };
-  # Drivers NVIDIA (RTX 4060)
-  services.xserver.videoDrivers = [ "nvidia" ];
-  hardware.nvidia = {
-    modesetting.enable = true;
-    open = false;
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
-    prime = {
-      sync.enable = lib.mkForce false;
-      offload.enable = lib.mkForce false;
-    };
-  };
-
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true;
-  };
-
-  # Remote access baseline.
-  services.openssh.enable = true;
-  services.tailscale.enable = true;
+  # =========================
+  # TAILSCALE (RVE-specific, não genérico)
+  # =========================
+  # authKeyFile e extraUpFlags são identidade deste host — ficam aqui.
   services.kryonix.tailscale = {
     advertiseExitNode = true;
     authKeyFile = /root/tailscale-authkey.secret;
     extraUpFlags = [ "--hostname=RVE-GLACIER" ];
   };
 
-  # The Brain API unit still points at an unpackaged runtime/env and must not
-  # make host activation fail until that server deployment path is finished.
+  # =========================
+  # BRAIN API — override temporário
+  # =========================
+  # O wantedBy é controlado pelo brain.nix via cadeia de dependências
+  # (ollama → kryonix-lightrag → kryonix-brain-api).
+  # Mantém mkForce [] até o primeiro nixos-rebuild switch validado no Glacier.
+  # REMOVER esta linha após o primeiro switch bem-sucedido.
   systemd.services.kryonix-brain-api.wantedBy = lib.mkForce [ ];
 
-  security.sudo.wheelNeedsPassword = false;
-
-  environment.systemPackages = with pkgs; [
-    git
-    curl
-    wget
-    vim
-    htop
-    efibootmgr
-    pciutils
-    usbutils
-    tailscale
-  ];
-
   # =========================
-  # NETWORK (bridge / br0)
+  # KERNEL ZEN (hardware-specific)
   # =========================
-  networking = {
-    hostName = hostname;
-    firewall = {
-      enable = true;
-      trustedInterfaces = [ "tailscale0" ];
-    };
+  kernelZen = {
+    enable = true;
+    kernel = "zen";
+    forceLocalBuild = true;
+    useLLVMStdenv = true;
+    extraMakeFlags = [ ];
+    disableMitigations = lib.mkDefault false;
+    extraKernelParams = [ ];
   };
 
   # =========================
-  # BOOT / KERNEL
+  # NETWORK — hostname apenas (IP, bridge, firewall em rve-compat e glacier-base)
+  # =========================
+  networking.hostName = hostname;
+
+  # =========================
+  # BOOT (hardware-specific)
   # =========================
   boot = {
     loader = {
@@ -126,7 +92,6 @@
       grub = {
         enable = true;
         efiSupport = true;
-        # UEFI-only: do not try to install GRUB as an i386-pc blocklist loader.
         device = "nodev";
         useOSProber = false;
       };
@@ -144,11 +109,4 @@
   # SYSTEM
   # =========================
   system.stateVersion = "26.05";
-
-  # Branding
-  kryonix.branding = {
-    enable = true;
-    prettyName = "Kryonix Glacier";
-    edition = "Server/Workstation";
-  };
 }

@@ -1,7 +1,7 @@
-[submodule "ai/kryonix-vault"]
-	path = ai/kryonix-vault
-	url = https://github.com/RAGton/kryonix-vault.git
-	branch = main
+
 [submodule "packages/kryonix-brain-lightrag"]
 	path = packages/kryonix-brain-lightrag
 	url = https://github.com/RAGEnterprise/kryonix-brain-lightrag.git
+[submodule ".ai/kryonix-vault"]
+	path = .ai/kryonix-vault
+	url = https://github.com/RAGton/kryonix-vault.git

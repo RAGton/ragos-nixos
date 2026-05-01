@@ -20,5 +20,9 @@
     ./ti
     ./server-ai.nix
     ./workstation-gamer.nix
+    # Perfis específicos do Glacier (base/ai/gamer com separação limpa)
+    ./glacier-base.nix
+    ./glacier-ai.nix
+    ./glacier-gamer.nix
   ];
 }

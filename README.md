@@ -105,6 +105,23 @@ O projeto já padroniza o branding do Kryonix no:
 
 O produto é apresentado publicamente como **Kryonix**. O nome antigo permanece apenas como compatibilidade temporária de CLI/opções/caminho.
 
+## IA Local e Serviços do Brain
+
+O `glacier` agora conta com serviços de Inteligência Artificial nativos (Ollama, LightRAG, Kryonix Brain API). Antes de ativar a infraestrutura pela primeira vez, é obrigatório gerar uma chave de segurança para acesso à API:
+
+1. Gere uma chave segura aleatória:
+```sh
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+2. Crie ou injete no arquivo de ambiente `/etc/kryonix/brain.env` que fica fora do controle de versão:
+```sh
+KRYONIX_BRAIN_KEY="<chave_gerada_aqui>"
+LIGHTRAG_VERBOSE="1"
+```
+
+Se esse arquivo não existir, o Systemd se recusará a subir as units `kryonix-brain-api` e `kryonix-lightrag` no momento do `kryonix switch`.
+
 ## Documentação
 
 - [Operação diária e CLI](docs/OPERATIONS.md)

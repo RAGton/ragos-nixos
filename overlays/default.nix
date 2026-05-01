@@ -220,4 +220,12 @@
           ];
         });
   };
+  openldap-no-checks = _final: prev: {
+    pkgsi686Linux = prev.pkgsi686Linux // {
+      openldap = prev.pkgsi686Linux.openldap.overrideAttrs (_old: {
+        doCheck = false;
+        doInstallCheck = false;
+      });
+    };
+  };
 }

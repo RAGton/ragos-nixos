@@ -20,6 +20,7 @@
       outputs.overlays.openrgb-git
       outputs.overlays.drkonqi-ignore-missing-buildid
       outputs.overlays.python312-docs-stub
+      outputs.overlays.openldap-no-checks
     ];
 
     config = {

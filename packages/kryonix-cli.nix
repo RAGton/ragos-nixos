@@ -988,6 +988,8 @@ writeShellApplication {
                 "  graph     Opera o grafo do Brain (stats, top, heal, repair)"
                 "  mcp       Valida e imprime a configuracao MCP"
                 "  vault     Opera o vault via Brain (scan, index)"
+                "  ollama    Controla o serviço Ollama (start, stop, status, run, vram, pull)"
+                "  ai        Interage com a camada de IA (continue, status, checkpoint)"
                 "Opcoes globais:"
                 "  --host <host>    Forca o alvo da flake (ex.: glacier)"
                 "  --user <user>    Usuario para o comando home"
@@ -1603,6 +1605,156 @@ writeShellApplication {
                   exit 1
                 fi
                 run_brain_cli vault "''${extra_args[@]}"
+                ;;
+
+              ollama)
+                if [[ ''${#extra_args[@]} -eq 0 ]]; then
+                  printf 'Uso: kryonix ollama <start|stop|status|run|vram|pull>\n' >&2
+                  exit 1
+                fi
+                ollama_sub="''${extra_args[0]}"
+                extra_args=("''${extra_args[@]:1}")
+
+                case "$ollama_sub" in
+                  start)
+                    printf '🚀 Iniciando Ollama...\n'
+                    sudo systemctl start ollama
+                    # Polling até porta 11434 responder (max 30s)
+                    for _i in $(seq 1 30); do
+                      if curl -s -o /dev/null -w "" http://127.0.0.1:11434/ 2>/dev/null; then
+                        printf '✅ Ollama ativo na porta 11434\n'
+                        # Mostrar VRAM
+                        if command -v nvidia-smi &>/dev/null; then
+                          nvidia-smi --query-gpu=memory.used,memory.free,memory.total --format=csv,noheader
+                        fi
+                        exit 0
+                      fi
+                      sleep 1
+                    done
+                    printf '⚠️  Ollama não respondeu em 30s. Verifique: journalctl -u ollama --no-pager -n 20\n' >&2
+                    exit 1
+                    ;;
+                  stop)
+                    printf '🛑 Parando Ollama...\n'
+                    sudo systemctl stop ollama
+                    printf '✅ Ollama parado.\n'
+                    if command -v nvidia-smi &>/dev/null; then
+                      printf 'VRAM livre: '
+                      nvidia-smi --query-gpu=memory.free --format=csv,noheader
+                    fi
+                    ;;
+                  status)
+                    systemctl status ollama --no-pager 2>/dev/null || printf 'Ollama não está rodando.\n'
+                    if command -v nvidia-smi &>/dev/null; then
+                      printf '\n── GPU VRAM ──\n'
+                      nvidia-smi --query-gpu=memory.used,memory.free,memory.total --format=csv,noheader
+                    fi
+                    ;;
+                  run)
+                    model="''${extra_args[0]:-qwen2.5-coder:7b}"
+                    # Garante que Ollama está rodando
+                    if ! curl -s -o /dev/null http://127.0.0.1:11434/ 2>/dev/null; then
+                      printf '🚀 Ollama não está ativo. Iniciando...\n'
+                      sudo systemctl start ollama
+                      sleep 3
+                    fi
+                    exec ollama run "$model"
+                    ;;
+                  vram)
+                    if command -v nvidia-smi &>/dev/null; then
+                      nvidia-smi --query-gpu=name,memory.used,memory.free,memory.total,temperature.gpu --format=csv,noheader
+                    else
+                      printf 'nvidia-smi não encontrado.\n' >&2
+                      exit 1
+                    fi
+                    ;;
+                  pull)
+                    model="''${extra_args[0]:-qwen2.5-coder:7b}"
+                    # Garante que Ollama está rodando para pull
+                    if ! curl -s -o /dev/null http://127.0.0.1:11434/ 2>/dev/null; then
+                      printf '🚀 Ollama não está ativo. Iniciando para pull...\n'
+                      sudo systemctl start ollama
+                      sleep 3
+                    fi
+                    ollama pull "$model"
+                    ;;
+                  *)
+                    printf 'Uso: kryonix ollama <start|stop|status|run|vram|pull> [model]\n' >&2
+                    exit 1
+                    ;;
+                esac
+                ;;
+
+              ai)
+                if [[ ''${#extra_args[@]} -eq 0 ]]; then
+                  printf 'Uso: kryonix ai <continue|status|checkpoint>\n' >&2
+                  exit 1
+                fi
+                ai_sub="''${extra_args[0]}"
+                extra_args=("''${extra_args[@]:1}")
+
+                state_file="$(kryonix_repo_root)/.ai/STATE.md"
+                ai_dir="$(dirname "$state_file")"
+
+                ensure_state_file() {
+                  if [[ ! -d "$ai_dir" ]]; then
+                    mkdir -p "$ai_dir"
+                  fi
+                  if [[ ! -f "$state_file" ]]; then
+                    printf "Criando arquivo de estado em %s\n" "$state_file"
+                    cat <<EOF > "$state_file"
+# Kryonix AI State
+
+- **Objetivo atual**: 
+- **Último passo concluído**: 
+- **Próximos passos**: 
+- **Serviços verificados**: 
+- **Testes executados**: 
+- **Erros pendentes**: 
+- **Timestamp da última execução**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+EOF
+                  fi
+                }
+
+                case "$ai_sub" in
+                  continue)
+                    ensure_state_file
+                    # Atualiza o timestamp para a execução atual
+                    sed -i "s/^- \*\*Timestamp da última execução\*\*: .*/- \*\*Timestamp da última execução\*\*: $(date -u +"%Y-%m-%dT%H:%M:%SZ")/" "$state_file"
+                    cat "$state_file"
+                    ;;
+                  status)
+                    if [[ ! -f "$state_file" ]]; then
+                      printf "Nenhum estado ativo. Rode 'kryonix ai continue' para iniciar.\n" >&2
+                      exit 1
+                    fi
+                    printf "=== Estado Atual da IA ===\n"
+                    cat "$state_file"
+                    ;;
+                  checkpoint)
+                    ensure_state_file
+                    msg="''${extra_args[*]:-Checkpoint manual}"
+                    checkpoint_file="$ai_dir/CHECKPOINTS.md"
+                    
+                    if [[ ! -f "$checkpoint_file" ]]; then
+                      cat <<EOF > "$checkpoint_file"
+# Kryonix AI Checkpoints
+EOF
+                    fi
+                    
+                    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+                    printf "\n## [%s] Checkpoint\n\n%s\n" "$timestamp" "$msg" >> "$checkpoint_file"
+                    
+                    # Tenta atualizar o último passo no STATE.md se existir
+                    sed -i "s/^- \*\*Último passo concluído\*\*: .*/- \*\*Último passo concluído\*\*: $msg ($timestamp)/" "$state_file"
+                    
+                    printf "✅ Checkpoint registrado: %s\n" "$msg"
+                    ;;
+                  *)
+                    printf 'Uso: kryonix ai <continue|status|checkpoint>\n' >&2
+                    exit 1
+                    ;;
+                esac
                 ;;
 
               *)
