@@ -1,5 +1,5 @@
 # =============================================================================
-# Autor: rag
+# Autor: ragton
 #
 # O que é:
 # - Módulo Home Manager para habilitar `cliphist` (histórico da área de transferência).

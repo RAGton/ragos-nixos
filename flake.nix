@@ -109,6 +109,27 @@
       formatterFor = system: (import nixpkgs { inherit system; }).nixfmt;
       stripContext = builtins.unsafeDiscardStringContext;
 
+      mkDenoCacheOnly =
+        pkgs:
+        pkgs.writeShellApplication {
+          name = "deno";
+          runtimeInputs = [ pkgs.nix ];
+          text = ''
+            set -euo pipefail
+
+            # Use the stable input here because the current unstable Deno may
+            # miss cache.nixos.org and try to build rusty-v8/V8 locally.
+            exec nix shell \
+              --inputs-from path:${self} \
+              --no-write-lock-file \
+              --option max-jobs 0 \
+              --option builders "" \
+              --option builders-use-substitutes true \
+              nixpkgs-stable#deno \
+              --command deno "$@"
+          '';
+        };
+
       mkHomePkgs =
         system:
         import nixpkgs {
@@ -133,6 +154,7 @@
             inherit system;
             config.allowUnfree = true;
           };
+          denoCacheOnly = mkDenoCacheOnly pkgs;
           latexShell = pkgs.mkShell {
             packages = with pkgs; [
               texlive.combined.scheme-full
@@ -148,6 +170,12 @@
         {
           default = latexShell;
           latex = latexShell;
+          deno = pkgs.mkShell {
+            packages = [ denoCacheOnly ];
+            shellHook = ''
+              echo "Deno is cache-only here: Nix will refuse local builds."
+            '';
+          };
         };
 
       formattingCheck =
@@ -279,10 +307,12 @@
             config.allowUnfree = true;
           };
           kryonixCli = pkgs.callPackage ./packages/kryonix-cli.nix { };
+          denoCacheOnly = mkDenoCacheOnly pkgs;
         in
         {
           default = kryonixCli;
           kryonix = kryonixCli;
+          "deno-cache-only" = denoCacheOnly;
         }
       );
 

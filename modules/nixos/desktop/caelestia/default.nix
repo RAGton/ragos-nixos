@@ -209,7 +209,7 @@ let
   effectivePackage = cfg.package.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ launcherPatch ];
     postPatch = (old.postPatch or "") + ''
-      sed -i '/pragma DefaultEnv/d' shell.qml
+1      sed -i '/pragma DefaultEnv/d' shell.qml
     '';
   });
 in

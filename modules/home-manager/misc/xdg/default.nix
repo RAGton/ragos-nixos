@@ -5,7 +5,9 @@
 let
   imageViewer = pkgs.loupe;
   pdfViewer = pkgs.evince;
-  mediaPlayer = pkgs.mpv;
+  # Keep local media playback without mpv-with-scripts, which pulls yt-dlp ->
+  # deno -> rusty-v8 and can compile V8 locally when cache is missing.
+  mediaPlayer = pkgs.mpv-unwrapped;
   textEditor = pkgs.gnome-text-editor;
 in
 {

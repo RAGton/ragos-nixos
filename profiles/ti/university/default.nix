@@ -33,7 +33,8 @@ in
       xournalpp
       drawio
       evince
-      kdePackages.kalarm
+      # Do not add deno/yt-dlp/mpv-with-scripts/kalarm to the base closure:
+      # this can pull rusty-v8 and compile V8 locally.
       kdePackages.merkuro
       kdePackages.okular
     ];

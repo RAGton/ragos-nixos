@@ -1,5 +1,3 @@
-Cole este prompt no Copilot/Antigravity 👇
-
 ```txt
 Você está no repo NixOS/Kryonix em /etc/kryonix no host inspiron.
 
