@@ -27,7 +27,7 @@
   kryonix.profiles.server-ai.enable = true;
   # Disabled during the initial install to avoid pulling heavy gaming packages
   # such as Lutris while keeping the hardware/session essentials below.
-  kryonix.profiles.workstation-gamer.enable = false;
+  kryonix.profiles.workstation-gamer.enable = true;
 
   # Keep the non-gaming parts normally provided by workstation-gamer.
   kryonix.desktop.environment = "hyprland";
@@ -43,7 +43,7 @@
   kryonix.profiles.dev.enable = true;
   kryonix.profiles.university.enable = true;
   kryonix.profiles.ti.enable = true;
-  
+
   kernelZen = {
     enable = true;
 
