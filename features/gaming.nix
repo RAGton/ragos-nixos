@@ -90,6 +90,14 @@ in
       };
     };
 
+    nvtop = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Habilita nvtop para NVIDIA. Desligado por padrão porque puxa o CUDA toolkit completo.";
+      };
+    };
+
     sunshine = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -165,7 +173,7 @@ in
         (lib.optional (cfg.wineTools.enable && pkgs ? dxvk) dxvk)
         (lib.optional (cfg.wineTools.enable && pkgs ? vkd3d-proton) vkd3d-proton)
         (lib.optional (
-          isNvidia && pkgs ? nvtopPackages && pkgs.nvtopPackages ? nvidia
+          cfg.nvtop.enable && isNvidia && pkgs ? nvtopPackages && pkgs.nvtopPackages ? nvidia
         ) pkgs.nvtopPackages.nvidia)
       ];
 

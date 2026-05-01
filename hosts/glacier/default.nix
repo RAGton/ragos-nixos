@@ -38,6 +38,7 @@
     mangohud.enable = true;
     lutris.enable = false;
     wineTools.enable = false;
+    nvtop.enable = false;
     heroic.enable = true;
   };
 

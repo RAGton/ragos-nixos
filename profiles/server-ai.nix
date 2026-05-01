@@ -48,7 +48,6 @@ in
     # Monitoramento básico
     environment.systemPackages = with pkgs; [
       htop
-      nvtopPackages.nvidia
       iotop
     ];
 

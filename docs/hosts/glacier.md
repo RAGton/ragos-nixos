@@ -28,4 +28,4 @@ Glacier é o servidor principal do ecossistema Kryonix, atuando como o "Cérebro
 ## Configuração Declarativa
 A configuração está localizada em `hosts/glacier/default.nix`.
 
-O perfil `server-ai` é obrigatório no Glacier. Workstation, gaming e OpenRGB são features separadas. Lutris e ferramentas Wine/Proton ficam desligadas por padrão para não puxar `openldap-i686-linux`; habilite explicitamente apenas quando esse caminho estiver buildável.
+O perfil `server-ai` é obrigatório no Glacier. Workstation, gaming e OpenRGB são features separadas. Lutris e ferramentas Wine/Proton ficam desligadas por padrão para não puxar `openldap-i686-linux`; habilite explicitamente apenas quando esse caminho estiver buildável. O `nvtop` NVIDIA também fica opt-in porque puxa o CUDA toolkit completo e não é necessário para o servidor IA bootar.

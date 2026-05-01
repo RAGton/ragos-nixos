@@ -20,6 +20,7 @@ in
       steam.gamescope = lib.mkDefault true;
       lutris.enable = lib.mkDefault false;
       wineTools.enable = lib.mkDefault false;
+      nvtop.enable = lib.mkDefault false;
       performanceGovernor = lib.mkDefault true;
     };
   };

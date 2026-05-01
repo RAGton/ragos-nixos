@@ -21,4 +21,5 @@
 - `kryonix.features.workstation.enable = true`: Hyprland/Caelestia e apps gráficos.
 - `kryonix.features.gaming.enable = true`: Steam/GameMode/MangoHud/Gamescope.
 - `kryonix.features.gaming.lutris.enable = false`: Lutris fica opt-in para evitar `openldap-i686-linux`.
+- `kryonix.features.gaming.nvtop.enable = false`: nvtop NVIDIA fica opt-in para não puxar o CUDA toolkit completo no caminho base.
 - `kryonix.features.openrgb.enable = true`: OpenRGB via `services.hardware.openrgb`.
