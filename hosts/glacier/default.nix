@@ -33,7 +33,7 @@
   kryonix.desktop.environment = "hyprland";
   kryonix.shell.caelestia.enable = true;
   kryonix.features.gaming = {
-    enable = false;
+    enable = true;
     steam.enable = true;
     lutris.enable = true;
     heroic.enable = true;
