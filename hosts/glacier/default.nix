@@ -78,15 +78,18 @@
   # =========================
   boot = {
     loader = {
-      systemd-boot.enable = false;
+      systemd-boot.enable = lib.mkForce false;
       grub = {
-        enable = true;
+        enable = lib.mkForce true;
         efiSupport = true;
         device = "nodev";
         useOSProber = false;
+        # Instala também no local removível/fallback (/EFI/BOOT/BOOTX64.EFI)
+        # Útil para firmwares UEFI que perdem entradas ou priorizam o fallback.
+        efiInstallAsRemovable = true;
       };
       efi = {
-        canTouchEfiVariables = true;
+        canTouchEfiVariables = lib.mkForce false;
         efiSysMountPoint = "/boot";
       };
     };
