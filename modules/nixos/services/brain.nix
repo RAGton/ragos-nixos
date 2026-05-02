@@ -202,13 +202,13 @@ in
 
     storagePath = mkOption {
       type = types.path;
-      default = "/var/lib/kryonix/brain/storage";
+      default = "/home/rocha/.local/share/kryonix/kryonix-vault/storage";
       description = "Caminho para o storage do LightRAG (apenas server).";
     };
 
     vaultPath = mkOption {
       type = types.path;
-      default = "/var/lib/kryonix/vault";
+      default = "/home/rocha/.local/share/kryonix/kryonix-vault";
       description = "Caminho para o Vault Obsidian montado/local (apenas server).";
     };
   };
@@ -286,14 +286,17 @@ in
       wantedBy = [ "multi-user.target" ];
       environment = {
         LD_LIBRARY_PATH = "${lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib pkgs.zlib ]}";
+        KRYONIX_BRAIN_HOME = "/home/rocha/.local/share/kryonix/kryonix-vault";
+        LIGHTRAG_VAULT_DIR = "/home/rocha/.local/share/kryonix/kryonix-vault/vault";
+        LIGHTRAG_WORKING_DIR = "/home/rocha/.local/share/kryonix/kryonix-vault/storage";
       };
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = lightragWarmupScript;
         EnvironmentFile = cfg.environmentFile;
-        User = "kryonix-brain";
-        Group = "kryonix-brain";
+        User = "rocha";
+        Group = "users";
         WorkingDirectory = cfg.packageDir;
       };
     };
@@ -317,6 +320,9 @@ in
       wantedBy = [ "multi-user.target" ];
       environment = {
         LD_LIBRARY_PATH = "${lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib pkgs.zlib ]}";
+        KRYONIX_BRAIN_HOME = "/home/rocha/.local/share/kryonix/kryonix-vault";
+        LIGHTRAG_VAULT_DIR = "/home/rocha/.local/share/kryonix/kryonix-vault/vault";
+        LIGHTRAG_WORKING_DIR = "/home/rocha/.local/share/kryonix/kryonix-vault/storage";
       };
       serviceConfig = {
         ExecStart = brainApiStartScript;
@@ -324,19 +330,13 @@ in
         EnvironmentFile = cfg.environmentFile;
         Restart = "on-failure";
         RestartSec = "10";
-        User = "kryonix-brain";
-        Group = "kryonix-brain";
+        User = "rocha";
+        Group = "users";
       };
     };
 
     # ── Usuário de sistema do Brain ────────────────────────────────
-    users.users.kryonix-brain = mkIf (cfg.role == "server") {
-      isSystemUser = true;
-      group = "kryonix-brain";
-      home = "/var/lib/kryonix/brain";
-      createHome = true;
-    };
-    users.groups.kryonix-brain = mkIf (cfg.role == "server") { };
+    # O serviço roda como rocha para ter acesso de leitura e escrita nativos ao Vault em /home/rocha
 
     # ── Firewall por interface ─────────────────────────────────────
     # Brain API e Ollama só acessíveis via LAN (br0) e Tailscale (tailscale0).

@@ -591,6 +591,9 @@ writeShellApplication {
                 source "/etc/kryonix/brain.env"
                 set +a
               fi
+              export KRYONIX_BRAIN_HOME="/home/rocha/.local/share/kryonix/kryonix-vault"
+              export LIGHTRAG_VAULT_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/vault"
+              export LIGHTRAG_WORKING_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/storage"
               export LD_LIBRARY_PATH="${stdenv.cc.cc.lib}/lib:${zlib}/lib:''${LD_LIBRARY_PATH:-}"
               run_command uv run --project "$project_dir" python -m kryonix_brain_lightrag.cli "$@"
             }
@@ -607,6 +610,9 @@ writeShellApplication {
                 source "/etc/kryonix/brain.env"
                 set +a
               fi
+              export KRYONIX_BRAIN_HOME="/home/rocha/.local/share/kryonix/kryonix-vault"
+              export LIGHTRAG_VAULT_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/vault"
+              export LIGHTRAG_WORKING_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/storage"
               export LD_LIBRARY_PATH="${stdenv.cc.cc.lib}/lib:${zlib}/lib:''${LD_LIBRARY_PATH:-}"
               run_command uv run --project "$project_dir" python -m "$module" "$@"
             }
@@ -728,6 +734,9 @@ writeShellApplication {
                 source "/etc/kryonix/brain.env"
                 set +a
               fi
+              export KRYONIX_BRAIN_HOME="/home/rocha/.local/share/kryonix/kryonix-vault"
+              export LIGHTRAG_VAULT_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/vault"
+              export LIGHTRAG_WORKING_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/storage"
               export LD_LIBRARY_PATH="${stdenv.cc.cc.lib}/lib:${zlib}/lib:''${LD_LIBRARY_PATH:-}"
               run_command uv run --project "$project_dir" python -c '
     from kryonix_brain_lightrag import config
