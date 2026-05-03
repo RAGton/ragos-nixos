@@ -741,13 +741,13 @@ writeShellApplication {
                   export LIGHTRAG_WORKING_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/storage"
                   export LD_LIBRARY_PATH="${stdenv.cc.cc.lib}/lib:${zlib}/lib:''${LD_LIBRARY_PATH:-}"
                   run_command uv run --project "$project_dir" python -c '
-        from kryonix_brain_lightrag import config
-        print("Kryonix Brain health")
-        print(f"project_dir: {config.PROJECT_DIR}")
-        print(f"vault_dir: {config.VAULT_DIR}")
-        print(f"working_dir: {config.WORKING_DIR}")
-        print("status: OK")
-        '
+from kryonix_brain_lightrag import config
+print("Kryonix Brain health")
+print(f"project_dir: {config.PROJECT_DIR}")
+print(f"vault_dir: {config.VAULT_DIR}")
+print(f"working_dir: {config.WORKING_DIR}")
+print("status: OK")
+'
                 }
 
                 kryonix_brain_doctor() {
