@@ -6,51 +6,144 @@ description:
 
 ## Missão
 
-Você é o agente responsável por transformar o **Glacier NixOS** no servidor local de IA do ecossistema Kryonix, mantendo o **Inspiron** como cliente/workstation.
+Você é o agente responsável por estabilizar e evoluir o **Glacier NixOS** como servidor local de IA do ecossistema Kryonix, mantendo o **Inspiron** como cliente/workstation.
 
-O objetivo é fazer funcionar, de forma declarativa e testada:
+O objetivo é fazer funcionar, de forma declarativa, testada e segura:
 
-- Ollama sob demanda, sem ficar sempre ativo quando o usuário for jogar.
-- Modelo de código estilo “Claude Code”/coding assistant, local no Ollama.
+- Ollama sob demanda.
 - Kryonix Brain.
-- LightRAG declarativo.
+- LightRAG com grounding real.
 - Obsidian Vault.
-- Grafo, GraphML, VDB, KV stores e fontes.
-- MCP remoto.
+- GraphML, Vector DB, KV stores e fontes.
+- MCP remoto limpo via stdio.
 - Tailscale.
-- Integração com CLI `kryonix`.
-- Validação com testes antes de declarar pronto.
+- CLI `kryonix`.
+- Validação final com testes reais antes de declarar pronto.
 
-> Importante: Claude/Claude Code oficial é proprietário da Anthropic e não roda diretamente no Ollama como modelo local. O alvo aqui é usar um modelo local de código equivalente/adequado para coding agent, por exemplo Qwen Coder, DeepSeek Coder ou outro modelo disponível no Ollama/nixpkgs, respeitando os limites da RTX 4060 8GB.
+> Importante: não declarar sucesso se algum comando crítico falhar. Logs bonitos não significam entrega concluída.
 
 ---
 
-## Contexto obrigatório
+## Estado atual conhecido
+
+A validação recente mostrou:
+
+### OK
+
+```txt
+kryonix brain health      OK
+kryonix brain stats       OK
+kryonix brain vault-scan  OK
+nh os build .#glacier     OK
+
+Dados atuais do Brain:
+
+entities: 4367
+relations: 5357
+docs: 150
+chunks: 640
+failed_docs: 0
+skipped_docs: 0
+consistency_status: OK
+vault files: 159
+Pendente / Falhando
+kryonix brain search --explain
+
+Ainda responde genericamente/alucinado:
+
+Reasoning and Action Graph
+sensores IoT
+áudio
+imagem
+controle de dispositivos
+ações físicas
+
+Isso é errado para o Kryonix.
+
+kryonix mcp doctor
+
+Falha porque .mcp.json possui entradas com args: [] para alguns servidores:
+
+mcp-nixos: args must be a non-empty list
+github: args must be a non-empty list
+nix flake check
+
+Falha por formatação Nix:
+
+./features/openrgb.nix: not formatted
+./packages/kryonix-cli.nix: not formatted
+./modules/nixos/common/default.nix: not formatted
+
+Também existe alteração não salva ou pendente em:
+
+hosts/glacier/rve-compat.nix
+Contexto obrigatório
 
 Antes de modificar qualquer coisa, leia:
 
-1. `.ai/*`
-2. `AGENTS.md`
-3. `docs/ai/PROJECT_CONTEXT.md`
-4. `docs/ai/PROJECT_INDEX.md`
-5. `context/INDEX.md`
-6. `docs/ai/BRAIN_SERVER_ARCHITECTURE.md`
-7. `docs/hosts/glacier.md`
-8. `docs/ai/glacier-nixos-migration.md`
-9. `hosts/glacier/**`
-10. `modules/nixos/services/**`
-11. `features/ai.nix`
-12. `packages/kryonix-cli.nix`
+.ai/*
+AGENTS.md
+docs/ai/PROJECT_CONTEXT.md
+docs/ai/PROJECT_INDEX.md
+context/INDEX.md
+docs/ai/BRAIN_SERVER_ARCHITECTURE.md
+docs/hosts/glacier.md
+docs/ai/glacier-nixos-migration.md
+hosts/glacier/**
+modules/nixos/services/**
+features/ai.nix
+packages/kryonix-cli.nix
+packages/kryonix-brain-lightrag/**
+.mcp.json
+.mcp.example.json
 
 Se algum arquivo não existir, registre como pendência, mas não pare sem necessidade.
 
 Código real vence documentação antiga.
 
----
+Regras absolutas
+Não declarar pronto sem testes reais.
+Não mexer em Vault, GraphML, embeddings ou storage LightRAG sem autorização.
+Não rodar full reindex sem autorização.
+Não apagar cache ou storage para “resolver” problema.
+Não continuar Axum/PyO3 nesta fase.
+Não abrir Ollama publicamente fora de LAN/Tailscale.
+Não colocar secrets em Git/Nix/docs.
+Não gravar KRYONIX_BRAIN_KEY no repositório.
+Não alterar discos/boot sem confirmação explícita.
+Não quebrar Inspiron.
+Não aceitar resposta RAG genérica.
+Não aceitar /search sem sources, grounding e chunks quando houver contexto.
+Não deixar logs MCP no stdout.
+Em MCP stdio: stdout é somente JSON-RPC; logs devem ir para stderr.
+Commitar submodule antes do repo raiz, se submodule mudar.
+Regra sobre edição de arquivos
 
-## Arquitetura alvo
+Não usar sudoedit dentro de /etc/kryonix se o diretório for gravável pelo usuário. Isso pode gerar:
 
-```txt
+sudoedit: edição de arquivos em um diretório gravável não é permitida
+
+Preferir:
+
+cd /etc/kryonix
+nvim hosts/glacier/rve-compat.nix
+
+Se o arquivo estiver com dono errado:
+
+sudo chown rocha:users hosts/glacier/rve-compat.nix
+
+Se vários arquivos do repo estiverem rootados:
+
+sudo chown -R rocha:users /etc/kryonix
+
+Antes de salvar/reverter:
+
+git diff -- hosts/glacier/rve-compat.nix
+
+Se a alteração for acidental:
+
+git checkout -- hosts/glacier/rve-compat.nix
+Arquitetura alvo
 Glacier NixOS
 ├── IP LAN: 10.0.0.2
 ├── Tailscale
@@ -65,61 +158,335 @@ Glacier NixOS
 ├── MCP Brain server
 ├── Hyprland/Caelestia opcional
 └── Perfil gamer sem IA ativa por padrão
-```
-
-```txt
 Inspiron
 └── Cliente via Tailscale
     ├── kryonix brain health
     ├── kryonix brain stats
     ├── kryonix brain search
     └── MCP client remoto
-```
+Fase 0 — Baseline obrigatório
+cd /etc/kryonix
 
----
+git status --short
+git diff --stat
+git diff
+git submodule status --recursive
 
-## Hardware alvo
+Verificar especialmente:
 
-- CPU: Ryzen 7 9700X
-- GPU: NVIDIA RTX 4060 8GB VRAM
-- Uso: IA local quando não estiver jogando
-- Requisito: IA deve ser fácil de ligar/desligar
+git diff -- hosts/glacier/rve-compat.nix
 
----
+Não seguir sem entender o diff.
 
-## Regras absolutas
+Fase 1 — Corrigir arquivo pendente rve-compat.nix
 
-- Não declarar pronto sem testes reais.
-- Não colocar secrets em Git/Nix/docs.
-- Não gravar `KRYONIX_BRAIN_KEY` no repositório.
-- Não mexer em `rag_storage` sem backup.
-- Não rodar full reindex sem autorização.
-- Não deixar Ollama sempre consumindo GPU se o usuário quer jogar.
-- Não ativar preload permanente de modelo pesado por padrão.
-- Não abrir Ollama publicamente fora de LAN/Tailscale.
-- Não remover Tailscale.
-- Não quebrar Inspiron.
-- Não alterar discos/boot sem confirmação explícita.
-- Não usar respostas genéricas no Brain.
-- Não aceitar `/search` sem `sources`, `grounding` e chunks quando houver contexto.
-- Commitar submodule antes do repo raiz, se submodule mudar.
+Se o editor mostrar popup perguntando para salvar:
 
----
+Se a alteração for intencional: salvar.
+Se for acidental: descartar.
 
-## Modelo recomendado
+Validar:
 
-Escolha modelo por perfil. Não hardcodar em vários lugares. Criar variáveis:
+cd /etc/kryonix
 
-```bash
+git diff -- hosts/glacier/rve-compat.nix
+ls -l hosts/glacier/rve-compat.nix
+
+Se não conseguir salvar:
+
+sudo chown rocha:users hosts/glacier/rve-compat.nix
+nvim hosts/glacier/rve-compat.nix
+Fase 2 — Corrigir .mcp.json
+
+Erro atual:
+
+mcp-nixos: args must be a non-empty list
+github: args must be a non-empty list
+
+Abrir:
+
+cat .mcp.json
+cat .mcp.example.json
+
+Corrigir entradas com args: [].
+
+Opção preferida: usar argumento real aceito pelo servidor.
+
+Exemplo:
+
+{
+  "command": "/home/rocha/.npm-global/bin/mcp-nixos",
+  "args": ["--stdio"]
+}
+
+Se --stdio não existir:
+
+/home/rocha/.npm-global/bin/mcp-nixos --help || true
+/home/rocha/.npm-global/bin/github-mcp-server --help || true
+
+Se o servidor usa stdio por padrão e não aceita nenhum argumento, ajustar o validador com allowlist explícita, sem enfraquecer segurança global.
+
+Exemplo conceitual:
+
+allow_empty_args_for = [
+  "mcp-nixos",
+  "github"
+]
+
+Mas só permitir se:
+
+command for caminho absoluto.
+comando estiver em path confiável.
+não usar shell inline.
+não conter secrets.
+não usar npx/uvx lento no handshake.
+
+Validar:
+
+kryonix mcp check
+kryonix mcp doctor
+Fase 3 — Garantir MCP stdio limpo
+
+Regra:
+
+stdout = somente JSON-RPC
+stderr = logs, banners, debug, warnings
+
+Procurar logs perigosos:
+
+grep -R "Persistence hardening applied" -n .
+grep -R "print(" -n packages/kryonix-brain-lightrag | head -200
+grep -R "console.log\|println!\|eprintln!\|FastMCP\|Starting MCP" -n . | head -300
+
+Se houver:
+
+print("[SYSTEM] ...")
+
+Trocar para:
+
+import sys
+print("[SYSTEM] ...", file=sys.stderr)
+
+Ou usar logging para stderr.
+
+Criar/verificar script de teste:
+
+scripts/check-mcp-stdio-clean.sh './scripts/mcp/kryonix-brain-stdio'
+scripts/check-mcp-stdio-clean.sh './scripts/mcp/mcp-nixos-stdio'
+
+Se não existir, criar.
+
+Fase 4 — Corrigir RAG alucinando
+
+Query crítica:
+
+kryonix brain search "Como funciona o pipeline de RAG do Kryonix?" --explain
+
+A resposta atual está errada quando diz:
+
+Reasoning and Action Graph
+sensores IoT
+áudio
+imagem
+controle de dispositivos IoT
+ações físicas
+
+Neste projeto, RAG significa:
+
+Retrieval-Augmented Generation
+
+O pipeline real esperado é:
+
+Vault / Markdown / Obsidian
+→ ingestão
+→ documentos
+→ chunks
+→ embeddings
+→ nano-vectordb / Vector DB
+→ entidades e relações
+→ GraphML
+→ busca hybrid/vector/graph
+→ montagem de contexto
+→ Ollama / LLM local
+→ resposta com fontes
+Arquivos prováveis
+packages/kryonix-brain-lightrag/kryonix_brain_lightrag/rag.py
+packages/kryonix-brain-lightrag/kryonix_brain_lightrag/cli.py
+packages/kryonix-brain-lightrag/kryonix_brain_lightrag/api.py
+packages/kryonix-brain-lightrag/kryonix_brain_lightrag/prompts*
+Prompt obrigatório do Brain
+
+O prompt final precisa conter regra equivalente:
+
+Você é o Kryonix Brain.
+
+Responda somente com base no CONTEXTO recuperado.
+Não invente etapas.
+Não use explicações genéricas sobre RAG.
+Neste projeto, RAG significa Retrieval-Augmented Generation.
+Se o contexto não comprovar uma etapa, não mencione essa etapa.
+Se as fontes recuperadas forem fracas, responda que não encontrou grounding suficiente.
+Sempre liste fontes com arquivo, chunk e score.
+Nunca chame RAG de Reasoning and Action Graph.
+Nunca mencione IoT, sensores, áudio, imagem ou execução de ações físicas a menos que isso esteja explicitamente no contexto recuperado.
+Hard guard obrigatório
+
+Se a query contém:
+
+pipeline
+RAG
+Kryonix
+
+os chunks principais precisam conter termos técnicos reais:
+
+LightRAG
+embedding
+embeddings
+chunk
+chunks
+GraphML
+Ollama
+Vault
+vector
+hybrid
+nano-vectordb
+entities
+relations
+storage
+
+Se os top chunks não tiverem esses termos, retornar:
+
+Não encontrei grounding suficiente no Vault/índice atual para descrever o pipeline RAG do Kryonix com segurança.
+Termos proibidos para essa query
+
+Se a resposta final contém qualquer um destes termos sem fonte explícita:
+
+Reasoning and Action Graph
+sensores IoT
+Controlar dispositivos IoT
+áudio
+imagem
+ações físicas
+tomar decisões e executar ações
+
+descartar a resposta e retornar grounding insuficiente.
+
+Fase 5 — Corrigir saída duplicada de fontes
+
+Hoje a CLI mostra duas seções:
+
+Fontes usadas
+Fontes Utilizadas:
+
+Manter apenas uma.
+
+Formato final:
+
+Fontes usadas:
+  1. vault/... | chunk: chunk-d0 | score: 0.682 | modo: hybrid
+  2. repo/...  | chunk: chunk-75 | score: 0.679 | modo: hybrid
+
+A CLI deve ser robusta contra campos ausentes:
+
+title = (
+    src.get("title")
+    or src.get("arquivo")
+    or src.get("file")
+    or src.get("path")
+    or src.get("source")
+    or "fonte desconhecida"
+)
+
+score = src.get("score", "n/a")
+chunk = src.get("chunk") or src.get("chunk_id") or src.get("id") or "chunk desconhecido"
+mode = src.get("modo") or src.get("mode") or src.get("retrieval_mode") or "unknown"
+
+Nunca dar KeyError por fonte incompleta.
+
+Fase 6 — Logs para stderr
+
+Durante search --explain, aparecem logs:
+
+INFO:nano-vectordb...
+[DEBUG] ...
+[HARDEN] ...
+WARNING: ...
+
+Para CLI interativa isso pode existir, mas precisa ir para stderr.
+
+Procurar:
+
+grep -R "print(.*DEBUG\|print(.*HARDEN\|print(.*INFO\|print(.*WARNING" -n packages/kryonix-brain-lightrag
+
+Trocar por:
+
+print("...", file=sys.stderr)
+
+ou logging.
+
+A resposta final estruturada deve permanecer em stdout.
+
+Fase 7 — Corrigir formatação Nix
+
+Erro atual:
+
+./features/openrgb.nix: not formatted
+./packages/kryonix-cli.nix: not formatted
+./modules/nixos/common/default.nix: not formatted
+
+Rodar:
+
+cd /etc/kryonix
+nix fmt
+
+Se não resolver:
+
+nix develop -c treefmt
+
+Ou formatar diretamente:
+
+nixfmt features/openrgb.nix packages/kryonix-cli.nix modules/nixos/common/default.nix
+
+Não alterar semântica. Só formatação.
+
+Validar:
+
+nix flake check
+Fase 8 — Ollama sob demanda
+
+Ollama deve ser fácil de ligar/desligar:
+
+kryonix ai start
+kryonix ai stop
+kryonix ai restart
+kryonix ai status
+kryonix ai ps
+kryonix ai unload
+kryonix ai pull-models
+
+Comportamento esperado:
+
+kryonix ai start: inicia ollama.service e kryonix-brain.service.
+kryonix ai stop: para Brain e Ollama.
+kryonix ai unload: descarrega modelo da VRAM via keep_alive=0.
+kryonix ai status: mostra systemd, GPU e modelos carregados.
+Quando usuário for jogar, kryonix ai stop deve liberar GPU/VRAM.
+
+Não preloadar modelo pesado por padrão.
+
+Fase 9 — Modelo local recomendado
+
+Não hardcodar em vários lugares.
+
+Usar variáveis:
+
 KRYONIX_LLM_MODEL
 KRYONIX_EMBED_MODEL
 LIGHTRAG_PROFILE_NAME
 OLLAMA_CONTEXT_LENGTH
-```
 
-Perfis sugeridos:
+Perfis:
 
-```txt
 safe:
   LLM: qwen2.5-coder:3b
   embed: nomic-embed-text
@@ -136,441 +503,57 @@ high:
   uso: trabalho pesado
 
 extreme:
-  LLM: modelo maior, somente manual, sabendo que pode usar RAM/CPU
+  LLM: modelo maior, somente manual
   uso: não padrão
-```
 
-Critérios:
-- Priorizar modelo coder.
-- Testar latência.
-- Testar qualidade em NixOS, Rust, Python e engenharia de software.
-- Se alucinar, ajustar prompt/grounding antes de só trocar modelo.
-- Não preloadar modelo pesado por padrão.
+Se alucinar, corrigir prompt/grounding antes de só trocar modelo.
 
----
+Fase 10 — Testes obrigatórios
 
-## Ollama sob demanda
+Rodar:
 
-Implementar modo fácil:
+uv run --project packages/kryonix-brain-lightrag pytest -q
 
-```bash
-kryonix ai start
-kryonix ai stop
-kryonix ai restart
-kryonix ai status
-kryonix ai ps
-kryonix ai unload
-kryonix ai pull-models
-```
+Rodar:
 
-Comportamento:
+python -m compileall packages/kryonix-brain-lightrag
 
-- `kryonix ai start` inicia `ollama.service` e `kryonix-brain.service`.
-- `kryonix ai stop` para Brain e Ollama.
-- `kryonix ai unload` descarrega o modelo da VRAM usando API do Ollama com `keep_alive=0`.
-- `kryonix ai status` mostra systemd, GPU e modelos carregados.
-- Quando usuário for jogar, `kryonix ai stop` deve liberar GPU/VRAM.
+Rodar:
 
-Não deixar `services.ollama.loadModels` com modelo pesado por padrão, a menos que exista opção explícita:
+nix-shell packages/kryonix-brain-lightrag/shell.nix --run \
+  "cargo test --manifest-path packages/kryonix-brain-lightrag/rust-core/Cargo.toml"
 
-```nix
-kryonix.ai.preloadModels = false;
-```
+Rodar:
 
----
-
-## NixOS declarativo esperado
-
-Criar/ajustar módulos:
-
-```txt
-modules/nixos/services/ollama.nix
-modules/nixos/services/kryonix-brain.nix
-modules/nixos/services/lightrag.nix
-modules/nixos/services/mcp-brain.nix
-hosts/glacier/services/ai.nix
-hosts/glacier/storage.nix
-hosts/glacier/nvidia.nix
-hosts/glacier/networking.nix
-```
-
-Ou seguir a estrutura atual, mas manter responsabilidades separadas.
-
-### Ollama
-
-Configurar:
-
-```nix
-services.ollama = {
-  enable = false; # ou true apenas se o usuário quiser sempre ativo
-  package = pkgs.ollama-cuda;
-  host = "0.0.0.0";
-  port = 11434;
-};
-```
-
-Se o projeto preferir serviço habilitado, garantir que não carregue modelo em VRAM automaticamente e que `kryonix ai stop` desligue tudo.
-
-Firewall:
-- liberar `11434` apenas LAN/Tailscale.
-- não expor para internet pública.
-
-### Brain API
-
-Criar serviço systemd:
-
-```nix
-systemd.services.kryonix-brain = {
-  description = "Kryonix Brain API";
-  after = [ "network-online.target" "ollama.service" ];
-  wants = [ "network-online.target" ];
-  wantedBy = [ "multi-user.target" ];
-};
-```
-
-Requisitos:
-- `EnvironmentFile=/etc/kryonix/brain.env`
-- storage em caminho Linux estável.
-- logs sem secrets.
-- `Restart=on-failure`.
-- `StateDirectory` quando fizer sentido.
-- API com `X-API-Key`.
-
-### LightRAG
-
-Declarar paths:
-
-```txt
-/var/lib/kryonix/vault
-/var/lib/kryonix/brain/rag_storage
-/var/lib/kryonix/brain/backups
-```
-
-Ou, se usando o disco 2:
-
-```txt
-/home/storage/vault
-/home/storage/brain/rag_storage
-/home/storage/brain/backups
-/home/storage/models
-```
-
-Não deixar path Windows.
-
-### Obsidian
-
-O Vault deve ser acessível em path estável:
-
-```txt
-/home/storage/vault
-```
-
-Criar wrapper:
-
-```bash
-kryonix-obsidian
-```
-
-Ele deve abrir o vault correto.
-
----
-
-## Storage esperado no Glacier
-
-Disco 1:
-- NVMe 256GB
-- sistema NixOS
-- Btrfs subvolumes:
-  - `@`
-  - `@home`
-  - `@nix`
-  - `@persist`
-  - `@log`
-
-Disco 2:
-- NVMe 1TB
-- label `storage`
-- Btrfs
-- subvolumes:
-  - `@data`
-  - `@backup`
-  - `@vm`
-  - `@vault`
-
-Montagem alvo:
-
-```txt
-/home/storage -> /dev/disk/by-label/storage subvol=@data
-/home/storage/vault
-/home/storage/brain
-/home/storage/models
-/home/storage/backups
-/home/storage/vm
-/home/storage/games
-/home/storage/projects
-```
-
-Gerar/ajustar `hardware-configuration.nix` ou módulo `storage.nix` para montar isso declarativamente.
-
----
-
-## LightRAG qualidade obrigatória
-
-O `/search` deve retornar:
-
-```json
-{
-  "status": "success",
-  "answer": "...",
-  "grounding": {
-    "entities": 0,
-    "relations": 0,
-    "chunks": 0
-  },
-  "sources": [
-    {
-      "title": "...",
-      "path": "...",
-      "chunk_id": "...",
-      "score": 0.0
-    }
-  ],
-  "warnings": []
-}
-```
-
-Critérios:
-- `success` exige chunks > 0.
-- `success` exige sources não vazio.
-- Se contexto insuficiente, responder que não há contexto suficiente.
-- Não inventar restaurante, OpenAI/GPT, LangChain etc.
-- Não usar cache antigo para validar.
-- `no_cache=true` deve funcionar.
-- `debug=true` deve mostrar dados de grounding.
-
----
-
-## MCP remoto
-
-Glacier deve ser server.
-
-Inspiron deve consumir remoto:
-
-```txt
-Inspiron MCP client
-  -> Tailscale/SSH
-  -> Glacier MCP Brain server
-  -> tools JSON-RPC
-```
-
-Validar:
-- JSON-RPC limpo.
-- sem logs no stdout.
-- tools list.
-- tool de stats.
-- tool de search.
-- sem escrita direta do Inspiron no `rag_storage`.
-
----
-
-## Web research controlado
-
-Não implementar busca web automática em toda consulta.
-
-Criar parâmetro/comando futuro:
-
-```bash
-kryonix brain learn-web "tema" --mode official-only
-kryonix brain learn-web "tema" --review
-kryonix brain ingest-note --approve
-```
-
-Política:
-- oficial primeiro;
-- código de qualidade;
-- releases/issues relevantes;
-- fóruns só com revisão;
-- nada entra no Vault sem aprovação ou modo explícito.
-
----
-
-## Geração de pacotes Nix com IA
-
-Preparar comandos:
-
-```bash
-kryonix package init
-kryonix package inspect-source
-kryonix package generate-nix
-kryonix package build
-kryonix package test
-```
-
-A IA deve ajudar, mas os testes decidem.
-
-Obrigatório:
-- gerar derivation revisável.
-- rodar `nix build`.
-- explicar dependências.
-- documentar patch se houver.
-- não aceitar pacote que só “parece certo”.
-
----
-
-## Execução por fases
-
-### Fase 0 — Precheck
-
-```bash
-cd /etc/kryonix
-git status
-git submodule status --recursive
-find .ai -maxdepth 2 -type f -print
-```
-
-Ler `.ai/*` antes de editar.
-
-### Fase 1 — Validar host instalado
-
-```bash
-hostname
-ip addr
-lsblk -f
-findmnt /
-findmnt /home/storage
-nvidia-smi || true
-systemctl --failed
-```
-
-### Fase 2 — Nix baseline
-
-```bash
-nix flake check --show-trace
-sudo nixos-rebuild dry-build --flake .#glacier --show-trace
-sudo nixos-rebuild test --flake .#glacier --show-trace
-```
-
-Não rodar `switch` antes disso passar.
-
-### Fase 3 — Ollama
-
-```bash
-sudo systemctl status ollama || true
-ollama --version
-ollama list
-ollama ps
-```
-
-Testar modelo:
-
-```bash
-ollama pull qwen2.5-coder:7b
-ollama run qwen2.5-coder:7b "Explique como empacotar um app Rust no NixOS."
-ollama ps
-```
-
-Testar unload:
-
-```bash
-curl http://localhost:11434/api/generate \
-  -H "Content-Type: application/json" \
-  -d '{"model":"qwen2.5-coder:7b","keep_alive":0}'
-ollama ps
-```
-
-### Fase 4 — Brain API
-
-```bash
-sudo systemctl status kryonix-brain
-curl http://localhost:8000/health
-source /etc/kryonix/brain.env
-curl -H "X-API-Key: $KRYONIX_BRAIN_KEY" http://localhost:8000/stats
-```
-
-### Fase 5 — LightRAG
-
-```bash
 kryonix brain health
 kryonix brain stats
-kryonix brain search "Como funciona o pipeline RAG do Kryonix?"
-```
+kryonix brain vault-scan
 
-Se existir script local:
+Rodar o teste principal:
 
-```bash
-rag doctor
-rag stats
-rag test all
-```
+kryonix brain search "Como funciona o pipeline de RAG do Kryonix?" --explain
 
-ou comando equivalente do projeto.
+Esse comando precisa:
 
-### Fase 6 — Obsidian/Vault
+exit code 0
+sem Traceback
+sem KeyError
+sem Reasoning and Action Graph
+sem sensores IoT
+sem áudio/imagem
+sem controle de dispositivos
+com fontes corretas OU grounding insuficiente
+sem seção duplicada de fontes
 
-```bash
-test -d /home/storage/vault
-kryonix-obsidian --help || true
-```
+Rodar:
 
-Validar que o vault não está em path Windows.
+kryonix mcp check
+kryonix mcp doctor
 
-### Fase 7 — Inspiron remoto
+Rodar:
 
-No Inspiron:
+nix flake check
 
-```bash
-kryonix brain health
-kryonix brain stats
-kryonix brain search "Como funciona o pipeline RAG do Kryonix?"
-```
+Rodar:
 
-### Fase 8 — Aplicar
-
-Só se tudo passar:
-
-```bash
-sudo nixos-rebuild switch --flake .#glacier --show-trace
-```
-
-### Fase 9 — Commit/push
-
-```bash
-git status
-git diff --stat
-git grep -n "KRYONIX_BRAIN_KEY=.*[a-f0-9]" || true
-git grep -n "200520" || true
-git grep -n "tskey-" || true
-```
-
-Se limpo:
-
-```bash
-git add .
-git commit -m "feat(glacier): enable declarative local AI Brain stack"
-git push
-```
-
----
-
-## Definition of Done
-
-Só declare pronto se:
-
-- `.ai/*` foi lido.
-- `nix flake check` passou.
-- `nixos-rebuild dry-build` passou.
-- `nixos-rebuild test` passou.
-- `switch` passou, se aplicado.
-- Tailscale funciona.
-- SSH funciona.
-- NVIDIA aparece.
-- Ollama inicia/paralisa com comando.
-- Modelo coder roda.
-- Modelo descarrega da VRAM.
-- Brain API responde.
-- LightRAG responde com sources/grounding.
-- Obsidian abre o vault correto.
-- Inspiron consome Brain remoto.
-- MCP remoto validado ou pendência declarada.
-- Nenhum secret foi commitado.
-- Git limpo.
+nh os build

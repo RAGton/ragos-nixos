@@ -132,8 +132,8 @@ else:
         if not cfg.get("command"):
             errors.append(f"{name}: missing command")
         args = cfg.get("args")
-        if not isinstance(args, list) or not args:
-            errors.append(f"{name}: args must be a non-empty list")
+        if not isinstance(args, list):
+            errors.append(f"{name}: args must be a list")
         cwd = cfg.get("cwd")
         if cwd:
             cwd_s = str(cwd)

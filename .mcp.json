@@ -12,26 +12,19 @@
       "cwd": "/etc/kryonix"
     },
     "mcp-nixos": {
-      "command": "/run/current-system/sw/bin/uvx",
-      "args": [
-        "mcp-nixos"
-      ]
+      "command": "/home/rocha/.local/bin/mcp-nixos",
+      "args": ["--stdio"]
     },
     "vault-readonly": {
-      "command": "npx",
+      "command": "/home/rocha/.npm-global/bin/mcp-server-filesystem",
       "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
         "/home/rocha/.local/share/kryonix/kryonix-vault"
       ],
       "description": "Read-only access to Obsidian vault"
     },
     "github": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
+      "command": "/home/rocha/.npm-global/bin/mcp-server-github",
+      "args": ["--stdio"],
       "description": "GitHub issues, PRs, commits, file access"
     }
   }

@@ -1,0 +1,1 @@
+[SYSTEM] Persistence hardening applied (Atomic Writes enabled).

@@ -43,9 +43,9 @@ in
     };
 
     # Garante que o usuário rocha tenha acesso ao hardware sem sudo
-    users.users.rocha.extraGroups = [ 
-      "i2c" 
-      "video" 
+    users.users.rocha.extraGroups = [
+      "i2c"
+      "video"
       "input"
     ];
 

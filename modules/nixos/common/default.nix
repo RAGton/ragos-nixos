@@ -184,12 +184,17 @@
   networking.firewall = {
     enable = lib.mkDefault true;
     allowedTCPPorts = [
-      21115 21116 21117 21118 21119 # RustDesk
-      6568 7070                     # AnyDesk
+      21115
+      21116
+      21117
+      21118
+      21119 # RustDesk
+      6568
+      7070 # AnyDesk
     ];
     allowedUDPPorts = [
-      21116                         # RustDesk
-      7070                          # AnyDesk
+      21116 # RustDesk
+      7070 # AnyDesk
     ];
   };
 

@@ -1,21 +1,19 @@
 {
   "mcpServers": {
     "kryonix-brain": {
-      "command": "/run/current-system/sw/bin/uv",
+      "command": "uv",
       "args": [
         "--quiet",
         "run",
         "--project",
         "/etc/kryonix/packages/kryonix-brain-lightrag",
-        "kg-server"
+        "kryonix-brain-mcp"
       ],
-      "cwd": "/etc/kryonix"
-    },
-    "mcp-nixos": {
-      "command": "/run/current-system/sw/bin/uvx",
-      "args": [
-        "mcp-nixos"
-      ]
+      "env": {
+        "KRYONIX_BRAIN_KEY": "sua-chave-aqui",
+        "KRYONIX_BRAIN_PORT": "8000",
+        "LIGHTRAG_VERBOSE": "0"
+      }
     }
   }
 }

@@ -1,31 +1,59 @@
-# MCP (Model Context Protocol)
+# Kryonix Brain MCP — Protocolo de Segurança
 
-O Kryonix integra servidores de **Model Context Protocol** para interações locais JSON-RPC isoladas.
+O servidor MCP do Kryonix Brain foi endurecido para garantir a integridade do sistema e do Vault. Operações de escrita direta foram substituídas por um fluxo de **propostas**.
 
-## Fonte de Verdade
-- **Serviço:** N/A (Cada server roda sob demanda invocado pelo agent client)
-- **Porta:** N/A (A comunicação é via standard I/O streams)
-- **Comando:** `kryonix mcp doctor`
-- **Validação:** Todos os servidores configurados no `.mcp.json` retornando check verde.
+## Ferramentas Disponíveis
 
-## Servidores MCP Suportados
-A arquitetura de integração inclui:
-1. **mcp-nixos**: Expõe acesso seguro a opções do NixOS e pacotes.
-2. **Filesystem**: Exposição _read-only_ do Vault.
+### Pesquisa e Consulta
+- `rag_search`: Busca híbrida no grafo com síntese.
+- `rag_stats`: Estatísticas de nós e arestas.
+- `rag_health`: Diagnóstico de integridade.
+- `obsidian_search`: Busca notas no vault.
+- `obsidian_read`: Lê conteúdo de uma nota.
 
-> [!WARNING]
-> A inicialização remota do **Brain MCP (`kryonix-brain`)** do `glacier` a partir de hosts clientes está classificada como PARTIAL no ROADMAP e não constitui feature plenamente validada em runtime oficial.
+### Aprendizado Seguro (Propostas)
+- `brain_learn_propose`: Envia conteúdo para a fila de ingestão. Requer aprovação manual via CLI ou API.
+- `brain_note_propose`: Cria uma proposta de nota em `00-inbox/ai-proposals/`.
+- `brain_events_log`: Registra eventos técnicos no log do sistema.
 
-## Validação de Segurança e Variáveis 
-A regra principal para o MCP é que **nenhum secret deve ser incluído em arquivos locais do repositório**. 
-- O arquivo `.mcp.json` é ignorado pelo GIT (`.gitignore`).
-- Apenas a cópia `.mcp.example.json` deve ser manipulada ou enviada no versionamento.
-- Caminhos para servidores locais precisam ser sempre absolutos.
+### Manutenção (Dry-Run)
+- `graph_repair_dry_run`: Diagnóstico de reparo do grafo (sem alteração de arquivos).
+- `rag_repair_vdb_dry_run`: Diagnóstico de integridade do Vector DB.
 
-## Testes do MCP
+## Fluxo de Aprendizado Controlado
 
-Os comandos abaixo são necessários para validar se sua integração foi feita corretamente, protegendo o vazamento de segredos via `stdout`:
-```sh
-kryonix mcp check        # Analisa o config atrás de secrets expostos
-kryonix mcp doctor       # Confirma vitalidade dos servers
+Para que a IA "aprenda" algo novo ou crie uma nota, ela deve usar as ferramentas de proposta:
+
+1.  **A IA propõe**: O conteúdo é salvo em uma fila (JSON) ou pasta de inbox no Vault.
+2.  **Scanner de Segurança**: O sistema remove automaticamente tokens e segredos detectados.
+3.  **Humano Revisa**: O operador do Kryonix revisa a proposta.
+4.  **Aprovação**:
+    - Para ingestão no grafo: `kryonix brain ingest approve <id>`.
+    - Para notas no vault: O humano move a nota da pasta `00-inbox/ai-proposals` para o local definitivo.
+
+## Configuração do Cliente
+
+Use o template em `.mcp.example.json` para configurar seu cliente (ex: Claude Desktop, Cursor, Antigravity).
+
+```json
+{
+  "mcpServers": {
+    "kryonix-brain": {
+      "command": "uv",
+      "args": [
+        "--quiet",
+        "run",
+        "--project",
+        "/etc/kryonix/packages/kryonix-brain-lightrag",
+        "kryonix-brain-mcp"
+      ],
+      "env": {
+        "KRYONIX_BRAIN_KEY": "sua-chave-aqui"
+      }
+    }
+  }
+}
 ```
+
+> [!IMPORTANT]
+> Nunca coloque sua `KRYONIX_BRAIN_KEY` real em arquivos versionados. Use variáveis de ambiente ou o arquivo `.mcp.json` (que está no `.gitignore`).
