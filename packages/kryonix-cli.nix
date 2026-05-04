@@ -585,7 +585,6 @@ writeShellApplication {
 
                     run_brain_cli() {
                       local project_dir
-
                       project_dir="$(brain_project_dir)" || return 1
                       if [[ -f "/etc/kryonix/brain.env" ]]; then
                         set -a
@@ -593,9 +592,10 @@ writeShellApplication {
                         source "/etc/kryonix/brain.env"
                         set +a
                       fi
-                      export KRYONIX_BRAIN_HOME="/home/rocha/.local/share/kryonix/kryonix-vault"
-                      export LIGHTRAG_VAULT_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/vault"
-                      export LIGHTRAG_WORKING_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/storage"
+                      export KRYONIX_BRAIN_HOME="''${KRYONIX_BRAIN_HOME:-/var/lib/kryonix}"
+                      export LIGHTRAG_VAULT_DIR="''${LIGHTRAG_VAULT_DIR:-$KRYONIX_BRAIN_HOME/vault}"
+                      export LIGHTRAG_WORKING_DIR="''${KRYONIX_BRAIN_HOME}/storage"
+                      export LIGHTRAG_CAG_DIR="''${KRYONIX_BRAIN_HOME}/cag"
                       export LD_LIBRARY_PATH="${stdenv.cc.cc.lib}/lib:${zlib}/lib:''${LD_LIBRARY_PATH:-}"
                       run_command uv run --project "$project_dir" python -m kryonix_brain_lightrag.cli "$@"
                     }
@@ -617,10 +617,9 @@ writeShellApplication {
                     }
 
                     run_brain_module() {
-                      local module="$1"
-                      local project_dir
+                      local module project_dir
+                      module="$1"
                       shift
-
                       project_dir="$(brain_project_dir)" || return 1
                       if [[ -f "/etc/kryonix/brain.env" ]]; then
                         set -a
@@ -628,9 +627,10 @@ writeShellApplication {
                         source "/etc/kryonix/brain.env"
                         set +a
                       fi
-                      export KRYONIX_BRAIN_HOME="/home/rocha/.local/share/kryonix/kryonix-vault"
-                      export LIGHTRAG_VAULT_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/vault"
-                      export LIGHTRAG_WORKING_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/storage"
+                      export KRYONIX_BRAIN_HOME="''${KRYONIX_BRAIN_HOME:-/var/lib/kryonix}"
+                      export LIGHTRAG_VAULT_DIR="''${LIGHTRAG_VAULT_DIR:-$KRYONIX_BRAIN_HOME/vault}"
+                      export LIGHTRAG_WORKING_DIR="''${LIGHTRAG_WORKING_DIR:-$KRYONIX_BRAIN_HOME/storage}"
+                      export LIGHTRAG_CAG_DIR="''${KRYONIX_BRAIN_HOME}/cag"
                       export LD_LIBRARY_PATH="${stdenv.cc.cc.lib}/lib:${zlib}/lib:''${LD_LIBRARY_PATH:-}"
                       run_command uv run --project "$project_dir" python -m "$module" "$@"
                     }
@@ -1046,7 +1046,7 @@ writeShellApplication {
                         "  iso       Builda a ISO publica do Kryonix"
                         "  fmt       Roda o formatter da flake"
                         "  check     Roda nix flake check --keep-going"
-                        "  brain     Acessa o Kryonix Brain local ou remoto (health, doctor, stats, search, ask)"
+                        "  brain     Acessa o Kryonix Brain (health, doctor, stats, search, ask, cag)"
                         "  graph     Opera o grafo do Brain (stats, top, heal, repair)"
                         "  mcp       Valida e imprime a configuracao MCP"
                         "  vault     Opera o vault via Brain (scan, index)"
@@ -1074,8 +1074,10 @@ writeShellApplication {
                         "  kryonix git-status"
                         "  kryonix brain stats"
                         "  kryonix brain doctor --remote"
-                        "  kryonix brain doctor --local"
                         "  kryonix brain search \"Como funciona o pipeline RAG do Kryonix?\""
+                        "  kryonix brain cag route \"Qual o host do Ollama?\""
+                        "  kryonix brain cag ask \"Como funciona o Glacier?\""
+                        "  kryonix brain cag route \"Qual o host do Ollama?\""
                         "  kryonix graph top --limit 10"
                         "  kryonix mcp check"
                         "  kryonix test all"
@@ -1633,8 +1635,11 @@ writeShellApplication {
                           api)
                             run_brain_module kryonix_brain_lightrag.api "''${extra_args[@]}"
                             ;;
+                          cag)
+                            run_brain_cli cag "''${extra_args[@]}"
+                            ;;
                            *)
-                             echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api>"
+                             echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag>"
                              exit 1
                              ;;
                         esac
