@@ -111,6 +111,36 @@
         PreferredAuthentications = "publickey";
       };
     };
+
+    matchBlocks."glacier-publico" = {
+      hostname = "168.227.127.73";
+      user = "rocha";
+      port = 2224;
+      identityFile = [
+        "~/.ssh/id_ed25519"
+        "~/.ssh/ragos-ve"
+      ];
+      identitiesOnly = true;
+      extraOptions = {
+        ServerAliveInterval = "30";
+        ServerAliveCountMax = "3";
+      };
+    };
+
+    matchBlocks."glacier-public" = {
+      hostname = "168.227.127.73";
+      user = "rocha";
+      port = 2224;
+      identityFile = [
+        "~/.ssh/id_ed25519"
+        "~/.ssh/ragos-ve"
+      ];
+      identitiesOnly = true;
+      extraOptions = {
+        ServerAliveInterval = "30";
+        ServerAliveCountMax = "3";
+      };
+    };
   };
 
   programs.delta = {
