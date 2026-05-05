@@ -11,7 +11,7 @@
 # Como
 # - Expõe `options.wallpaper` e `options.wallpapers`.
 # - Publica o wallpaper padrão em `~/.config/wallpaper.png`.
-# - Publica a galeria em `~/.local/share/wallpapers/*`.
+# - Publica a galeria em `~/.local/share/wallpaper/*`.
 #
 # Riscos
 # - `wallpapers` com nomes (basename) repetidos vão colidir no destino.
@@ -40,7 +40,7 @@
       ../../../../files/wallpaper/11.png
       ../../../../files/wallpaper/12.png
     ];
-    description = "Lista de wallpapers para instalar em ~/.local/share/wallpapers (galeria).";
+    description = "Lista de wallpapers para instalar em ~/.local/share/wallpaper (galeria).";
   };
 
   config = {
@@ -50,7 +50,7 @@
     # Obs.: nomes repetidos (mesmo basename) vão colidir.
     xdg.dataFile = lib.listToAttrs (
       map (p: {
-        name = "wallpapers/${builtins.baseNameOf p}";
+        name = "wallpaper/${builtins.baseNameOf p}";
         value.source = p;
       }) config.wallpapers
     );

@@ -129,7 +129,7 @@
       ];
     };
 
-    paths.wallpaperDir = "~/.local/share/wallpapers";
+    paths.wallpaperDir = "~/.local/share/wallpaper";
     sidebar.enabled = true;
     utilities.enabled = true;
   };

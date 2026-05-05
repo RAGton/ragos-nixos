@@ -39,7 +39,7 @@ Para abrir um app, basta digitar o nome normal do programa no launcher.
 
 ## Wallpapers
 
-A galeria usada pelo shell fica em `~/.local/share/wallpapers`.
+A galeria usada pelo shell fica em `~/.local/share/wallpaper`.
 
 O estado declarativo que este repo publica para o Caelestia fica em [desktop/hyprland/rice/caelestia-config.nix](../desktop/hyprland/rice/caelestia-config.nix). Ele grava a paleta em `~/.local/state/caelestia/scheme.json` e o wallpaper inicial em `~/.local/state/caelestia/wallpaper/path.txt`, usando o wallpaper azul padrão em [files/wallpaper/ragos-system-4k.png](../files/wallpaper/ragos-system-4k.png).
 

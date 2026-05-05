@@ -52,6 +52,7 @@
   # =========================
   # authKeyFile e extraUpFlags são identidade deste host — ficam aqui.
   services.kryonix.tailscale = {
+    autoconnect = true;
     advertiseExitNode = true;
     authKeyFile = /root/tailscale-authkey.secret;
     extraUpFlags = [ "--hostname=RVE-GLACIER" ];

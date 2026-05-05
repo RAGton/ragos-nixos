@@ -235,7 +235,7 @@
       expire = true;
     };
 
-    paths.wallpaperDir = "~/.local/share/wallpapers";
+    paths.wallpaperDir = "~/.local/share/wallpaper";
 
     services = {
       audioIncrement = 0.05;
