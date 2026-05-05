@@ -36,8 +36,8 @@ in
       };
       address = lib.mkOption {
         type = lib.types.str;
-        default = "0.0.0.0";
-        description = "Endereço para o bind do servidor (0.0.0.0 para público)";
+        default = "127.0.0.1";
+        description = "Endereço para o bind do servidor (127.0.0.1 para segurança total, 0.0.0.0 para público)";
       };
     };
     client = {
@@ -48,8 +48,8 @@ in
   config = lib.mkMerge [
     # Configuração do SERVIDOR
     (lib.mkIf cfg.server.enable {
-      # Firewall: Abre a porta solicitada
-      networking.firewall.allowedTCPPorts = [ cfg.server.port ];
+      # Firewall: Abre a porta apenas na interface Tailscale por padrão
+      networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ cfg.server.port ];
 
       environment.systemPackages = [ pkgs.wayvnc ];
 

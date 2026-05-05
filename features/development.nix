@@ -267,6 +267,9 @@ in
     programs.direnv = lib.mkIf cfg.tools.direnv.enable {
       enable = true;
       nix-direnv.enable = true;
+      silent = true;
+      enableBashIntegration = true;
+      enableZshIntegration = true;
     };
 
     # =========================

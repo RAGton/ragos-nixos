@@ -86,6 +86,10 @@ let
     "git.enableSmartCommit" = true;
     "git.autofetch" = true;
     "git.autofetchPeriod" = 120;
+    # Direnv integration
+    "direnv.path.executable" = "${pkgs.direnv}/bin/direnv";
+    "direnv.restart.automatic" = true;
+    "direnv.watchForChanges" = true;
   };
 
   vscodeSettings = baseVscodeSettings // cfg.extraSettings;
