@@ -128,6 +128,7 @@ let
     "EditorConfig.EditorConfig"
     "Gruntfuggly.todo-tree"
     "mechatroner.rainbow-csv"
+    "mkhl.direnv"
   ];
 
   vscodePackage = if edition == "codium" then pkgs.vscodium else pkgs.vscode;

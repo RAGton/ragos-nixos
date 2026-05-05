@@ -56,6 +56,22 @@ in
     # Firewall base: confia no túnel Tailscale
     networking.firewall.trustedInterfaces = [ "tailscale0" ];
 
+    # Hardening: Fail2Ban para proteger o SSH exposto
+    services.fail2ban = {
+      enable = true;
+      maxretry = 5;
+      bantime = "24h";
+      jails = {
+        sshd-kryonix = ''
+          enabled = true
+          port = 2224
+          filter = sshd
+          logpath = /var/log/auth.log
+          backend = systemd
+        '';
+      };
+    };
+
     # Sudo sem senha para wheel (host single-user)
     security.sudo.wheelNeedsPassword = false;
 
