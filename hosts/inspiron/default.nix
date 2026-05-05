@@ -101,6 +101,8 @@
     };
   };
 
+  kryonix.features.remoteDesktop.client.enable = true;
+
   # Kryonix Brain (Distributed Architecture via Tailscale)
   kryonix.features.ai.brain = {
     enable = true;

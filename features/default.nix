@@ -28,6 +28,7 @@
     ./virtualization.nix
     ./development.nix
     ./ai.nix
+    ./remote-desktop.nix
   ];
 
   # Configuração base comum a todas as features

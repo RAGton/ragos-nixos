@@ -45,6 +45,7 @@
   # Perfis funcionais
   kryonix.profiles.dev.enable = true;
   kryonix.profiles.ti.enable = true;
+  kryonix.features.remoteDesktop.server.enable = true;
 
   # =========================
   # TAILSCALE (RVE-specific, não genérico)

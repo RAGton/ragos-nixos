@@ -66,6 +66,15 @@ writeShellApplication {
                     blue_line() {
                       local text="$1"
 
+                      if [[ "''${json_mode:-0}" -eq 1 ]]; then
+                        if [[ -n "$blue" ]]; then
+                          printf '%b%s%b\n' "$blue" "$text" "$reset" >&2
+                        else
+                          printf '%s\n' "$text" >&2
+                        fi
+                        return 0
+                      fi
+
                       if [[ -n "$blue" ]]; then
                         printf '%b%s%b\n' "$blue" "$text" "$reset"
                       else
@@ -128,6 +137,18 @@ writeShellApplication {
                     }
 
                     print_command() {
+                      # Suprime trace em modo JSON, a menos que verbose seja solicitado
+                      if [[ "''${json_mode:-0}" -eq 1 ]] && [[ "''${verbose:-0}" -eq 0 ]]; then
+                        return 0
+                      fi
+
+                      # Verificação adicional por argumento --json para segurança extra
+                      for arg in "$@"; do
+                        if [[ "$arg" == "--json" ]] && [[ "''${verbose:-0}" -eq 0 ]]; then
+                          return 0
+                        fi
+                      done
+
                       local line="+"
                       local arg
 
@@ -619,6 +640,7 @@ writeShellApplication {
                       local bin_path="$project_dir/rust-core/target/debug/$tool_name"
                       
                       if [[ -x "$bin_path" ]]; then
+                        export LD_LIBRARY_PATH="${runtimeLibPath}:''${LD_LIBRARY_PATH:-}"
                         "$bin_path" "$@"
                       else
                         printf 'ERRO: Ferramenta Rust %s não encontrada ou não compilada.\n' "$tool_name" >&2
@@ -763,18 +785,36 @@ writeShellApplication {
                         source "/etc/kryonix/brain.env"
                         set +a
                       fi
-                      export KRYONIX_BRAIN_HOME="/home/rocha/.local/share/kryonix/kryonix-vault"
-                      export LIGHTRAG_VAULT_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/vault"
-                      export LIGHTRAG_WORKING_DIR="/home/rocha/.local/share/kryonix/kryonix-vault/storage"
+                      
+                      # Usar paths canônicos de produção em vez de home do usuário
+                      export KRYONIX_BRAIN_HOME="''${KRYONIX_BRAIN_HOME:-/var/lib/kryonix}"
+                      export LIGHTRAG_VAULT_DIR="''${LIGHTRAG_VAULT_DIR:-$KRYONIX_BRAIN_HOME/vault}"
+                      export LIGHTRAG_WORKING_DIR="''${LIGHTRAG_WORKING_DIR:-$KRYONIX_BRAIN_HOME/storage}"
+                      export LIGHTRAG_CAG_DIR="''${LIGHTRAG_CAG_DIR:-$KRYONIX_BRAIN_HOME/cag}"
                       export LD_LIBRARY_PATH="${runtimeLibPath}:''${LD_LIBRARY_PATH:-}"
-                      run_command uv run --project "$project_dir" python -c '
-    from kryonix_brain_lightrag import config
-    print("Kryonix Brain health")
-    print(f"project_dir: {config.PROJECT_DIR}")
-    print(f"vault_dir: {config.VAULT_DIR}")
-    print(f"working_dir: {config.WORKING_DIR}")
-    print("status: OK")
-    '
+                      
+                      run_command uv run --project "$project_dir" python -c "
+import json
+import os
+from kryonix_brain_lightrag import config
+
+health = {
+    \"status\": \"OK\",
+    \"project_dir\": str(config.PROJECT_DIR),
+    \"vault_dir\": str(config.VAULT_DIR),
+    \"working_dir\": str(config.WORKING_DIR),
+    \"role\": \"server\"
+}
+
+if os.environ.get(\"KRYONIX_JSON_MODE\") == \"1\":
+    print(json.dumps(health))
+else:
+    print(\"Kryonix Brain health (Local)\")
+    print(f\"  project: {health['project_dir']}\")
+    print(f\"  vault:   {health['vault_dir']}\")
+    print(f\"  storage: {health['working_dir']}\")
+    print(f\"  status:  {health['status']}\")
+"
                     }
 
                     kryonix_brain_doctor() {
@@ -1316,6 +1356,7 @@ writeShellApplication {
                     update=0
                     verbose=0
                     dry=0
+                    json_mode=0
                     flake_arg=""
                     host_arg=""
                     user_arg="$(id -un)"
@@ -1331,6 +1372,11 @@ writeShellApplication {
                           ;;
                         --verbose|-v)
                           verbose=$((verbose + 1))
+                          ;;
+                        --json)
+                          json_mode=1
+                          export KRYONIX_JSON_MODE=1
+                          extra_args+=("$1")
                           ;;
                         --dry|-n)
                           dry=1
@@ -1369,6 +1415,12 @@ writeShellApplication {
                           break
                           ;;
                         *)
+                          if [[ "$1" == ".#"* ]] || [[ "$1" == ". #"* ]]; then
+                            printf 'ERRO: Sintaxe ".#host" ou ". #host" não permitida.\n' >&2
+                            printf 'Use: kryonix %s --host <host>\n' "$subcommand" >&2
+                            exit 1
+                          fi
+
                           if [[ "$subcommand" == "test" ]] && is_kryonix_test_target "$1"; then
                             extra_args+=("$1")
                           elif accepts_positional_host && [[ -z "$host_arg" && "$1" != -* ]]; then
@@ -1380,6 +1432,11 @@ writeShellApplication {
                       esac
                       shift
                     done
+
+                    if [[ "$subcommand" == "test" ]] && [[ "$EUID" -eq 0 ]]; then
+                       printf 'ERRO: "kryonix test" não deve ser executado com sudo.\n' >&2
+                       exit 1
+                    fi
 
                     flake_host="''${host_arg:-$(map_runtime_host)}"
 
@@ -1827,16 +1884,16 @@ writeShellApplication {
                           if [[ ! -f "$state_file" ]]; then
                             printf "Criando arquivo de estado em %s\n" "$state_file"
                             cat <<EOF > "$state_file"
-        # Kryonix AI State
+# Kryonix AI State
 
-        - **Objetivo atual**: 
-        - **Último passo concluído**: 
-        - **Próximos passos**: 
-        - **Serviços verificados**: 
-        - **Testes executados**: 
-        - **Erros pendentes**: 
-        - **Timestamp da última execução**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    EOF
+- **Objetivo atual**: 
+- **Último passo concluído**: 
+- **Próximos passos**: 
+- **Serviços verificados**: 
+- **Testes executados**: 
+- **Erros pendentes**: 
+- **Timestamp da última execução**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+EOF
                           fi
                         }
 
@@ -1862,8 +1919,8 @@ writeShellApplication {
                             
                             if [[ ! -f "$checkpoint_file" ]]; then
                               cat <<EOF > "$checkpoint_file"
-        # Kryonix AI Checkpoints
-    EOF
+# Kryonix AI Checkpoints
+EOF
                             fi
                             
                             timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")

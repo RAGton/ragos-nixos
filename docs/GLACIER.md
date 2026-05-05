@@ -103,20 +103,21 @@ kryonix boot
 
 ## Rebuild remoto seguro
 
-Primeiro apenas build:
+Primeiro apenas verifique e faça o rebuild:
 
 ```sh
-NIX_CONFIG="experimental-features = nix-command flakes" nh os build .#glacier -L --show-trace
+kryonix check --host glacier
+kryonix rebuild --host glacier
 ```
 
 Teste temporário:
 
 ```sh
-NIX_CONFIG="experimental-features = nix-command flakes" nh os test .#glacier -L --show-trace
+kryonix test --host glacier
 ```
 
 Switch só depois:
 
 ```sh
-NIX_CONFIG="experimental-features = nix-command flakes" nh os switch .#glacier -L --show-trace
+kryonix switch --host glacier
 ```

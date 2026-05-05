@@ -4,11 +4,19 @@ Este documento descreve o procedimento canônico para aplicar mudanças de confi
 
 ## 🛑 Regra de Ouro
 
-**Nunca use `nh os switch` ou `nixos-rebuild switch` diretamente.**
-Use sempre o comando unificado `kryonix`. Isso garante que:
+**Nunca use `nh os switch`, `nixos-rebuild switch` ou a sintaxe `.#host` diretamente.**
+
+Use sempre o comando unificado `kryonix` com a flag `--host`. Isso garante que:
 1. O repositório em `/etc/kryonix` seja a fonte de verdade.
 2. Os logs de ativação sejam indexados pelo Brain.
 3. O mapeamento de hostname (`glacier`) seja respeitado.
+4. **Sintaxes proibidas** como `kryonix switch .#glacier` sejam bloqueadas para evitar inconsistências.
+
+| Operação | Comando Correto | Comando Proibido |
+| :--- | :--- | :--- |
+| Switch | `kryonix switch --host glacier` | `kryonix switch .#glacier` |
+| Build | `kryonix rebuild --host glacier` | `kryonix build .#glacier` |
+| Test | `kryonix test --host glacier` | `sudo kryonix test` |
 
 ## 🛠️ Procedimento Canônico
 

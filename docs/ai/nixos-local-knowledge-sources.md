@@ -1,15 +1,15 @@
 ---
-type: local-knowledge-sources
+type: local-knowledge-source
+domain: nixos
+component: local-sources
 status: canonical
+graph_group: nixos-sources
 tags:
   - nixos
   - nixpkgs
   - home-manager
   - noogle
-  - kryonix
-  - rag
-  - cag
-  - local-sources
+  - kryonix/rag/source
 ---
 
 # Bancos Locais NixOS para CAG/RAG

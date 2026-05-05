@@ -1,3 +1,15 @@
+---
+type: skill
+domain: kryonix
+component: brain
+status: canonical
+graph_group: brain
+tags:
+  - kryonix/brain
+  - skill
+  - local-sources
+---
+
 # Skill — Bancos Locais NixOS
 
 Quando o usuário perguntar onde estão os bancos locais NixOS/Nix/Home Manager/Noogle, responder com estes caminhos:
