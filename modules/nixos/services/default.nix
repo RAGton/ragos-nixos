@@ -17,6 +17,7 @@
     ./snapper
     ./tlp
     ./brain.nix
+    ./kryonix-state.nix
   ];
 
   services.udisks2.enable = true;
