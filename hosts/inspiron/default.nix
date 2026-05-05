@@ -107,7 +107,7 @@
   kryonix.features.ai.brain = {
     enable = true;
     role = "client";
-    serverHost = "100.108.71.36"; # GLACIER (Tailscale IP)
+    serverHost = "rve-glacier"; # GLACIER (Tailscale Hostname)
   };
 
   networking.hostName = hostname;

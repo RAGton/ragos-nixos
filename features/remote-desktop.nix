@@ -98,7 +98,7 @@ in
             case "$TARGET" in
               glacier)
                 # Tenta IP do Tailscale primeiro, depois LAN
-                IP="100.108.71.36" 
+                IP="rve-glacier"
                 ;;
               inspiron)
                 IP="inspiron" # Assume resolução via /etc/hosts ou DNS local
@@ -109,7 +109,7 @@ in
             esac
 
             echo "🚀 Conectando ao Kryonix Remote Desktop em $IP:$PORT..."
-            
+
             # tigervnc viewer usa host::port para conexões diretas
             # -SecurityTypes=None (padrão do wayvnc se não configurado TLS)
             vncviewer "$IP::$PORT"
