@@ -651,12 +651,12 @@ writeShellApplication {
                           export KRYONIX_STATE_ROOT="/var/lib/kryonix"
                           export KRYONIX_BRAIN_ROOT="/var/lib/kryonix/brain"
                           export KRYONIX_VAULT_DIR="/var/lib/kryonix/vault"
-                          export LIGHTRAG_VAULT_DIR="''${LIGHTRAG_VAULT_DIR:-/var/lib/kryonix/vault}"
-                          export LIGHTRAG_WORKING_DIR="''${LIGHTRAG_WORKING_DIR:-/var/lib/kryonix/brain/storage}"
-                          export KRYONIX_BRAIN_STORAGE="''${KRYONIX_BRAIN_STORAGE:-/var/lib/kryonix/brain/storage}"
-                          export LIGHTRAG_CAG_DIR="''${LIGHTRAG_CAG_DIR:-/var/lib/kryonix/brain/cag}"
-                          export KRYONIX_CAG_DIR="''${KRYONIX_CAG_DIR:-/var/lib/kryonix/brain/cag}"
-                          export KRYONIX_RAG_MANIFEST_DIR="''${KRYONIX_RAG_MANIFEST_DIR:-/var/lib/kryonix/brain/rag/manifests}"
+                          export LIGHTRAG_VAULT_DIR="/var/lib/kryonix/vault"
+                          export LIGHTRAG_WORKING_DIR="/var/lib/kryonix/brain/storage"
+                          export KRYONIX_BRAIN_STORAGE="/var/lib/kryonix/brain/storage"
+                          export LIGHTRAG_CAG_DIR="/var/lib/kryonix/brain/cag"
+                          export KRYONIX_CAG_DIR="/var/lib/kryonix/brain/cag"
+                          export KRYONIX_RAG_MANIFEST_DIR="/var/lib/kryonix/brain/rag/manifests"
                           export LD_LIBRARY_PATH="${runtimeLibPath}:''${LD_LIBRARY_PATH:-}"
                         }
 
@@ -745,27 +745,62 @@ writeShellApplication {
                           local url
                           local status
                           local -a curl_args
+                          local api_key
 
                           brain_remote_required || return $?
                           url="$(brain_api_url)"
-                          curl_args=(-fsS --connect-timeout 3 --max-time 120 -X "$method" -H "Accept: application/json")
+                          api_key="''${KRYONIX_BRAIN_API_KEY:-''${KRYONIX_BRAIN_KEY:-}}"
 
-                          if [[ -n "''${KRYONIX_BRAIN_KEY:-}" ]]; then
-                            curl_args+=(-H "X-API-Key: ''${KRYONIX_BRAIN_KEY}")
+                          curl_args=(--connect-timeout 5 --max-time 120 -X "$method" -H "Accept: application/json")
+
+                          if [[ -n "$data" ]] || [[ "$method" == "POST" ]] || [[ "$method" == "PUT" ]]; then
+                            curl_args+=(-H "Content-Type: application/json")
+                          fi
+
+                          if [[ -n "$api_key" ]]; then
+                            curl_args+=(-H "X-API-Key: $api_key")
                           fi
 
                           if [[ -n "$data" ]]; then
-                            curl_args+=(-H "Content-Type: application/json" --data "$data")
+                            curl_args+=(--data "$data")
                           fi
 
                           blue_line "Brain remoto: $method $url$path"
-                          if curl "''${curl_args[@]}" "$url$path"; then
-                            status=0
-                          else
-                            status=$?
+
+                          local tmp_resp http_code
+                          tmp_resp=$(mktemp)
+
+                          http_code=$(curl -sS -w "%{http_code}" -o "$tmp_resp" "''${curl_args[@]}" "$url$path")
+                          status=$?
+
+                          if [[ $status -ne 0 ]]; then
+                            printf 'ERRO: Falha ao conectar ao servidor remoto (%s)\n' "$status" >&2
+                            rm -f "$tmp_resp"
+                            return "$status"
                           fi
+
+                          if [[ "$http_code" == "403" ]]; then
+                            printf 'ERRO: Acesso negado (403 Forbidden).\n' >&2
+                            if [[ -z "$api_key" ]]; then
+                              printf 'Causa: O endpoint remoto é protegido por chave de API.\n' >&2
+                              printf 'Solução: Por favor, defina a variável: export KRYONIX_BRAIN_API_KEY=sua_chave\n' >&2
+                            else
+                              printf 'Causa: A chave fornecida em KRYONIX_BRAIN_API_KEY é inválida ou expirou.\n' >&2
+                            fi
+                            rm -f "$tmp_resp"
+                            return 403
+                          elif [[ "$http_code" -ge 400 ]]; then
+                            printf 'ERRO: O servidor remoto retornou status HTTP %s.\n' "$http_code" >&2
+                            cat "$tmp_resp" >&2
+                            printf '\n' >&2
+                            rm -f "$tmp_resp"
+                            return "$http_code"
+                          fi
+
+                          cat "$tmp_resp"
                           printf '\n'
-                          return "$status"
+                          rm -f "$tmp_resp"
+                          return 0
                         }
 
                         parse_brain_mode() {
