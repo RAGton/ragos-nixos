@@ -747,6 +747,7 @@ writeShellApplication {
                           local -a curl_args
                           local api_key
 
+                          export_brain_env
                           brain_remote_required || return $?
                           url="$(brain_api_url)"
                           api_key="''${KRYONIX_BRAIN_API_KEY:-''${KRYONIX_BRAIN_KEY:-}}"
