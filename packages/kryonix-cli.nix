@@ -766,7 +766,7 @@ writeShellApplication {
                             curl_args+=(--data "$data")
                           fi
 
-                          blue_line "Brain remoto: $method $url$path"
+                          blue_line "Brain remoto: $method $url$path" >&2
 
                           local tmp_resp http_code
                           tmp_resp=$(mktemp)
@@ -894,8 +894,42 @@ writeShellApplication {
                         kryonix_brain_stats() {
                           parse_brain_mode "$@"
                           if brain_should_use_remote "$brain_mode"; then
-                            brain_remote_curl GET /stats
-                            return $?
+                            if [[ "''${KRYONIX_JSON_MODE:-}" == "1" ]]; then
+                              brain_remote_curl GET /stats
+                              return $?
+                            else
+                              local response
+                              response="$(brain_remote_curl GET /stats)" || return $?
+                              local project_dir
+                              project_dir="$(brain_project_dir)" || return 1
+                              printf '%s' "$response" | uv run --project "$project_dir" python -c '
+import sys, json
+from rich.console import Console
+from rich.table import Table
+
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    print("Erro ao decodificar a resposta remota.")
+    sys.exit(1)
+
+console = Console()
+console.print("\n[bold magenta][/bold magenta][black on magenta]BRAIN REMOTE STATS[/black on magenta][bold magenta][/bold magenta]")
+t = Table(show_header=True, header_style="bold magenta")
+t.add_column("Métrica", style="cyan")
+t.add_column("Contagem", style="green")
+t.add_column("Detalhe / Status", style="dim")
+
+t.add_row("Entidades", str(data.get("entities", 0)), "Mapeadas no Grafo")
+t.add_row("Relações", str(data.get("relations", 0)), "Conexões semânticas")
+t.add_row("Documentos", str(data.get("docs", 0)), "Arquivos indexados")
+t.add_row("Consistência", str(data.get("consistency_status", "OK")), "Status do RAG")
+t.add_row("Diretório Remoto", str(data.get("working_dir", "N/A")), "Storage no Glacier")
+
+console.print(t)
+'
+                              return $?
+                            fi
                           fi
 
                           run_brain_cli stats "''${brain_passthrough[@]}"
@@ -928,8 +962,50 @@ writeShellApplication {
                             fi
                             query="''${brain_passthrough[*]}"
                             payload="$(jq -n --arg query "$query" --arg mode "hybrid" --arg lang "pt-BR" '{query:$query, mode:$mode, lang:$lang}')"
-                            brain_remote_curl POST /search "$payload"
-                            return $?
+                            
+                            if [[ "''${KRYONIX_JSON_MODE:-}" == "1" ]]; then
+                              brain_remote_curl POST /search "$payload"
+                              return $?
+                            else
+                              local response
+                              response="$(brain_remote_curl POST /search "$payload")" || return $?
+                              local project_dir
+                              project_dir="$(brain_project_dir)" || return 1
+                              printf '%s' "$response" | uv run --project "$project_dir" python -c '
+import sys, json
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
+
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    print("Erro ao decodificar a resposta remota.")
+    sys.exit(1)
+
+if data.get("status") == "success":
+    console = Console()
+    answer = data.get("answer", "")
+    sources = data.get("sources", [])
+    grounding = data.get("grounding", {})
+    confidence = grounding.get("confidence", "Normal")
+    latency = grounding.get("latency_sec", 0.0)
+
+    console.print(f"\n[bold magenta][/bold magenta][black on magenta]BRAIN REMOTE RESPONSE[/black on magenta][bold magenta][/bold magenta] [dim]Grounding: {confidence} ({latency}s)[/dim]")
+    console.print(Panel(Markdown(answer), border_style="magenta", title="[bold magenta]Kryonix RAG (Remote)[/bold magenta]", title_align="left"))
+
+    if sources:
+        console.print("\n[bold cyan]Fontes usadas (Glacier RAG):[/bold cyan]")
+        for i, src in enumerate(sources[:5]):
+            title = src.get("file") or src.get("title") or src.get("path") or "fonte desconhecida"
+            score = src.get("score", "n/a")
+            mode_used = src.get("mode") or "hybrid"
+            console.print(f"  {i+1}. [bold white]{title}[/bold white] | score: {score} | modo: {mode_used}")
+else:
+    print(data.get("answer", "Erro desconhecido"))
+'
+                              return $?
+                            fi
                           fi
 
                           run_brain_cli "$action" "''${brain_passthrough[@]}"
@@ -1949,7 +2025,7 @@ writeShellApplication {
     - **Testes executados**: 
     - **Erros pendentes**: 
     - **Timestamp da última execução**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    EOF
+EOF
                               fi
                             }
 
@@ -1976,7 +2052,7 @@ writeShellApplication {
                                 if [[ ! -f "$checkpoint_file" ]]; then
                                   cat <<EOF > "$checkpoint_file"
     # Kryonix AI Checkpoints
-    EOF
+EOF
                                 fi
                                 
                                 timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
