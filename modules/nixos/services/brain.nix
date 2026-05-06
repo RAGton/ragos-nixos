@@ -279,6 +279,8 @@ in
             pkgs.ollama;
         host = "0.0.0.0";
         port = 11434;
+        user = "ollama";
+        group = "ollama";
         models = "/home/storage/ollama/models";
         # keep_alive=0: modelo descarregado da VRAM imediatamente após uso.
         # Crítico para liberar GPU quando Ollama para (kryonix ollama stop).
