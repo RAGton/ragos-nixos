@@ -788,13 +788,13 @@ writeShellApplication {
                               printf 'Causa: A chave fornecida em KRYONIX_BRAIN_API_KEY é inválida ou expirou.\n' >&2
                             fi
                             rm -f "$tmp_resp"
-                            return 403
+                            return 1
                           elif [[ "$http_code" -ge 400 ]]; then
                             printf 'ERRO: O servidor remoto retornou status HTTP %s.\n' "$http_code" >&2
                             cat "$tmp_resp" >&2
                             printf '\n' >&2
                             rm -f "$tmp_resp"
-                            return "$http_code"
+                            return 1
                           fi
 
                           cat "$tmp_resp"
