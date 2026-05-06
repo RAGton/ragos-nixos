@@ -382,7 +382,7 @@ in
       homeMode = "0770";
     };
     users.users.rocha.extraGroups = [ "kryonix" ];
-    users.users.ollama.extraGroups = [ "kryonix" ];
+    users.users.ollama.extraGroups = mkIf cfg.ollama.enable [ "kryonix" ];
 
     # ── Firewall por interface ─────────────────────────────────────
     # Brain API e Ollama só acessíveis via LAN (br0) e Tailscale (tailscale0).
