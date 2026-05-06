@@ -218,40 +218,31 @@ in
 
     brainHome = mkOption {
       type = types.path;
-      default = "/home/rocha/.local/share/kryonix/kryonix-vault";
-      description = ''
-        Diretório home do Brain.
-        Alvo futuro limpo: /var/lib/kryonix-brain
-      '';
+      default = "/home/storage";
+      description = "Diretório home do Brain.";
     };
 
     storagePath = mkOption {
       type = types.path;
-      default = "/home/rocha/.local/share/kryonix/kryonix-vault/storage";
-      description = ''
-        Caminho para o storage do LightRAG (apenas server).
-        Alvo futuro limpo: /var/lib/kryonix-brain/storage
-      '';
+      default = "/home/storage/brain/storage";
+      description = "Caminho para o storage do LightRAG (apenas server).";
     };
 
     vaultPath = mkOption {
       type = types.path;
-      default = "/home/rocha/.local/share/kryonix/kryonix-vault/vault";
-      description = ''
-        Caminho para o Vault Obsidian montado/local (apenas server).
-        Alvo futuro limpo: /var/lib/kryonix-brain/vault
-      '';
+      default = "/home/storage/vault";
+      description = "Caminho para o Vault Obsidian montado/local (apenas server).";
     };
 
     user = mkOption {
       type = types.str;
-      default = "rocha";
+      default = "kryonix";
       description = "Usuário que executará os serviços do Brain.";
     };
 
     group = mkOption {
       type = types.str;
-      default = "users";
+      default = "kryonix";
       description = "Grupo que executará os serviços do Brain.";
     };
   };
@@ -380,7 +371,16 @@ in
     };
 
     # ── Usuário de sistema do Brain ────────────────────────────────
-    # O serviço roda como rocha para ter acesso de leitura e escrita nativos ao Vault em /home/rocha
+    users.groups.kryonix = {};
+    users.users.kryonix = {
+      isSystemUser = true;
+      group = "kryonix";
+      description = "Kryonix Brain Service User";
+      home = "/home/storage";
+      createHome = true;
+      homeMode = "0770";
+    };
+    users.users.rocha.extraGroups = [ "kryonix" ];
 
     # ── Firewall por interface ─────────────────────────────────────
     # Brain API e Ollama só acessíveis via LAN (br0) e Tailscale (tailscale0).

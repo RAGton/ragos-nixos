@@ -63,8 +63,8 @@
   kernelZen = {
     enable = true;
     kernel = "zen";
-    forceLocalBuild = true;
-    useLLVMStdenv = true;
+    forceLocalBuild = false;
+    useLLVMStdenv = false;
     extraMakeFlags = [ ];
     disableMitigations = lib.mkDefault false;
     extraKernelParams = [ ];
