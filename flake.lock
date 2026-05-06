@@ -75,11 +75,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1777979467,
-        "narHash": "sha256-f9SQ3UlQnggUG2Fb2lqGjc6r340+m1gcUexDClpqun0=",
+        "lastModified": 1778018508,
+        "narHash": "sha256-1rgFHrghdfVlUyKvIfQwXnrXDDyNtxew89pYwsmTIRQ=",
         "owner": "openai",
         "repo": "codex",
-        "rev": "70807730f5a8e093d5182089ad5a4b1b4355f9fa",
+        "rev": "d0f9d5eba2004c9a2057bc66baff5fe67ff60ff6",
         "type": "github"
       },
       "original": {
@@ -168,11 +168,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1777988791,
-        "narHash": "sha256-DtbtSW5+Hls7z+D9BfsAXvFuivt5iZ0OzUXjQ8d8lB8=",
+        "lastModified": 1778009629,
+        "narHash": "sha256-nUoQtf4Zq7DRYJrfv904hjrxjAlWVP6a1pNNFKx3FCg=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "d987617879f613053f6fdf4491fe28ce0283d543",
+        "rev": "00ed86e58bb6979a7921859fd1615d19382eac5c",
         "type": "github"
       },
       "original": {

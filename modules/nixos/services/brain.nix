@@ -279,6 +279,7 @@ in
             pkgs.ollama;
         host = "0.0.0.0";
         port = 11434;
+        models = "/home/storage/ollama/models";
         # keep_alive=0: modelo descarregado da VRAM imediatamente após uso.
         # Crítico para liberar GPU quando Ollama para (kryonix ollama stop).
         environmentVariables = {
@@ -381,6 +382,7 @@ in
       homeMode = "0770";
     };
     users.users.rocha.extraGroups = [ "kryonix" ];
+    users.users.ollama.extraGroups = [ "kryonix" ];
 
     # ── Firewall por interface ─────────────────────────────────────
     # Brain API e Ollama só acessíveis via LAN (br0) e Tailscale (tailscale0).
