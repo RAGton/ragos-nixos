@@ -25,17 +25,20 @@
   ...
 }:
 {
-  home.file =
+  home.file = {
+    ".ssh/config".force = true;
+  } // (
     let
       hasGitKey = userConfig.gitKey != "";
       isSshSigningKey = hasGitKey && lib.hasPrefix "ssh-" userConfig.gitKey;
     in
-    lib.mkIf isSshSigningKey {
+    if isSshSigningKey then {
       ".config/git/allowed_signers" = {
         text = "${userConfig.email} ${userConfig.gitKey}\n";
         force = true;
       };
-    };
+    } else {}
+  );
 
   # Forçar a criação da config do Git para evitar conflitos de ativação
   xdg.configFile."git/config".force = true;
@@ -96,6 +99,8 @@
       aliases.co = "pr checkout";
     };
   };
+
+
 
   programs.ssh = {
     enable = true;
