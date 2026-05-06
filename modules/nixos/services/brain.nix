@@ -294,6 +294,9 @@ in
     # Start manual: kryonix ollama start  →  systemctl start ollama
     systemd.services.ollama = mkIf cfg.ollama.enable {
       wantedBy = mkForce (if cfg.ollamaAutoStart then [ "multi-user.target" ] else [ ]);
+      serviceConfig = {
+        ProtectHome = lib.mkForce "read-only";
+      };
     };
 
     # ── VRAM check (oneshot antes do ollama) ───────────────────────

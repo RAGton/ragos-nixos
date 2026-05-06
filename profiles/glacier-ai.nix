@@ -70,8 +70,8 @@ in
         vramMinGiB = cfg.vramMinGiB;
         acceleration = "cuda";
       };
-      storagePath = "/home/storage/brain/storage";
-      vaultPath = "/home/storage/vault";
+      storagePath = "/var/lib/kryonix/brain/storage";
+      vaultPath = "/var/lib/kryonix/vault";
     };
   };
 }
