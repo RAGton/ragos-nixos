@@ -11,10 +11,10 @@ Status: Roadmap / Arquitetura proposta
 ```txt
 /var/lib/kryonix/
 ├── brain/
-│   ├── lightrag/
-│   │   ├── storage/
-│   │   ├── cache/
-│   │   └── snapshots/
+│   ├── storage/
+│   │   └── (Arquivos do LightRAG, graphml, NanoVectorDB)
+│   ├── cache/
+│   ├── snapshots/
 │   ├── neo4j/
 │   │   ├── data/
 │   │   ├── logs/

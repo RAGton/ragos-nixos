@@ -224,13 +224,13 @@ in
 
     storagePath = mkOption {
       type = types.path;
-      default = "/home/storage/brain/storage";
+      default = "/var/lib/kryonix/brain/storage";
       description = "Caminho para o storage do LightRAG (apenas server).";
     };
 
     vaultPath = mkOption {
       type = types.path;
-      default = "/home/storage/vault";
+      default = "/var/lib/kryonix/vault";
       description = "Caminho para o Vault Obsidian montado/local (apenas server).";
     };
 
@@ -327,8 +327,8 @@ in
       wantedBy = [ "multi-user.target" ];
       environment = {
         LD_LIBRARY_PATH = runtimeLibPath;
-        KRYONIX_BRAIN_HOME = "${cfg.vaultPath}";
-        LIGHTRAG_VAULT_DIR = "${cfg.vaultPath}/vault";
+        KRYONIX_BRAIN_HOME = "/var/lib/kryonix";
+        LIGHTRAG_VAULT_DIR = "${cfg.vaultPath}";
         LIGHTRAG_WORKING_DIR = "${cfg.storagePath}";
       };
       serviceConfig = {
@@ -361,8 +361,8 @@ in
       wantedBy = [ "multi-user.target" ];
       environment = {
         LD_LIBRARY_PATH = runtimeLibPath;
-        KRYONIX_BRAIN_HOME = "${cfg.vaultPath}";
-        LIGHTRAG_VAULT_DIR = "${cfg.vaultPath}/vault";
+        KRYONIX_BRAIN_HOME = "/var/lib/kryonix";
+        LIGHTRAG_VAULT_DIR = "${cfg.vaultPath}";
         LIGHTRAG_WORKING_DIR = "${cfg.storagePath}";
       };
       serviceConfig = {

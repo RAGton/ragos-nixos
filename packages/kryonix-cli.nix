@@ -615,20 +615,62 @@ writeShellApplication {
                           printf '%s\n' "$project_dir"
                         }
 
-                        run_brain_cli() {
-                          local project_dir
-                          project_dir="$(brain_project_dir)" || return 1
+                        kryonix_brain_role() {
+                          local explicit lower
+
+                          explicit="''${KRYONIX_BRAIN_ROLE:-}"
+                          lower="$(printf '%s' "$explicit" | tr '[:upper:]' '[:lower:]')"
+                          case "$lower" in
+                            client|server)
+                              printf '%s\n' "$lower"
+                              return 0
+                              ;;
+                          esac
+
+                          case "$(map_runtime_host)" in
+                            glacier)
+                              printf '%s\n' "server"
+                              ;;
+                            *)
+                              printf '%s\n' "client"
+                              ;;
+                          esac
+                        }
+
+                        export_brain_env() {
                           if [[ -f "/etc/kryonix/brain.env" ]]; then
                             set -a
                             # shellcheck disable=SC1091
                             source "/etc/kryonix/brain.env"
                             set +a
                           fi
-                          export KRYONIX_BRAIN_HOME="''${KRYONIX_BRAIN_HOME:-/var/lib/kryonix}"
-                          export LIGHTRAG_VAULT_DIR="''${LIGHTRAG_VAULT_DIR:-$KRYONIX_BRAIN_HOME/vault}"
-                          export LIGHTRAG_WORKING_DIR="''${KRYONIX_BRAIN_HOME}/storage"
-                          export LIGHTRAG_CAG_DIR="''${KRYONIX_BRAIN_HOME}/cag"
+                          local role
+                          role="$(kryonix_brain_role)"
+                          export KRYONIX_ROLE="$role"
+                          export KRYONIX_PROJECT_DIR="/etc/kryonix"
+                          export KRYONIX_STATE_ROOT="/var/lib/kryonix"
+                          export KRYONIX_BRAIN_ROOT="/var/lib/kryonix/brain"
+                          export KRYONIX_VAULT_DIR="/var/lib/kryonix/vault"
+                          export LIGHTRAG_VAULT_DIR="''${LIGHTRAG_VAULT_DIR:-/var/lib/kryonix/vault}"
+                          export LIGHTRAG_WORKING_DIR="''${LIGHTRAG_WORKING_DIR:-/var/lib/kryonix/brain/storage}"
+                          export KRYONIX_BRAIN_STORAGE="''${KRYONIX_BRAIN_STORAGE:-/var/lib/kryonix/brain/storage}"
+                          export LIGHTRAG_CAG_DIR="''${LIGHTRAG_CAG_DIR:-/var/lib/kryonix/brain/cag}"
+                          export KRYONIX_CAG_DIR="''${KRYONIX_CAG_DIR:-/var/lib/kryonix/brain/cag}"
+                          export KRYONIX_RAG_MANIFEST_DIR="''${KRYONIX_RAG_MANIFEST_DIR:-/var/lib/kryonix/brain/rag/manifests}"
                           export LD_LIBRARY_PATH="${runtimeLibPath}:''${LD_LIBRARY_PATH:-}"
+                        }
+
+                        run_brain_cli() {
+                          local project_dir
+                          project_dir="$(brain_project_dir)" || return 1
+
+                          if [[ "$(kryonix_brain_role)" == "client" ]] && [[ "''${KRYONIX_LOCAL_RAG_ENABLE:-}" != "true" ]]; then
+                            printf 'ERRO: O RAG local está desabilitado por padrão no cliente (Inspiron) para evitar duplicação de índices pesados.\n' >&2
+                            printf 'Para forçar a execução local, defina a variável: export KRYONIX_LOCAL_RAG_ENABLE=true\n' >&2
+                            return 1
+                          fi
+
+                          export_brain_env
                           run_command uv run --project "$project_dir" python -m kryonix_brain_lightrag.cli "$@"
                         }
 
@@ -654,46 +696,23 @@ writeShellApplication {
                           module="$1"
                           shift
                           project_dir="$(brain_project_dir)" || return 1
-                          if [[ -f "/etc/kryonix/brain.env" ]]; then
-                            set -a
-                            # shellcheck disable=SC1091
-                            source "/etc/kryonix/brain.env"
-                            set +a
+
+                          if [[ "$(kryonix_brain_role)" == "client" ]] && [[ "''${KRYONIX_LOCAL_RAG_ENABLE:-}" != "true" ]]; then
+                            printf 'ERRO: Execução local do cérebro desabilitada no cliente (Inspiron).\n' >&2
+                            printf 'Para forçar a execução local, defina: export KRYONIX_LOCAL_RAG_ENABLE=true\n' >&2
+                            return 1
                           fi
-                          export KRYONIX_BRAIN_HOME="''${KRYONIX_BRAIN_HOME:-/var/lib/kryonix}"
-                          export LIGHTRAG_VAULT_DIR="''${LIGHTRAG_VAULT_DIR:-$KRYONIX_BRAIN_HOME/vault}"
-                          export LIGHTRAG_WORKING_DIR="''${LIGHTRAG_WORKING_DIR:-$KRYONIX_BRAIN_HOME/storage}"
-                          export LIGHTRAG_CAG_DIR="''${KRYONIX_BRAIN_HOME}/cag"
-                          export LD_LIBRARY_PATH="${runtimeLibPath}:''${LD_LIBRARY_PATH:-}"
+
+                          export_brain_env
                           run_command uv run --project "$project_dir" python -m "$module" "$@"
-                        }
-
-                        kryonix_brain_role() {
-                          local explicit lower
-
-                          explicit="''${KRYONIX_BRAIN_ROLE:-}"
-                          lower="$(printf '%s' "$explicit" | tr '[:upper:]' '[:lower:]')"
-                          case "$lower" in
-                            client|server)
-                              printf '%s\n' "$lower"
-                              return 0
-                              ;;
-                          esac
-
-                          case "$(map_runtime_host)" in
-                            glacier)
-                              printf '%s\n' "server"
-                              ;;
-                            *)
-                              printf '%s\n' "client"
-                              ;;
-                          esac
                         }
 
                         brain_api_url() {
                           local url
-
-                          url="''${KRYONIX_BRAIN_API:-''${KRYONIX_BRAIN_URL:-}}"
+                          url="''${KRYONIX_BRAIN_API:-''${KRYONIX_REMOTE_BRAIN_URL:-''${KRYONIX_BRAIN_URL:-}}}"
+                          if [[ -z "$url" ]] && [[ "$(kryonix_brain_role)" == "client" ]]; then
+                            url="http://glacier-publico:8000"
+                          fi
                           printf '%s\n' "''${url%/}"
                         }
 
@@ -703,7 +722,6 @@ writeShellApplication {
                             return 2
                           fi
                         }
-
                         brain_should_use_remote() {
                           local mode="$1"
 
@@ -730,7 +748,7 @@ writeShellApplication {
 
                           brain_remote_required || return $?
                           url="$(brain_api_url)"
-                          curl_args=(-fsS --connect-timeout 3 --max-time 20 -X "$method" -H "Accept: application/json")
+                          curl_args=(-fsS --connect-timeout 3 --max-time 120 -X "$method" -H "Accept: application/json")
 
                           if [[ -n "''${KRYONIX_BRAIN_KEY:-}" ]]; then
                             curl_args+=(-H "X-API-Key: ''${KRYONIX_BRAIN_KEY}")
@@ -777,21 +795,22 @@ writeShellApplication {
                             return $?
                           fi
 
+                          if [[ "$(kryonix_brain_role)" == "client" ]] && [[ "''${KRYONIX_LOCAL_RAG_ENABLE:-}" != "true" ]]; then
+                            if [[ "''${KRYONIX_JSON_MODE:-}" == "1" ]]; then
+                              printf '{"status": "LOCAL_DISABLED", "role": "client", "note": "RAG local desabilitado"}\n'
+                            else
+                              printf 'Kryonix Brain health (Local)\n'
+                              printf '  role:    client\n'
+                              printf '  status:  LOCAL_DISABLED\n'
+                              printf '  nota:    RAG local desabilitado para evitar duplicação do índice pesado.\n'
+                              printf '           Use --remote para consultar o Glacier, ou export KRYONIX_LOCAL_RAG_ENABLE=true para habilitar local.\n'
+                            fi
+                            return 0
+                          fi
+
                           local project_dir
                           project_dir="$(brain_project_dir)" || return 1
-                          if [[ -f "/etc/kryonix/brain.env" ]]; then
-                            set -a
-                            # shellcheck disable=SC1091
-                            source "/etc/kryonix/brain.env"
-                            set +a
-                          fi
-                          
-                          # Usar paths canônicos de produção em vez de home do usuário
-                          export KRYONIX_BRAIN_HOME="''${KRYONIX_BRAIN_HOME:-/var/lib/kryonix}"
-                          export LIGHTRAG_VAULT_DIR="''${LIGHTRAG_VAULT_DIR:-$KRYONIX_BRAIN_HOME/vault}"
-                          export LIGHTRAG_WORKING_DIR="''${LIGHTRAG_WORKING_DIR:-$KRYONIX_BRAIN_HOME/storage}"
-                          export LIGHTRAG_CAG_DIR="''${LIGHTRAG_CAG_DIR:-$KRYONIX_BRAIN_HOME/cag}"
-                          export LD_LIBRARY_PATH="${runtimeLibPath}:''${LD_LIBRARY_PATH:-}"
+                          export_brain_env
                           
                           run_command uv run --project "$project_dir" python -c "
     import json
@@ -803,7 +822,7 @@ writeShellApplication {
         \"project_dir\": str(config.PROJECT_DIR),
         \"vault_dir\": str(config.VAULT_DIR),
         \"working_dir\": str(config.WORKING_DIR),
-        \"role\": \"server\"
+        \"role\": os.environ.get(\"KRYONIX_ROLE\", \"server\")
     }
 
     if os.environ.get(\"KRYONIX_JSON_MODE\") == \"1\":
@@ -813,6 +832,7 @@ writeShellApplication {
         print(f\"  project: {health['project_dir']}\")
         print(f\"  vault:   {health['vault_dir']}\")
         print(f\"  storage: {health['working_dir']}\")
+        print(f\"  role:    {health['role']}\")
         print(f\"  status:  {health['status']}\")
     "
                         }
