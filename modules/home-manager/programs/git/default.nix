@@ -143,6 +143,17 @@
     };
   };
 
+  # Solução resiliente para o erro "Bad owner or permissions on ~/.ssh/config"
+  # que ocorre quando arquivos do Nix store são gerados como nobody:nogroup.
+  home.activation.sshConfigPermissions = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    if [ -L "$HOME/.ssh/config" ]; then
+      target=$(readlink "$HOME/.ssh/config")
+      rm -f "$HOME/.ssh/config"
+      cp "$target" "$HOME/.ssh/config"
+      chmod 600 "$HOME/.ssh/config"
+    fi
+  '';
+
   programs.delta = {
     enable = true;
     enableGitIntegration = true;
