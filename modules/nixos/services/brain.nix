@@ -377,7 +377,7 @@ in
     };
 
     # ── Usuário de sistema do Brain ────────────────────────────────
-    users.groups.kryonix = {};
+    users.groups.kryonix = { };
     users.users.kryonix = {
       isSystemUser = true;
       group = "kryonix";
