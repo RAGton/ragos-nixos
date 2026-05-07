@@ -88,13 +88,13 @@ in
     general {
       gaps_in = 3
       gaps_out = 6
-      border_size = 2
+      border_size = 5
     }
 
     decoration {
       rounding = 8
-      active_opacity = 1.0
-      inactive_opacity = 1.0
+      active_opacity = 0.9
+      inactive_opacity = 0.8
 
       blur {
         enabled = false
@@ -102,7 +102,7 @@ in
     }
 
     animations {
-      enabled = false
+      enabled = true
     }
 
     misc {
