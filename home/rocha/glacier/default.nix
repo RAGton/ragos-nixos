@@ -21,6 +21,7 @@
   };
 
   kryonix.flatpak.enable = true;
+  services.kryonix-wayvnc.enable = true;
 
   programs.home-manager.enable = true;
 

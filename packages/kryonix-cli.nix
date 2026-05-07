@@ -48,12 +48,14 @@ writeShellApplication {
     uv
     openrgb
   ];
-  text = "set -euo pipefail\ntrap 'stty sane opost onlcr echo icanon isig 2>/dev/null || true' EXIT INT TERM\n"
-         + "runtimeLibPath=\"${runtimeLibPath}\"\n"
-         + builtins.readFile ./kryonix-cli/core.sh
-         + builtins.readFile ./kryonix-cli/nixos.sh
-         + builtins.readFile ./kryonix-cli/git.sh
-         + builtins.readFile ./kryonix-cli/brain.sh
-         + builtins.readFile ./kryonix-cli/services.sh
-         + builtins.readFile ./kryonix-cli/main.sh;
+  text =
+    "set -euo pipefail\ntrap 'stty sane opost onlcr echo icanon isig 2>/dev/null || true' EXIT INT TERM\n"
+    + "runtimeLibPath=\"${runtimeLibPath}\"\n"
+    + builtins.readFile ./kryonix-cli/core.sh
+    + builtins.readFile ./kryonix-cli/nixos.sh
+    + builtins.readFile ./kryonix-cli/git.sh
+    + builtins.readFile ./kryonix-cli/brain.sh
+    + builtins.readFile ./kryonix-cli/services.sh
+    + builtins.readFile ./kryonix-cli/remote.sh
+    + builtins.readFile ./kryonix-cli/main.sh;
 }

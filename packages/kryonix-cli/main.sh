@@ -29,6 +29,7 @@ print_usage() {
     "  ollama    Controla o serviço Ollama (start, stop, status, run, vram, pull)"
     "  ai        Interage com a camada de IA (continue, status, checkpoint)"
     "  rgb       Controla LEDs via OpenRGB (off, list, set)"
+    "  remote    Gerencia o acesso e servicos remotos (vnc status, start, stop)"
     "Opcoes globais:"
     "  --host <host>    Forca o alvo da flake (ex.: glacier)"
     "  --user <user>    Usuario para o comando home"
@@ -178,7 +179,7 @@ case "$subcommand" in
     exit 0
     ;;
 
-  clean|vm|git-status|pull|deploy|sync|brain|graph|mcp|vault|rgb|ollama|ai)
+  clean|vm|git-status|pull|deploy|sync|brain|graph|mcp|vault|rgb|ollama|ai|remote)
     needs_flake=0
     ;;
 
@@ -530,6 +531,10 @@ case "$subcommand" in
 
   ai)
     kryonix_ai "${extra_args[@]}"
+    ;;
+
+  remote)
+    kryonix_remote "${extra_args[@]}"
     ;;
 
   *)

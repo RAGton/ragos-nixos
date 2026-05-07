@@ -42,6 +42,7 @@ in
   kryonix.shell.backend = "caelestia";
   kryonix.programs.aiWorkstation.enable = true;
   services.kryonix-brain-tunnel.enable = true;
+  services.kryonix-glacier-vnc-tunnel.enable = true;
 
   home.stateVersion = "26.05";
 
