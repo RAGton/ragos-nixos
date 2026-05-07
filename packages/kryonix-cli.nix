@@ -11,6 +11,7 @@
   nix,
   nvd,
   nixos-install-tools,
+  python3,
   util-linux,
   uv,
   stdenv,
@@ -42,6 +43,7 @@ writeShellApplication {
     nix
     nvd
     nixos-install-tools
+    python3
     util-linux
     uv
     openrgb

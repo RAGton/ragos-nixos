@@ -22,7 +22,7 @@ print_usage() {
     "  iso       Builda a ISO publica do Kryonix"
     "  fmt       Roda o formatter da flake"
     "  check     Roda nix flake check --keep-going"
-    "  brain     Acessa o Kryonix Brain (health, doctor, stats, search, ask, cag)"
+    "  brain     Acessa o Kryonix Brain (health, doctor, stats, search, ask, cag, api-key)"
     "  graph     Opera o grafo do Brain (status, schema, ingest, query, doctor, stats, top, heal, repair)"
     "  mcp       Valida e imprime a configuracao MCP"
     "  vault     Opera o vault via Brain (scan, index)"
@@ -53,6 +53,8 @@ print_usage() {
     "  kryonix brain search \"Como funciona o pipeline RAG do Kryonix?\""
     "  kryonix brain cag route \"Qual o host do Ollama?\""
     "  kryonix brain cag ask \"Como funciona o Glacier?\""
+    "  kryonix brain api-key status"
+    "  kryonix brain api-key generate"
     "  kryonix graph status"
     "  kryonix graph schema"
     "  kryonix graph ingest --dry-run"
@@ -410,8 +412,11 @@ case "$subcommand" in
       cag)
         kryonix_brain_cag "${extra_args[@]}"
         ;;
+      api-key)
+        kryonix_brain_api_key "${extra_args[@]}"
+        ;;
        *)
-         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag>"
+         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key>"
          exit 1
          ;;
     esac

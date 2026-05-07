@@ -844,3 +844,244 @@ else:
     run_brain_cli cag "$sub_action" "${brain_passthrough[@]}"
   fi
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Brain API Key management
+# Regras:
+#   - Nunca imprimir o valor da chave.
+#   - Arquivo: /etc/kryonix/brain.env  root:root 0600  fora do Git.
+#   - Variável canônica: KRYONIX_BRAIN_API_KEY
+#   - Geração: python3 secrets.token_hex(32)
+#   - generate NÃO sobrescreve arquivo existente.
+#   - rotate faz backup antes de sobrescrever.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_brain_env_file="/etc/kryonix/brain.env"
+
+brain_api_key_status() {
+  local env_file="$_brain_env_file"
+
+  printf 'Brain API Key — status\n'
+
+  if ! sudo test -f "$env_file" 2>/dev/null; then
+    printf '  arquivo    : AUSENTE (%s)\n' "$env_file"
+    printf '  AÇÃO       : rode "kryonix brain api-key generate" no Glacier.\n'
+    return 1
+  fi
+
+  sudo stat -c '  arquivo    : %n' "$env_file"
+  sudo stat -c '  dono/perm  : %U:%G %a' "$env_file"
+
+  if sudo grep -q '^KRYONIX_BRAIN_API_KEY=' "$env_file" 2>/dev/null; then
+    printf '  chave      : PRESENTE (valor não exibido)\n'
+  else
+    printf '  chave      : AUSENTE ou variável errada no arquivo\n'
+    printf '  esperado   : KRYONIX_BRAIN_API_KEY=<hex>\n'
+    return 1
+  fi
+
+  # Verificar API local (WARN se offline, não FAIL)
+  if curl -fsS --connect-timeout 3 http://127.0.0.1:8000/health >/dev/null 2>&1; then
+    printf '  api /health: OK\n'
+  else
+    printf '  api /health: WARN (offline ou não disponível neste host)\n'
+  fi
+}
+
+brain_api_key_generate() {
+  local env_file="$_brain_env_file"
+
+  # Aviso no cliente (Inspiron): geração local é para o servidor
+  if [[ "$(kryonix_brain_role)" == "client" ]]; then
+    printf 'AVISO: Este host é detectado como cliente (não Glacier).\n' >&2
+    printf 'A chave de API deve ser gerada e armazenada no Glacier.\n' >&2
+    printf 'Se quiser forçar execução local (ex.: dev), continue sob sua responsabilidade.\n' >&2
+  fi
+
+  if sudo test -f "$env_file" 2>/dev/null; then
+    printf 'brain.env já existe; não sobrescrevendo.\n'
+    sudo stat -c '  dono/perm  : %U:%G %a  arquivo: %n' "$env_file"
+    printf 'Para trocar a chave, use: kryonix brain api-key rotate\n'
+    return 0
+  fi
+
+  local key
+  key="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+
+  if [[ -z "$key" ]]; then
+    printf 'ERRO: chave gerada vazia.\n' >&2
+    return 1
+  fi
+
+  local tmp
+  tmp="$(mktemp)"
+  printf 'KRYONIX_BRAIN_API_KEY=%s\n' "$key" > "$tmp"
+  unset key
+
+  sudo mkdir -p "$(dirname "$env_file")"
+  sudo install -m 600 -o root -g root "$tmp" "$env_file"
+  rm -f "$tmp"
+
+  sudo stat -c '  dono/perm  : %U:%G %a  arquivo: %n' "$env_file"
+
+  if systemctl list-unit-files 2>/dev/null | grep -q '^kryonix-brain-api.service'; then
+    printf '  reiniciando kryonix-brain-api...\n'
+    sudo systemctl restart kryonix-brain-api || true
+  fi
+
+  printf 'Brain API key criada com segurança.\n'
+  printf 'Valor NÃO exibido. Use "kryonix brain api-key validate" para testar.\n'
+}
+
+brain_api_key_rotate() {
+  local env_file="$_brain_env_file"
+  local confirmed=0
+  local arg
+
+  # Verificar flag --yes
+  for arg in "$@"; do
+    if [[ "$arg" == "--yes" || "$arg" == "-y" ]]; then
+      confirmed=1
+    fi
+  done
+
+  if ! sudo test -f "$env_file" 2>/dev/null; then
+    printf 'ERRO: %s não existe. Use "kryonix brain api-key generate" primeiro.\n' "$env_file" >&2
+    return 1
+  fi
+
+  if [[ "$confirmed" -eq 0 ]]; then
+    printf 'AVISO: rotate substitui a chave atual e reinicia o serviço.\n'
+    printf 'Um backup será criado antes. Confirmar? [s/N] '
+    local answer
+    read -r answer
+    case "$answer" in
+      [sS][iI]|[sS]|[yY][eE][sS]|[yY])
+        confirmed=1
+        ;;
+      *)
+        printf 'Operação cancelada.\n'
+        return 0
+        ;;
+    esac
+  fi
+
+  # Backup atômico com timestamp
+  local ts
+  ts="$(date +%Y%m%d-%H%M%S)"
+  local backup_file="${env_file}.bak.${ts}"
+
+  sudo cp "$env_file" "$backup_file"
+  sudo chmod 600 "$backup_file"
+  printf '  backup     : %s\n' "$backup_file"
+
+  # Gerar nova chave
+  local key
+  key="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+
+  if [[ -z "$key" ]]; then
+    printf 'ERRO: nova chave gerada vazia. Backup preservado em %s\n' "$backup_file" >&2
+    return 1
+  fi
+
+  local tmp
+  tmp="$(mktemp)"
+  printf 'KRYONIX_BRAIN_API_KEY=%s\n' "$key" > "$tmp"
+  unset key
+
+  sudo install -m 600 -o root -g root "$tmp" "$env_file"
+  rm -f "$tmp"
+
+  sudo stat -c '  dono/perm  : %U:%G %a  arquivo: %n' "$env_file"
+
+  if systemctl list-unit-files 2>/dev/null | grep -q '^kryonix-brain-api.service'; then
+    printf '  reiniciando kryonix-brain-api...\n'
+    sudo systemctl restart kryonix-brain-api || true
+    sleep 2
+  fi
+
+  printf 'Chave rotacionada. Valor NÃO exibido.\n'
+  printf 'Validando nova chave...\n'
+  brain_api_key_validate
+}
+
+brain_api_key_validate() {
+  local env_file="$_brain_env_file"
+
+  printf 'Brain API Key — validate\n'
+
+  if ! sudo test -f "$env_file" 2>/dev/null; then
+    printf '  FAIL: %s não existe.\n' "$env_file"
+    return 1
+  fi
+
+  if ! sudo grep -q '^KRYONIX_BRAIN_API_KEY=' "$env_file" 2>/dev/null; then
+    printf '  FAIL: KRYONIX_BRAIN_API_KEY ausente no arquivo.\n'
+    return 1
+  fi
+
+  # Testar /health (público)
+  if curl -fsS --connect-timeout 5 http://127.0.0.1:8000/health >/dev/null 2>&1; then
+    printf '  /health    : OK\n'
+  else
+    printf '  /health    : WARN (API offline ou não disponível neste host)\n'
+    printf '  Validação autenticada ignorada (API não responde).\n'
+    return 0
+  fi
+
+  # Testar /stats com X-API-Key em subshell isolado (chave não vaza)
+  local http_code
+  local tmp_resp
+  tmp_resp="$(mktemp)"
+
+  http_code="$(
+    K="$(sudo grep '^KRYONIX_BRAIN_API_KEY=' "$env_file" | cut -d'=' -f2- | tr -d '[:space:]')"
+    curl -sS --connect-timeout 5 -w '%{http_code}' \
+      -H "X-API-Key: $K" \
+      -o "$tmp_resp" \
+      http://127.0.0.1:8000/stats 2>/dev/null || true
+    unset K
+  )" || true
+
+  if [[ "$http_code" == "200" ]]; then
+    printf '  /stats     : OK (autenticado)\n'
+  elif [[ "$http_code" == "403" || "$http_code" == "401" ]]; then
+    printf '  /stats     : FAIL (chave inválida — HTTP %s)\n' "$http_code"
+    rm -f "$tmp_resp"
+    return 1
+  else
+    printf '  /stats     : WARN (HTTP %s — verificar serviço)\n' "${http_code:-erro}"
+  fi
+
+  rm -f "$tmp_resp"
+  printf '  resultado  : OK (valor não exibido)\n'
+}
+
+kryonix_brain_api_key() {
+  local sub="${1:-status}"
+  shift || true
+
+  case "$sub" in
+    status)
+      brain_api_key_status "$@"
+      ;;
+    generate)
+      brain_api_key_generate "$@"
+      ;;
+    rotate)
+      brain_api_key_rotate "$@"
+      ;;
+    validate)
+      brain_api_key_validate "$@"
+      ;;
+    *)
+      printf 'Uso: kryonix brain api-key <status|generate|rotate|validate>\n' >&2
+      printf '\n' >&2
+      printf '  status    verifica se /etc/kryonix/brain.env existe e tem a chave correta\n' >&2
+      printf '  generate  cria a chave (não sobrescreve existente)\n' >&2
+      printf '  rotate    substitui a chave (backup automático + restart do serviço)\n' >&2
+      printf '  validate  testa /health e /stats com a chave (sem exibir o valor)\n' >&2
+      return 1
+      ;;
+  esac
+}
