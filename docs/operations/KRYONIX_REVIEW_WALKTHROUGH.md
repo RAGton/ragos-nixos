@@ -75,3 +75,42 @@ Observação:
 - primeira ingestão real foi controlada e pequena/média
 - vault inteiro ainda não foi ingerido
 - Text2Cypher destrutivo continua proibido
+
+## GraphRAG Fase 4.1 — primeira ingestão controlada
+
+Status: FUNCTIONAL.
+
+Manifest aplicado:
+- graph-v1-20260507T150910Z-685280cb
+
+Resultado:
+- nodes: 143
+- relationships: 11
+
+Labels confirmadas:
+- File: 133
+- Host: 4
+- Service: 3
+- Port: 3
+
+Relações confirmadas:
+- LISTENS_ON: 3
+- DECLARES: 3
+- RUNS: 3
+- DEPENDS_ON: 2
+
+Validações:
+- kryonix graph status: connected true, node_count 143
+- kryonix graph schema: schema v1 OK
+- kryonix graph doctor: status ok
+- cypher-shell confirmou contagem por label e relação
+
+Observação importante:
+- O apply foi executado antes da criação do backup.
+- O backup neo4j-before-graph-apply-20260507-111523.tar.gz contém o estado pós-apply, apesar do nome.
+- Para rollback ao estado anterior node_count 0, é necessário localizar backup anterior à aplicação, se existir.
+
+Segurança:
+- Nenhum secret foi impresso.
+- Nenhum secret foi commitado.
+- /etc/kryonix/neo4j.env continua sendo usado apenas como EnvironmentFile.
