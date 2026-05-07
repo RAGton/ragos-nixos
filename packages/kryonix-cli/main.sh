@@ -403,7 +403,7 @@ case "$subcommand" in
         run_brain_module kryonix_brain_lightrag.api "${extra_args[@]}"
         ;;
       cag)
-        run_brain_cli cag "${extra_args[@]}"
+        kryonix_brain_cag "${extra_args[@]}"
         ;;
        *)
          echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag>"

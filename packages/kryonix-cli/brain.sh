@@ -555,3 +555,121 @@ graph_top_args() {
 
   printf '%s\n' "$limit"
 }
+
+kryonix_brain_cag() {
+  local sub_action="${1:-}"
+  shift || true
+
+  # Parse --local or --remote
+  parse_brain_mode "$@"
+  
+  if brain_should_use_remote "$brain_mode"; then
+    if [[ -z "$sub_action" ]]; then
+      sub_action="status"
+    fi
+
+    case "$sub_action" in
+      status)
+        if [[ "${KRYONIX_JSON_MODE:-}" == "1" ]]; then
+          brain_remote_curl GET /cag/status
+          return $?
+        else
+          local response
+          response="$(brain_remote_curl GET /cag/status)" || return $?
+          local project_dir
+          project_dir="$(brain_project_dir)" || return 1
+          printf '%s' "$response" | uv run --project "$project_dir" python -c '
+import sys, json
+from rich.console import Console
+
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    print("Erro ao decodificar a resposta remota.")
+    sys.exit(1)
+
+console = Console()
+console.print("\n[bold green][/bold green][black on green]CAG REMOTE STATUS[/black on green][bold green][/bold green]")
+if data.get("status") == "success" or "num_files" in data:
+    console.print(f"  [cyan]Status:[/cyan]      [bold green]Ativo[/bold green]")
+    console.print(f"  [cyan]Ficheiros:[/cyan]   {data.get(\"num_files\", 0)}")
+    console.print(f"  [cyan]Tamanho:[/cyan]     {data.get(\"size_bytes\", 0)} bytes")
+    console.print(f"  [cyan]Gerado em:[/cyan]   {data.get(\"created_at\", \"n/a\")}")
+else:
+    console.print(f"  [cyan]Status:[/cyan]      [bold red]Inativo / Não Encontrado[/bold red]")
+    console.print("[dim]Use \"kryonix brain cag build\" no servidor para inicializar o CAG.[/dim]")
+'
+          return $?
+        fi
+        ;;
+      ask|route)
+        if [[ "${#brain_passthrough[@]}" -eq 0 ]]; then
+          printf 'Uso: kryonix brain cag %s "pergunta"\n' "$sub_action" >&2
+          return 2
+        fi
+        local query="${brain_passthrough[*]}"
+        local payload
+        payload="$(jq -n --arg query "$query" --argjson top_k 5 '{query:$query, top_k:$top_k}')"
+
+        if [[ "${KRYONIX_JSON_MODE:-}" == "1" ]]; then
+          brain_remote_curl POST "/cag/$sub_action" "$payload"
+          return $?
+        else
+          local response
+          response="$(brain_remote_curl POST "/cag/$sub_action" "$payload")" || return $?
+          local project_dir
+          project_dir="$(brain_project_dir)" || return 1
+          printf '%s' "$response" | uv run --project "$project_dir" python -c '
+import sys, json
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.table import Table
+
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    print("Erro ao decodificar a resposta remota.")
+    sys.exit(1)
+
+console = Console()
+if "answer" in data:
+    console.print("\n[bold green][/bold green][black on green]CAG REMOTE ASK[/black on green][bold green][/bold green]")
+    console.print(Panel(Markdown(data["answer"]), border_style="green", title="[bold green]Kryonix CAG (Remote)[/bold green]", title_align="left"))
+    
+    sources = data.get("sources", [])
+    if sources:
+        console.print("\n[bold cyan]Ficheiros usados:[/bold cyan]")
+        for i, src in enumerate(sources):
+            console.print(f"  {i+1}. [bold white]{src}[/bold white]")
+elif "files" in data:
+    console.print("\n[bold green][/bold green][black on green]CAG REMOTE ROUTING[/black on green][bold green][/bold green]")
+    t = Table(show_header=True, header_style="bold green")
+    t.add_column("Ficheiro", style="cyan")
+    t.add_column("Score", justify="right", style="green")
+    
+    for f in data.get("files", []):
+        t.add_row(f.get("path", "n/a"), f"{f.get(\"score\", 0.0):.3f}")
+    console.print(t)
+else:
+    print(json.dumps(data, indent=2))
+'
+          return $?
+        fi
+        ;;
+      build|clear-cache)
+        printf 'ERRO: O subcomando "cag %s" modifica arquivos no servidor e deve ser executado localmente no Glacier.\n' "$sub_action" >&2
+        printf 'Execute: ssh glacier e rode: kryonix brain cag %s\n' "$sub_action" >&2
+        return 1
+        ;;
+      *)
+        printf 'Subcomando CAG desconhecido: %s\n' "$sub_action" >&2
+        printf 'Subcomandos válidos: status, ask, route, build, clear-cache\n' >&2
+        return 1
+        ;;
+    esac
+  else
+    run_brain_cli cag "$sub_action" "${brain_passthrough[@]}"
+  fi
+}
+
