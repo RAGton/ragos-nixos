@@ -79,7 +79,7 @@ in
         dbms.security.allow_csv_import_from_file_urls=true
 
         # Logs e Monitoramento
-        dbms.logs.query.enabled=true
+        dbms.logs.query.enabled=INFO
         dbms.logs.query.threshold=500ms
       '';
     };
