@@ -1,5 +1,9 @@
 # Pipeline RAG do Kryonix Brain
 
+Status: Implementado / Produção (V1)
+
+Este documento descreve o fluxo real de processamento e recuperação utilizado pelo Kryonix Brain no ambiente de produção. Para ver as propostas de melhoria de recuperação em longo prazo, consulte o [RAG Avançado (Roadmap)](RAG_ARCHITECTURE.md). O motor subjacente de grafos que executa este pipeline é documentado em [LightRAG (GraphRAG Engine)](lightrag.md).
+
 No Kryonix, RAG significa Retrieval-Augmented Generation.
 
 O pipeline técnico do Kryonix Brain é:

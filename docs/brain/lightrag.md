@@ -1,6 +1,8 @@
 # LightRAG
 
-O Kryonix utiliza o **LightRAG** como seu sistema primário de recuperação de informações baseadas em grafos.
+Status: Implementado / Produção (V1)
+
+O Kryonix utiliza o **LightRAG** como seu sistema primário de recuperação de informações baseadas em grafos. O fluxo completo de execução e recuperação executado pelo motor é detalhado no [Pipeline RAG Atual (V1)](kryonix-rag-pipeline.md).
 
 ## Fonte de Verdade
 - **Serviço:** N/A (Execução via CLI / binário local atrelado aos pacotes Python no momento)
