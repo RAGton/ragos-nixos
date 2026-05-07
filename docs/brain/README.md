@@ -49,6 +49,7 @@ Estes documentos representam blueprints arquiteturais planejados para futuras it
 - 🗺️ **[RAG Avançado (Target Pipeline)](RAG_ARCHITECTURE.md):** Proposta para enriquecer a recuperação com normalização e roteamento de queries, metadados, reranking e compressão de contexto.
 - 💾 **[CAG / Context Cache](CAG_ARCHITECTURE.md):** Planejamento para cache persistente de contextos estáticos frequentes do repositório (flake, serviços, políticas) para otimização de latência.
 - 🕸️ **[GraphRAG Multicamadas](GRAPH_RAG_ARCHITECTURE.md):** Ontologia e schema conceitual avançado para modelar dependências do NixOS, portas, hosts e vestígios de raciocínio.
+- 📐 **[Schema Mínimo Neo4j](NEO4J_SCHEMA.md):** Definição formal de nós, propriedades, constraints de unicidade e exemplos práticos de consultas Cypher de infraestrutura para o GraphRAG.
 - 📥 **[Pipeline de Ingestão Expandido](INGESTION_PIPELINE.md):** Estratégia declarativa para ingestão profunda do repositório, chunking inteligente de código `.nix` e manifestos de hash incremental.
 - 🔗 **[Obsidian + Neo4j Model](OBSIDIAN_NEO4J_MODEL.md):** Modelo de transição para conectar o Obsidian ao Neo4j, permitindo consultas Cypher multi-hop seguras de forma derivada e reconstruível.
 - 🧠 **[Reasoning Memory (Traces)](REASONING_MEMORY.md):** Grafo de vestígios e auditoria para persistir decisões tomadas pela IA durante as sessões de resolução de problemas.
