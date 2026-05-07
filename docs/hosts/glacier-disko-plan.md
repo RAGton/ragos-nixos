@@ -25,9 +25,8 @@ Na reinstalação, essa indireção não deve ser necessária.
 **Regra:** todo path que precise de storage pesado deve ter seu subvolume montado diretamente no disco maior via Disko/fstab. Sem symlinks.
 
 Em particular:
-- `/var` (ou pelo menos `/var/lib`) fica **no disco maior**, não no NVMe pequeno.
-- `/var/log` pode ficar no NVMe (logs não são pesados e se beneficiam de velocidade).
-- O NVMe fica com `/`, `/nix`, `/boot` e `/var/log` — dados que se beneficiam de velocidade e são recriáveis.
+- `/var` inteiro fica **no disco maior**, não no NVMe pequeno.
+- O NVMe fica com `/`, `/nix` e `/boot` — dados que se beneficiam de velocidade e são recriáveis.
 
 ---
 
@@ -69,7 +68,6 @@ sda (ou equivalente)
 |---|---|---|---|
 | `@root` | `/` | `compress=zstd,noatime` | ✅ sim |
 | `@nix` | `/nix` | `compress=zstd,noatime` | ✅ sim |
-| `@log` | `/var/log` | `compress=zstd,noatime` | ✅ sim |
 | `@snapshots` | `/.snapshots` | `compress=zstd,noatime` | ✅ sim |
 
 ### Disco maior — subvolumes de dados
@@ -77,6 +75,7 @@ sda (ou equivalente)
 | Subvolume | Mountpoint | Opções | Formatável? |
 |---|---|---|---|
 | `@var` | `/var` | `compress=zstd,noatime` | ⚠️ cuidado com `/var/lib` |
+| `@log` | `/var/log` | `compress=zstd,noatime` | ✅ sim |
 | `@home` | `/home` | `compress=zstd,noatime,autodefrag` | ❌ preservar |
 | `@storage` | `/home/storage` | `compress=zstd,noatime` | ❌ preservar (modelos, vault, dados Brain) |
 | `@kryonix` | `/var/lib/kryonix` | `compress=zstd,noatime` | ❌ preservar (Brain storage, LightRAG) |
@@ -86,8 +85,7 @@ sda (ou equivalente)
 
 > Subvolumes marcados como ❌ devem ser **snapshottados antes de qualquer operação destrutiva**.
 
-> `/var/log` fica no NVMe (montado sobre `/var` do disco maior), pois logs se beneficiam de I/O rápido e são efêmeros.
-> A ordem de mount no fstab garante que `/var/log` (NVMe) sobrepõe `/var` (disco maior).
+> `/var/log` é um subvolume separado dentro do mesmo disco para permitir limpeza/snapshot independente dos logs.
 
 ---
 
@@ -123,7 +121,6 @@ sda (ou equivalente)
               subvolumes = {
                 "@root"      = { mountpoint = "/";          mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@nix"       = { mountpoint = "/nix";       mountOptions = [ "compress=zstd" "noatime" ]; };
-                "@log"       = { mountpoint = "/var/log";   mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@snapshots" = { mountpoint = "/.snapshots"; mountOptions = [ "compress=zstd" "noatime" ]; };
               };
             };
@@ -146,6 +143,7 @@ sda (ou equivalente)
               extraArgs = [ "-f" "-L" "GLACIER-DATA" ];
               subvolumes = {
                 "@var"      = { mountpoint = "/var";                 mountOptions = [ "compress=zstd" "noatime" ]; };
+                "@log"      = { mountpoint = "/var/log";             mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@home"     = { mountpoint = "/home";                mountOptions = [ "compress=zstd" "noatime" "autodefrag" ]; };
                 "@storage"  = { mountpoint = "/home/storage";        mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@kryonix"  = { mountpoint = "/var/lib/kryonix";     mountOptions = [ "compress=zstd" "noatime" ]; };
@@ -175,7 +173,7 @@ O kernel/fstab monta na ordem correta automaticamente por profundidade de path. 
 │   │   ├── kryonix/       ← DISCO MAIOR  @kryonix
 │   │   ├── ollama/        ← DISCO MAIOR  @ollama
 │   │   └── neo4j/         ← DISCO MAIOR  @neo4j
-│   ├── log/               ← NVMe  @log (sobrepõe /var/log do disco maior)
+│   ├── log/               ← DISCO MAIOR  @log
 │   └── backups/kryonix/   ← DISCO MAIOR  @backups
 ├── home/                  ← DISCO MAIOR  @home
 │   └── storage/           ← DISCO MAIOR  @storage
