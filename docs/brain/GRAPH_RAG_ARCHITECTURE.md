@@ -1,6 +1,6 @@
 # GraphRAG do Kryonix Brain
 
-Status: Roadmap / Arquitetura proposta
+Status: Parcial
 
 ## Objetivo
 
@@ -45,3 +45,25 @@ Trace: diagnóstico anterior semelhante
 ## Segurança
 
 Text2Cypher deve usar schema limitado, usuário read-only, LIMIT obrigatório, timeout e bloqueio de escrita.
+
+## Fase 4 (controlada)
+
+Comandos expostos via CLI/API:
+
+```bash
+kryonix graph status
+kryonix graph schema
+kryonix graph ingest --dry-run
+kryonix graph ingest --apply <manifest_id>
+kryonix graph query "MATCH (s:Service) RETURN s.name LIMIT 5"
+kryonix graph doctor
+```
+
+Regras ativas:
+
+- `--dry-run` gera manifesto e não escreve no Neo4j.
+- `--apply` só aplica manifesto salvo.
+- Text2Cypher/consulta bloqueia escrita (`CREATE`, `MERGE`, `DELETE`, `SET`, `REMOVE`, `CALL dbms.*`, `CALL apoc.*`, `LOAD CSV`).
+- `LIMIT` obrigatório.
+- Timeout padrão aplicado.
+- Auditoria de consulta em `graph_audit.jsonl`.

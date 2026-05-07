@@ -1,6 +1,13 @@
 # Modelo de Schema Neo4j — Kryonix Brain & GraphRAG
 
-Status: Especificação Técnica de Produção / Consolidado
+Status: Parcial
+
+Schema operacional atual usado no GraphRAG controlado (V1):
+
+```txt
+Nodes: Host, Service, File, Command, Issue, Port, Model, GPU, Document, Chunk, Entity, ReasoningTrace, ReasoningStep, ToolCall, ToolResult
+Relações: RUNS, DEPENDS_ON, LISTENS_ON, DECLARES, IMPORTS, VALIDATES, REPAIRS, AFFECTS, HAS_CHUNK, HAS_ENTITY, MENTIONED_IN, HAS_STEP, USED_TOOL, RETURNED
+```
 
 Este documento estabelece o **schema mínimo e a ontologia formal** do Neo4j para o **Kryonix Brain**. Ele serve como o mapa de referência para engenheiros de dados, agentes autônomos e geradores de consultas **Text2Cypher** para representar de forma direcionada a arquitetura declarativa NixOS e as dependências operacionais do repositório.
 
