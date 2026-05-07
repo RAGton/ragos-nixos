@@ -140,3 +140,31 @@ Segurança:
 - Nenhum secret foi impresso.
 - Nenhum secret foi commitado.
 - /etc/kryonix/neo4j.env continua sendo usado apenas como EnvironmentFile.
+
+## Checkpoint — GraphRAG Fase 4.2
+
+Status: FUNCTIONAL.
+
+Validado:
+- graph status OK
+- graph schema OK
+- graph doctor OK
+- graph query com Cypher read-only OK
+- bloqueio de pergunta natural funcionando
+- bloqueio de query sem LIMIT funcionando
+- bloqueio de CREATE/DETACH DELETE funcionando
+- auditoria em graph_audit.jsonl corrigida em runtime
+- tmpfiles declarativo preparado para persistir graph_audit.jsonl em switch futuro
+
+Observação:
+- Commit principal: fe6176a fix(graph): clarify read-only Cypher query UX
+- A persistência declarativa do graph_audit.jsonl ainda depende de switch futuro no Glacier.
+- Não rodar ingest --apply grande sem novo dry-run, revisão e backup.
+
+Próxima fase:
+- Fase 4.3: comandos graph canônicos read-only:
+  - kryonix graph hosts
+  - kryonix graph services
+  - kryonix graph ports
+  - kryonix graph files
+  - kryonix graph host-services <host>
