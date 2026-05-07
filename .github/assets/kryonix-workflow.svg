@@ -1,0 +1,59 @@
+<svg width="1400" height="780" viewBox="0 0 1400 780" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1400" y2="780" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#040814"/>
+      <stop offset="1" stop-color="#0A1224"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#00D1FF"/>
+      <stop offset="1" stop-color="#8A5CFF"/>
+    </linearGradient>
+    <filter id="card"><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#00D1FF" flood-opacity="0.12"/></filter>
+  </defs>
+  <rect width="1400" height="780" rx="24" fill="url(#bg)"/>
+  <text x="700" y="86" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="58" font-weight="800" fill="#EDF8FF">Fluxo operacional do Kryonix</text>
+  <text x="700" y="124" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="22" fill="#ADC7E2">do repositório à máquina, com CLI, build declarativo e serviços locais</text>
+
+  <g transform="translate(80 220)" filter="url(#card)">
+    <rect width="248" height="150" rx="22" fill="#091728" stroke="#1E5E95"/>
+    <text x="124" y="62" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="700" fill="#8EDBFF">Git / Flake</text>
+    <text x="124" y="95" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="18" fill="#D5EBFF">repo + inputs + hosts</text>
+    <text x="124" y="121" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="18" fill="#D5EBFF">fonte declarativa</text>
+  </g>
+
+  <g transform="translate(410 220)" filter="url(#card)">
+    <rect width="248" height="150" rx="22" fill="#0B1229" stroke="#4F46C0"/>
+    <text x="124" y="62" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="700" fill="#D0B4FF">CLI kryonix</text>
+    <text x="124" y="95" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="18" fill="#EADFFF">switch • boot • diff</text>
+    <text x="124" y="121" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="18" fill="#EADFFF">doctor • check • fmt</text>
+  </g>
+
+  <g transform="translate(740 220)" filter="url(#card)">
+    <rect width="248" height="150" rx="22" fill="#091728" stroke="#1E5E95"/>
+    <text x="124" y="62" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="700" fill="#8EDBFF">Nix build</text>
+    <text x="124" y="95" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="18" fill="#D5EBFF">nixosConfigurations</text>
+    <text x="124" y="121" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="18" fill="#D5EBFF">homeConfigurations</text>
+  </g>
+
+  <g transform="translate(1070 220)" filter="url(#card)">
+    <rect width="248" height="150" rx="22" fill="#0B1229" stroke="#4F46C0"/>
+    <text x="124" y="62" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="700" fill="#D0B4FF">Host final</text>
+    <text x="124" y="95" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="18" fill="#EADFFF">glacier / inspiron</text>
+    <text x="124" y="121" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="18" fill="#EADFFF">estado reprodutível</text>
+  </g>
+
+  <path d="M328 295H410" stroke="url(#line)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M658 295H740" stroke="url(#line)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M988 295H1070" stroke="url(#line)" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="369" cy="295" r="7" fill="#00D1FF"><animate attributeName="cx" values="328;410;328" dur="2.6s" repeatCount="indefinite"/></circle>
+  <circle cx="699" cy="295" r="7" fill="#8A5CFF"><animate attributeName="cx" values="658;740;658" dur="2.6s" repeatCount="indefinite"/></circle>
+  <circle cx="1029" cy="295" r="7" fill="#00D1FF"><animate attributeName="cx" values="988;1070;988" dur="2.6s" repeatCount="indefinite"/></circle>
+
+  <g transform="translate(112 470)">
+    <rect width="1176" height="220" rx="24" fill="#081323" stroke="#27466A"/>
+    <text x="38" y="56" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="700" fill="#EAF7FF">Serviços e componentes principais</text>
+    <text x="38" y="106" font-family="'Segoe UI', Arial, sans-serif" font-size="22" fill="#8EDBFF">• Ollama + LightRAG + Kryonix Brain API</text>
+    <text x="38" y="142" font-family="'Segoe UI', Arial, sans-serif" font-size="22" fill="#8EDBFF">• Branding unificado: GRUB, GDM, Plymouth, wallpaper, os-release</text>
+    <text x="38" y="178" font-family="'Segoe UI', Arial, sans-serif" font-size="22" fill="#C8A9FF">• Storage operacional: /srv/ragenterprise e derivados</text>
+  </g>
+</svg>

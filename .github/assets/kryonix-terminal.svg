@@ -1,0 +1,42 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="720" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#050816"/>
+      <stop offset="1" stop-color="#0D1024"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#00D1FF"/>
+      <stop offset="1" stop-color="#8A5CFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" rx="24" fill="url(#bg)"/>
+  <rect x="32" y="28" width="1136" height="664" rx="20" fill="#08111D" stroke="#234263" stroke-width="2"/>
+  <rect x="32" y="28" width="1136" height="58" rx="20" fill="#101B2F"/>
+  <circle cx="68" cy="57" r="8" fill="#FF6B6B"/>
+  <circle cx="98" cy="57" r="8" fill="#FFD166"/>
+  <circle cx="128" cy="57" r="8" fill="#06D6A0"/>
+  <text x="598" y="64" text-anchor="middle" font-family="monospace" font-size="20" fill="#CDE6FF">rocha@glacier — /etc/kryonix</text>
+
+  <text x="64" y="130" font-family="monospace" font-size="28" fill="#8DE3FF">$ kryonix doctor</text>
+  <text x="64" y="180" font-family="monospace" font-size="22" fill="#CDE6FF">hostname: glacier</text>
+  <text x="64" y="218" font-family="monospace" font-size="22" fill="#CDE6FF">system: nixos / declarative / generation-aware</text>
+  <text x="64" y="256" font-family="monospace" font-size="22" fill="#CDE6FF">brain-api: enabled</text>
+  <text x="64" y="294" font-family="monospace" font-size="22" fill="#CDE6FF">lightrag: enabled</text>
+  <text x="64" y="332" font-family="monospace" font-size="22" fill="#CDE6FF">storage: /srv/ragenterprise healthy</text>
+  <text x="64" y="370" font-family="monospace" font-size="22" fill="#A9FFD0">✓ checks passed</text>
+
+  <text x="64" y="450" font-family="monospace" font-size="28" fill="#C6A4FF">$ kryonix switch --update</text>
+  <text x="64" y="500" font-family="monospace" font-size="22" fill="#CDE6FF">updating flake inputs...</text>
+  <text x="64" y="538" font-family="monospace" font-size="22" fill="#CDE6FF">building configuration for glacier...</text>
+  <text x="64" y="576" font-family="monospace" font-size="22" fill="#A9FFD0">✓ generation 148 built successfully</text>
+  <text x="64" y="614" font-family="monospace" font-size="22" fill="#A9FFD0">✓ switch complete</text>
+
+  <text x="64" y="666" font-family="monospace" font-size="24" fill="#8DE3FF">$ </text>
+  <rect x="94" y="648" width="14" height="26" rx="2" fill="url(#bar)">
+    <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/>
+  </rect>
+
+  <g opacity="0.17">
+    <rect x="48" y="108" width="1104" height="2" fill="#8A5CFF"><animate attributeName="y" values="108;650;108" dur="6s" repeatCount="indefinite"/></rect>
+  </g>
+</svg>
