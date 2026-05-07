@@ -35,7 +35,7 @@ kryonix_brain_role() {
 }
 
 export_brain_env() {
-  if [[ -f "/etc/kryonix/brain.env" ]]; then
+  if [[ -f "/etc/kryonix/brain.env" ]] && [[ -r "/etc/kryonix/brain.env" ]]; then
     set -a
     # shellcheck disable=SC1091
     source "/etc/kryonix/brain.env"
