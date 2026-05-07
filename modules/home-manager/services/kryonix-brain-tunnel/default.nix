@@ -10,7 +10,12 @@
 # - Garante que KRYONIX_REMOTE_BRAIN_URL = "http://127.0.0.1:18000" funcione sem
 #   precisar manter uma janela de terminal com o SSH aberta.
 #
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.services.kryonix-brain-tunnel;

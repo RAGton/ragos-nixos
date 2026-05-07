@@ -12,26 +12,31 @@
       "cwd": "/etc/kryonix"
     },
     "mcp-nixos": {
-      "command": "/home/rocha/.local/bin/mcp-nixos",
+      "command": "/run/current-system/sw/bin/uv",
       "args": [
+        "tool",
+        "run",
+        "mcp-nixos",
         "--stdio"
       ]
     },
     "vault-readonly": {
-      "command": "/home/rocha/.npm-global/bin/mcp-server-filesystem",
+      "command": "/run/current-system/sw/bin/npx",
       "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
         "/etc/kryonix",
         "/home/rocha/.local/share/kryonix/kryonix-vault",
         "/var/lib/kryonix"
-      ],
-      "description": "Readonly filesystem access"
+      ]
     },
     "github": {
-      "command": "/home/rocha/.npm-global/bin/mcp-server-github",
+      "command": "/run/current-system/sw/bin/npx",
       "args": [
+        "-y",
+        "@modelcontextprotocol/server-github",
         "--stdio"
-      ],
-      "description": "GitHub issues, PRs, commits, file access"
+      ]
     }
   }
 }

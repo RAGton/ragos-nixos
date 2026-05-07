@@ -76,6 +76,7 @@ in
     ../scripts
     ../services/cliphist
     ../services/flatpak
+    ../services/kryonix-brain-tunnel
   ];
 
   # Habilita Jupyter via módulo declarativo.
