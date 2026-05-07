@@ -164,31 +164,34 @@ O `glacier` conta com serviços de Inteligência Artificial nativos como **Ollam
 
 ### Setup da API Key (executar no Glacier)
 
-O arquivo de secrets `/etc/kryonix/brain.env` fica **fora do Git** e precisa ser criado manualmente no servidor antes do primeiro `kryonix switch`.
+O arquivo de secrets `/etc/kryonix/brain.env` fica **fora do Git** e precisa ser criado no servidor antes do primeiro `kryonix switch`.
 
-1. Gere uma chave aleatória segura:
+**Método recomendado (CLI):**
 
-   ```sh
-   python3 -c "import secrets; print(secrets.token_hex(32))"
-   ```
+```sh
+kryonix brain api-key generate
+kryonix brain api-key validate
+```
 
-2. Crie o arquivo com permissões restritas:
+**Método manual (fallback):**
 
-   ```sh
-   KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
-   tmp="$(mktemp)"
-   printf 'KRYONIX_BRAIN_API_KEY=%s\n' "$KEY" > "$tmp"
-   sudo install -m 600 -o root -g root "$tmp" /etc/kryonix/brain.env
-   rm -f "$tmp"
-   unset KEY
-   ```
+```sh
+KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+tmp="$(mktemp)"
+printf 'KRYONIX_BRAIN_API_KEY=%s\n' "$KEY" > "$tmp"
+sudo install -m 600 -o root -g root "$tmp" /etc/kryonix/brain.env
+rm -f "$tmp"
+unset KEY
+```
 
-3. Confirme as permissões:
+Confirme as permissões:
 
-   ```sh
-   sudo stat -c "%U:%G %a %n" /etc/kryonix/brain.env
-   # Esperado: root:root 600 /etc/kryonix/brain.env
-   ```
+```sh
+sudo stat -c "%U:%G %a %n" /etc/kryonix/brain.env
+# Esperado: root:root 600 /etc/kryonix/brain.env
+```
+
+Para rotação: `kryonix brain api-key rotate` (faz backup automático).
 
 Se esse arquivo não existir, o systemd se recusará a subir as units `kryonix-brain-api` e `kryonix-lightrag` no `kryonix switch`.
 

@@ -482,6 +482,101 @@ Portas conhecidas no projeto:
 
 Exposição pública deve ser evitada por padrão. Prefira LAN/Tailscale.
 
+### 11.4 Brain API Key — regra canônica
+
+A Kryonix Brain API usa exclusivamente a variável:
+
+```txt
+KRYONIX_BRAIN_API_KEY
+```
+
+Não usar nomes antigos como `KRYONIX_BRAIN_KEY`.
+
+#### Arquivo canônico no Glacier
+
+A chave deve ficar fora do Git em:
+
+```txt
+/etc/kryonix/brain.env
+```
+
+Permissões obrigatórias:
+
+```txt
+root:root 0600
+```
+
+Formato:
+
+```txt
+KRYONIX_BRAIN_API_KEY=<valor>
+```
+
+#### Regras obrigatórias
+
+- Nunca commitar `brain.env`.
+- Nunca criar `brain.env` dentro do repo.
+- Nunca imprimir o valor da chave em logs, README, walkthrough, issues ou commits.
+- Nunca colocar a chave em opções Nix que vão para o `/nix/store`.
+- Nunca usar `KRYONIX_BRAIN_KEY`.
+- `/health` é público.
+- `/stats`, `/search` e `/graph/*` exigem header `X-API-Key`.
+
+#### Comandos oficiais
+
+Use a CLI do Kryonix para gerenciar a chave:
+
+```bash
+kryonix brain api-key status
+kryonix brain api-key generate
+kryonix brain api-key rotate
+kryonix brain api-key validate
+```
+
+#### Comportamento esperado
+
+**`kryonix brain api-key generate`**
+
+- cria `/etc/kryonix/brain.env` se ausente;
+- não sobrescreve chave existente;
+- usa `python3 secrets.token_hex(32)`;
+- aplica `root:root 0600`;
+- reinicia `kryonix-brain-api` quando existir;
+- não imprime a chave.
+
+**`kryonix brain api-key rotate`**
+
+- cria backup do env antigo;
+- gera nova chave;
+- atualiza o arquivo atomicamente;
+- reinicia `kryonix-brain-api`;
+- valida a API;
+- não imprime a chave.
+
+**`kryonix brain api-key validate`**
+
+- testa `/health`;
+- testa `/stats` com `X-API-Key`;
+- não imprime a chave;
+- limpa variáveis temporárias com `unset`.
+
+#### Geração manual emergencial
+
+Só usar se a CLI estiver quebrada:
+
+```bash
+KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+tmp="$(mktemp)"
+printf "KRYONIX_BRAIN_API_KEY=%s\n" "$KEY" > "$tmp"
+sudo install -m 600 -o root -g root "$tmp" /etc/kryonix/brain.env
+rm -f "$tmp"
+unset KEY
+sudo systemctl restart kryonix-brain-api
+sudo stat -c "%U:%G %a %n" /etc/kryonix/brain.env
+```
+
+Se qualquer API key real aparecer em output, log ou chat, trate como vazada e rode rotação imediata.
+
 ---
 
 ## 12. Validação por tipo de mudança
