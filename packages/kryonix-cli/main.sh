@@ -55,6 +55,8 @@ print_usage() {
     "  kryonix brain cag ask \"Como funciona o Glacier?\""
     "  kryonix brain api-key status"
     "  kryonix brain api-key generate"
+    "  kryonix brain remote status"
+    "  kryonix brain remote configure --url http://rve-glacier:8000 --key-stdin"
     "  kryonix graph status"
     "  kryonix graph schema"
     "  kryonix graph ingest --dry-run"
@@ -415,8 +417,11 @@ case "$subcommand" in
       api-key)
         kryonix_brain_api_key "${extra_args[@]}"
         ;;
+      remote)
+        kryonix_brain_remote "${extra_args[@]}"
+        ;;
        *)
-         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key>"
+         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|remote>"
          exit 1
          ;;
     esac

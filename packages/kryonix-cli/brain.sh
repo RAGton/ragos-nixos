@@ -41,6 +41,12 @@ export_brain_env() {
     source "/etc/kryonix/brain.env"
     set +a
   fi
+  if [[ -f "$HOME/.config/kryonix/brain-remote.env" ]]; then
+    set -a
+    # shellcheck disable=SC1090,SC1091
+    source "$HOME/.config/kryonix/brain-remote.env"
+    set +a
+  fi
   local role
   role="$(kryonix_brain_role)"
   export KRYONIX_ROLE="${KRYONIX_ROLE:-$role}"
@@ -1099,6 +1105,127 @@ kryonix_brain_api_key() {
       printf '  rotate    substitui a chave (backup automático + restart do serviço)\n' >&2
       printf '  validate  testa /health e /stats com a chave (sem exibir o valor)\n' >&2
       return 1
+      ;;
+  esac
+}
+
+kryonix_brain_remote_status() {
+  local conf="$HOME/.config/kryonix/brain-remote.env"
+  if [[ -f "$conf" ]]; then
+    printf 'Configuração remota encontrada em %s\n' "$conf"
+    # shellcheck disable=SC1090,SC1091
+    source "$conf"
+    printf 'URL configurada: %s\n' "${KRYONIX_REMOTE_BRAIN_URL:-<não definida>}"
+    if [[ -n "${KRYONIX_BRAIN_API_KEY:-}" ]]; then
+      printf 'Chave API: *** (configurada)\n'
+    else
+      printf 'Chave API: <não configurada>\n'
+    fi
+  else
+    printf 'Nenhuma configuração remota encontrada.\n'
+    printf 'Rode: kryonix brain remote configure --url <URL> --key-stdin\n'
+  fi
+}
+
+kryonix_brain_remote_configure() {
+  local url=""
+  local key=""
+  local use_stdin=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --url)
+        url="$2"
+        shift 2
+        ;;
+      --key-stdin)
+        use_stdin=true
+        shift
+        ;;
+      *)
+        printf 'Opção desconhecida: %s\n' "$1" >&2
+        return 2
+        ;;
+    esac
+  done
+
+  if [[ -z "$url" ]]; then
+    printf 'ERRO: --url é obrigatório.\n' >&2
+    return 2
+  fi
+
+  if $use_stdin; then
+    IFS= read -r key
+  else
+    printf 'ERRO: --key-stdin é obrigatório para evitar vazamento da chave no histórico.\n' >&2
+    return 2
+  fi
+
+  if [[ -z "$key" ]]; then
+    printf 'ERRO: chave vazia.\n' >&2
+    return 2
+  fi
+
+  local conf_dir="$HOME/.config/kryonix"
+  local conf_file="$conf_dir/brain-remote.env"
+
+  mkdir -p "$conf_dir"
+  touch "$conf_file"
+  chmod 0600 "$conf_file"
+
+  cat > "$conf_file" <<EOF
+KRYONIX_REMOTE_BRAIN_URL=$url
+KRYONIX_BRAIN_API_KEY=$key
+EOF
+
+  printf 'Configuração salva em %s\n' "$conf_file"
+}
+
+kryonix_brain_remote_validate() {
+  local conf="$HOME/.config/kryonix/brain-remote.env"
+  if [[ ! -f "$conf" ]]; then
+    printf 'ERRO: Nenhuma configuração encontrada. Rode kryonix brain remote configure.\n' >&2
+    return 2
+  fi
+  # shellcheck disable=SC1090,SC1091
+  source "$conf"
+
+  printf 'Testando /health... '
+  if curl -fsS --max-time 5 "${KRYONIX_REMOTE_BRAIN_URL}/health" >/dev/null 2>&1; then
+    printf 'OK\n'
+  else
+    printf 'FALHA\n'
+    return 1
+  fi
+
+  printf 'Testando /stats (autenticação)... '
+  local st
+  st="$(curl -sS --max-time 5 -w "%{http_code}" -o /dev/null -H "X-API-Key: $KRYONIX_BRAIN_API_KEY" "${KRYONIX_REMOTE_BRAIN_URL}/stats")"
+  if [[ "$st" == "200" ]]; then
+    printf 'OK\n'
+  else
+    printf 'FALHA (HTTP %s)\n' "$st"
+    return 1
+  fi
+}
+
+kryonix_brain_remote() {
+  local sub="${1:-help}"
+  shift || true
+
+  case "$sub" in
+    status)
+      kryonix_brain_remote_status "$@"
+      ;;
+    configure)
+      kryonix_brain_remote_configure "$@"
+      ;;
+    validate)
+      kryonix_brain_remote_validate "$@"
+      ;;
+    *)
+      printf 'Uso: kryonix brain remote <status|configure|validate>\n' >&2
+      return 2
       ;;
   esac
 }
