@@ -1,20 +1,12 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 let
   cfg = config.kryonix.programs.aiWorkstation;
-
-  codexWrapper = pkgs.writeShellApplication {
-    name = "codex";
-    runtimeInputs = [ pkgs.nodejs_22 ];
-    text = ''
-      set -euo pipefail
-      exec npx --yes @openai/codex "$@"
-    '';
-  };
 
   claudeWrapper = pkgs.writeShellApplication {
     name = "claude";
@@ -66,7 +58,7 @@ in
   config = lib.mkIf (!pkgs.stdenv.isDarwin && cfg.enable) {
     home.packages = [
       pkgs.nodejs_22
-      codexWrapper
+      inputs.codex.packages.${pkgs.system}.default
       claudeWrapper
     ]
     ++ lib.optionals cfg.enableTraeLauncher [ traeLauncher ];
