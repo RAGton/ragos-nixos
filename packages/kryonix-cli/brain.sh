@@ -433,6 +433,83 @@ kryonix_graph_stats() {
   run_brain_cli stats "${brain_passthrough[@]}"
 }
 
+kryonix_graph_status() {
+  parse_brain_mode "$@"
+  if brain_should_use_remote "$brain_mode"; then
+    brain_remote_curl GET /graph/status
+    return $?
+  fi
+  printf '%s\n' "kryonix graph status local requer Brain API ativa no host." >&2
+  return 2
+}
+
+kryonix_graph_schema() {
+  parse_brain_mode "$@"
+  if brain_should_use_remote "$brain_mode"; then
+    brain_remote_curl GET /graph/schema
+    return $?
+  fi
+  printf '%s\n' "kryonix graph schema local requer Brain API ativa no host." >&2
+  return 2
+}
+
+kryonix_graph_ingest() {
+  local mode="${1:-}"
+  shift || true
+  parse_brain_mode "$@"
+
+  if ! brain_should_use_remote "$brain_mode"; then
+    printf '%s\n' "kryonix graph ingest local requer Brain API ativa no host." >&2
+    return 2
+  fi
+
+  case "$mode" in
+    --dry-run)
+      brain_remote_curl POST /graph/ingest/dry-run "{}"
+      ;;
+    --apply)
+      local manifest_id="${brain_passthrough[0]:-}"
+      if [[ -z "$manifest_id" ]]; then
+        printf '%s\n' "Uso: kryonix graph ingest --apply <manifest_id>" >&2
+        return 2
+      fi
+      local payload
+      payload="$(jq -n --arg manifest_id "$manifest_id" '{manifest_id:$manifest_id}')"
+      brain_remote_curl POST /graph/ingest/apply "$payload"
+      ;;
+    *)
+      printf '%s\n' "Uso: kryonix graph ingest <--dry-run|--apply <manifest_id>> [--remote|--local]" >&2
+      return 2
+      ;;
+  esac
+}
+
+kryonix_graph_query() {
+  if [[ $# -eq 0 ]]; then
+    printf '%s\n' "Uso: kryonix graph query \"MATCH ... RETURN ... LIMIT N\"" >&2
+    return 2
+  fi
+  parse_brain_mode
+  if ! brain_should_use_remote "$brain_mode"; then
+    printf '%s\n' "kryonix graph query local requer Brain API ativa no host." >&2
+    return 2
+  fi
+  local q="$*"
+  local payload
+  payload="$(jq -n --arg query "$q" --argjson timeout_sec 5 '{query:$query, timeout_sec:$timeout_sec}')"
+  brain_remote_curl POST /graph/query "$payload"
+}
+
+kryonix_graph_doctor() {
+  parse_brain_mode "$@"
+  if brain_should_use_remote "$brain_mode"; then
+    brain_remote_curl GET /graph/doctor
+    return $?
+  fi
+  printf '%s\n' "kryonix graph doctor local requer Brain API ativa no host." >&2
+  return 2
+}
+
 kryonix_graph_top() {
   parse_brain_mode "$@"
   if brain_should_use_remote "$brain_mode"; then
@@ -679,4 +756,3 @@ else:
     run_brain_cli cag "$sub_action" "${brain_passthrough[@]}"
   fi
 }
-

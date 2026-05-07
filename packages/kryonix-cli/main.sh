@@ -23,7 +23,7 @@ print_usage() {
     "  fmt       Roda o formatter da flake"
     "  check     Roda nix flake check --keep-going"
     "  brain     Acessa o Kryonix Brain (health, doctor, stats, search, ask, cag)"
-    "  graph     Opera o grafo do Brain (stats, top, heal, repair)"
+    "  graph     Opera o grafo do Brain (status, schema, ingest, query, doctor, stats, top, heal, repair)"
     "  mcp       Valida e imprime a configuracao MCP"
     "  vault     Opera o vault via Brain (scan, index)"
     "  ollama    Controla o serviço Ollama (start, stop, status, run, vram, pull)"
@@ -53,6 +53,10 @@ print_usage() {
     "  kryonix brain search \"Como funciona o pipeline RAG do Kryonix?\""
     "  kryonix brain cag route \"Qual o host do Ollama?\""
     "  kryonix brain cag ask \"Como funciona o Glacier?\""
+    "  kryonix graph status"
+    "  kryonix graph schema"
+    "  kryonix graph ingest --dry-run"
+    "  kryonix graph query \"MATCH (s:Service) RETURN s.name LIMIT 5\""
     "  kryonix graph top --limit 10"
     "  kryonix mcp check"
     "  kryonix test all"
@@ -421,6 +425,25 @@ case "$subcommand" in
     fi
 
     case "$graph_sub" in
+      status)
+        kryonix_graph_status "${extra_args[@]}"
+        ;;
+      schema)
+        kryonix_graph_schema "${extra_args[@]}"
+        ;;
+      ingest)
+        kryonix_graph_ingest "${extra_args[@]}"
+        ;;
+      query)
+        if [[ "${#extra_args[@]}" -eq 0 ]]; then
+          printf 'Uso: kryonix graph query "MATCH ... RETURN ... LIMIT N"\n' >&2
+          exit 2
+        fi
+        kryonix_graph_query "${extra_args[@]}"
+        ;;
+      doctor)
+        kryonix_graph_doctor "${extra_args[@]}"
+        ;;
       stats)
         kryonix_graph_stats "${extra_args[@]}"
         ;;
@@ -434,7 +457,7 @@ case "$subcommand" in
         kryonix_graph_server_only repair "${extra_args[@]}"
         ;;
       *)
-        printf 'Uso: kryonix graph <stats|top|heal|repair> [--remote|--local]\n' >&2
+        printf 'Uso: kryonix graph <status|schema|ingest|query|doctor|stats|top|heal|repair> [--remote|--local]\n' >&2
         exit 1
         ;;
     esac
