@@ -33,3 +33,12 @@ kryonix-artifacts/
 # Local/generated agent packs and MCP backups
 .agents/kryonix-rag-doc-pack/
 .mcp.json.bak-*
+
+# Kryonix local secrets - never commit
+/brain.env
+/neo4j.env
+/.env
+*.secret
+*.token
+id_ed25519
+id_ed25519.*
