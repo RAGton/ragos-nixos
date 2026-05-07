@@ -364,6 +364,8 @@ in
         KRYONIX_BRAIN_HOME = "/var/lib/kryonix";
         LIGHTRAG_VAULT_DIR = "${cfg.vaultPath}";
         LIGHTRAG_WORKING_DIR = "${cfg.storagePath}";
+        KRYONIX_BRAIN_API_HOST = "127.0.0.1";
+        KRYONIX_BRAIN_API_PORT = "${toString cfg.port}";
       };
       serviceConfig = {
         ExecStart = brainApiStartScript;
