@@ -101,14 +101,16 @@ in
         bash
         coreutils
         jq
+        quickshell
       ];
       text = ''
         set -euo pipefail
+        # Obter PID da instância caelestia-shell em execução
         pid="$(caelestia-shell list --all --json | jq -r 'map(select(.config_path | contains("caelestia-shell/shell.qml"))) | first | .pid // empty')"
         [ -n "$pid" ] || exit 1
-        qs_bin="$(readlink -f "/proc/$pid/exe")"
-        [ -n "$qs_bin" ] || exit 1
-        exec "$qs_bin" ipc --pid "$pid" call "$@"
+        # Usar o quickshell do PATH (runtimeInputs) em vez de readlink /proc/$pid/exe,
+        # que falha para processos wrapper (.quickshell-wra truncado pelo kernel).
+        exec quickshell ipc --pid "$pid" call "$@"
       '';
     })
 
