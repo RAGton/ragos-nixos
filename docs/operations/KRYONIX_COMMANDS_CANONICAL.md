@@ -65,6 +65,8 @@ Fonte canônica da superfície de comandos da CLI `kryonix`, com status real obs
 | `kryonix graph status` | FUNCTIONAL | remoto respondeu `connected=true` após rotação de credencial Neo4j |
 | `kryonix graph schema` | FUNCTIONAL | remoto respondeu schema v1 |
 | `kryonix graph ingest --dry-run` | FUNCTIONAL | remoto gerou manifest sem escrita no banco |
+| `kryonix graph query --cypher 'MATCH (h:Host) RETURN h LIMIT 20'` | FUNCTIONAL | consulta Cypher read-only; `LIMIT` obrigatório; pergunta natural é rejeitada pela CLI |
+| `kryonix graph examples` | FUNCTIONAL | lista exemplos seguros para Host/Service/Port/File |
 | `kryonix graph doctor` | FUNCTIONAL | checks de TCP/env/graph status `ok` |
 
 ## Vault, MCP, Ollama

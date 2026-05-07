@@ -49,6 +49,32 @@ Ver tabelas de status (`FUNCTIONAL/PARTIAL/BROKEN/UNKNOWN`) no documento canôni
 - Nenhuma mutação de storage/vault/índice foi executada nesta revisão.
 - Rollback de docs: `git restore docs/operations/KRYONIX_*.md`.
 
+## GraphRAG Fase 4.2 — query read-only UX
+
+Status: PARTIAL até o Glacier aplicar o novo tmpfiles/rebuild.
+
+Diagnóstico:
+- `graph query` já envia Cypher read-only para `/graph/query`.
+- pergunta natural em português não é suportada neste endpoint.
+- o guardrail `LIMIT obrigatório` é correto.
+- runtime remoto falhou em query válida porque `graph_audit.jsonl` não existia e `/var/lib/kryonix/brain` estava `root:root 0755`.
+
+Correção:
+- `kryonix graph query` agora valida localmente Cypher read-only antes de chamar o backend.
+- `--cypher` é aceito para deixar o modo explícito.
+- pergunta natural recebe erro amigável com exemplos.
+- query sem `LIMIT` é bloqueada pela CLI com mensagem clara.
+- escrita continua bloqueada (`CREATE`, `MERGE`, `DELETE`, `DETACH DELETE`, `SET`, `REMOVE`, `LOAD CSV`, `CALL dbms`, `CALL apoc`).
+- `kryonix graph examples` lista consultas seguras.
+- tmpfiles declara `graph_audit.jsonl` e `graph_manifests` com dono `kryonix:kryonix`.
+
+Validação esperada:
+```sh
+kryonix graph query --cypher 'MATCH (h:Host) RETURN h LIMIT 20'
+kryonix graph query --cypher 'MATCH (h:Host)-[:RUNS]->(s:Service) RETURN h, s LIMIT 20'
+kryonix graph query --cypher 'MATCH (s:Service)-[:LISTENS_ON]->(p:Port) RETURN s, p LIMIT 20'
+```
+
 ## GraphRAG Fase 4.1 — primeira ingestão controlada
 
 Status: FUNCTIONAL

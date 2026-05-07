@@ -224,6 +224,80 @@ parse_brain_mode() {
   done
 }
 
+kryonix_graph_query_usage() {
+  cat >&2 <<'EOF'
+Uso: kryonix graph query [--cypher] 'MATCH ... RETURN ... LIMIT N'
+
+graph query espera Cypher read-only, não pergunta natural em português.
+LIMIT é obrigatório e operações de escrita são bloqueadas.
+
+Exemplos:
+  kryonix graph query --cypher 'MATCH (h:Host) RETURN h LIMIT 20'
+  kryonix graph query --cypher 'MATCH (h:Host)-[:RUNS]->(s:Service) RETURN h, s LIMIT 20'
+  kryonix graph query --cypher 'MATCH (s:Service)-[:LISTENS_ON]->(p:Port) RETURN s, p LIMIT 20'
+EOF
+}
+
+kryonix_graph_examples() {
+  cat <<'EOF'
+Consultas GraphRAG read-only:
+
+  kryonix graph query --cypher 'MATCH (h:Host) RETURN h LIMIT 20'
+  kryonix graph query --cypher 'MATCH (h:Host)-[:RUNS]->(s:Service) RETURN h, s LIMIT 20'
+  kryonix graph query --cypher 'MATCH (s:Service)-[:LISTENS_ON]->(p:Port) RETURN s, p LIMIT 20'
+  kryonix graph query --cypher 'MATCH (f:File)-[:DECLARES]->(s:Service) RETURN f, s LIMIT 20'
+
+Regras:
+  - entrada deve ser Cypher read-only
+  - LIMIT é obrigatório
+  - CREATE, MERGE, DELETE, DETACH DELETE, SET, REMOVE, LOAD CSV, CALL dbms e CALL apoc são bloqueados
+EOF
+}
+
+kryonix_graph_validate_cypher_query() {
+  local q="$1"
+  local q_upper
+  local forbidden
+  local -a forbidden_patterns
+
+  q_upper="$(printf '%s' "$q" | tr '[:lower:]' '[:upper:]' | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')"
+
+  forbidden_patterns=(
+    "DETACH DELETE"
+    "LOAD CSV"
+    "CALL DBMS."
+    "CALL APOC."
+    "CREATE"
+    "MERGE"
+    "DELETE"
+    "SET"
+    "REMOVE"
+  )
+
+  for forbidden in "${forbidden_patterns[@]}"; do
+    if [[ "$q_upper" == *"$forbidden"* ]]; then
+      printf 'ERRO: padrão proibido em graph query read-only: %s\n' "$forbidden" >&2
+      return 2
+    fi
+  done
+
+  case "$q_upper" in
+    MATCH*|OPTIONAL\ MATCH*|WITH*)
+      ;;
+    *)
+      printf '%s\n' "ERRO: graph query atualmente espera Cypher read-only, não pergunta natural." >&2
+      kryonix_graph_query_usage
+      return 2
+      ;;
+  esac
+
+  if ! [[ "$q_upper" =~ (^|[[:space:]])LIMIT([[:space:]]|$) ]]; then
+    printf '%s\n' "ERRO: LIMIT obrigatório em graph query read-only." >&2
+    printf '%s\n' "Exemplo: kryonix graph query --cypher 'MATCH (h:Host) RETURN h LIMIT 20'" >&2
+    return 2
+  fi
+}
+
 kryonix_brain_health() {
   parse_brain_mode "$@"
   if brain_should_use_remote "$brain_mode"; then
@@ -486,15 +560,29 @@ kryonix_graph_ingest() {
 
 kryonix_graph_query() {
   if [[ $# -eq 0 ]]; then
-    printf '%s\n' "Uso: kryonix graph query \"MATCH ... RETURN ... LIMIT N\"" >&2
+    kryonix_graph_query_usage
     return 2
   fi
-  parse_brain_mode
+  parse_brain_mode "$@"
   if ! brain_should_use_remote "$brain_mode"; then
     printf '%s\n' "kryonix graph query local requer Brain API ativa no host." >&2
     return 2
   fi
-  local q="$*"
+  local -a query_args
+  query_args=("${brain_passthrough[@]}")
+  if [[ "${query_args[0]:-}" == "--help" || "${query_args[0]:-}" == "-h" ]]; then
+    kryonix_graph_query_usage
+    return 0
+  fi
+  if [[ "${query_args[0]:-}" == "--cypher" ]]; then
+    query_args=("${query_args[@]:1}")
+  fi
+  if [[ "${#query_args[@]}" -eq 0 ]]; then
+    kryonix_graph_query_usage
+    return 2
+  fi
+  local q="${query_args[*]}"
+  kryonix_graph_validate_cypher_query "$q" || return $?
   local payload
   payload="$(jq -n --arg query "$q" --argjson timeout_sec 5 '{query:$query, timeout_sec:$timeout_sec}')"
   brain_remote_curl POST /graph/query "$payload"

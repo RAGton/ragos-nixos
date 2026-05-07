@@ -55,7 +55,8 @@ kryonix graph status
 kryonix graph schema
 kryonix graph ingest --dry-run
 kryonix graph ingest --apply <manifest_id>
-kryonix graph query "MATCH (s:Service) RETURN s.name LIMIT 5"
+kryonix graph query --cypher "MATCH (h:Host) RETURN h LIMIT 20"
+kryonix graph examples
 kryonix graph doctor
 ```
 
@@ -63,7 +64,8 @@ Regras ativas:
 
 - `--dry-run` gera manifesto e não escreve no Neo4j.
 - `--apply` só aplica manifesto salvo.
-- Text2Cypher/consulta bloqueia escrita (`CREATE`, `MERGE`, `DELETE`, `SET`, `REMOVE`, `CALL dbms.*`, `CALL apoc.*`, `LOAD CSV`).
-- `LIMIT` obrigatório.
+- `graph query` espera Cypher read-only explícito, não pergunta natural.
+- Consulta bloqueia escrita (`CREATE`, `MERGE`, `DELETE`, `DETACH DELETE`, `SET`, `REMOVE`, `CALL dbms.*`, `CALL apoc.*`, `LOAD CSV`).
+- `LIMIT` obrigatório; a CLI mostra erro amigável antes de enviar a query.
 - Timeout padrão aplicado.
 - Auditoria de consulta em `graph_audit.jsonl`.

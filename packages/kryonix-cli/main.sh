@@ -56,7 +56,8 @@ print_usage() {
     "  kryonix graph status"
     "  kryonix graph schema"
     "  kryonix graph ingest --dry-run"
-    "  kryonix graph query \"MATCH (s:Service) RETURN s.name LIMIT 5\""
+    "  kryonix graph query --cypher \"MATCH (h:Host) RETURN h LIMIT 20\""
+    "  kryonix graph examples"
     "  kryonix graph top --limit 10"
     "  kryonix mcp check"
     "  kryonix test all"
@@ -436,10 +437,13 @@ case "$subcommand" in
         ;;
       query)
         if [[ "${#extra_args[@]}" -eq 0 ]]; then
-          printf 'Uso: kryonix graph query "MATCH ... RETURN ... LIMIT N"\n' >&2
+          kryonix_graph_query_usage
           exit 2
         fi
         kryonix_graph_query "${extra_args[@]}"
+        ;;
+      examples)
+        kryonix_graph_examples
         ;;
       doctor)
         kryonix_graph_doctor "${extra_args[@]}"
@@ -457,7 +461,7 @@ case "$subcommand" in
         kryonix_graph_server_only repair "${extra_args[@]}"
         ;;
       *)
-        printf 'Uso: kryonix graph <status|schema|ingest|query|doctor|stats|top|heal|repair> [--remote|--local]\n' >&2
+        printf 'Uso: kryonix graph <status|schema|ingest|query|examples|doctor|stats|top|heal|repair> [--remote|--local]\n' >&2
         exit 1
         ;;
     esac
