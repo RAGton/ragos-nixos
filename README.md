@@ -162,20 +162,56 @@ O nome antigo permanece apenas como camada temporária de compatibilidade.
 
 O `glacier` conta com serviços de Inteligência Artificial nativos como **Ollama**, **LightRAG** e **Kryonix Brain API**.
 
-Antes de ativar a infraestrutura pela primeira vez, gere uma chave segura:
+### Setup da API Key (executar no Glacier)
 
-```sh
-python3 -c "import secrets; print(secrets.token_hex(32))"
-```
+O arquivo de secrets `/etc/kryonix/brain.env` fica **fora do Git** e precisa ser criado manualmente no servidor antes do primeiro `kryonix switch`.
 
-Crie ou injete no arquivo `/etc/kryonix/brain.env` que fica fora do controle de versão:
+1. Gere uma chave aleatória segura:
 
-```sh
-KRYONIX_BRAIN_KEY="<chave_gerada_aqui>"
-LIGHTRAG_VERBOSE="1"
-```
+   ```sh
+   python3 -c "import secrets; print(secrets.token_hex(32))"
+   ```
+
+2. Crie o arquivo com permissões restritas:
+
+   ```sh
+   KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+   tmp="$(mktemp)"
+   printf 'KRYONIX_BRAIN_API_KEY=%s\n' "$KEY" > "$tmp"
+   sudo install -m 600 -o root -g root "$tmp" /etc/kryonix/brain.env
+   rm -f "$tmp"
+   unset KEY
+   ```
+
+3. Confirme as permissões:
+
+   ```sh
+   sudo stat -c "%U:%G %a %n" /etc/kryonix/brain.env
+   # Esperado: root:root 600 /etc/kryonix/brain.env
+   ```
 
 Se esse arquivo não existir, o systemd se recusará a subir as units `kryonix-brain-api` e `kryonix-lightrag` no `kryonix switch`.
+
+### Endpoints da Brain API
+
+- `GET /health` — público, sem autenticação
+- `GET /stats`, `POST /search`, `GET /graph/*` — requerem header `X-API-Key`
+
+```sh
+# Health check (público)
+curl -fsS http://10.0.0.2:8000/health
+
+# Stats autenticado
+curl -fsS -H "X-API-Key: <chave>" http://10.0.0.2:8000/stats
+
+# Busca semântica autenticada
+curl -fsS -H "X-API-Key: <chave>" http://10.0.0.2:8000/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "pipeline RAG Kryonix"}'
+```
+
+> ⚠️ **Nunca commite** `brain.env`, `neo4j.env` ou qualquer arquivo com API keys ou tokens.
+> Esses arquivos já estão listados no `.gitignore`.
 
 ---
 
