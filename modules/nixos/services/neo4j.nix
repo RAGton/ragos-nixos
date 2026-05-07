@@ -91,5 +91,15 @@ in
 
     # Permitir que o usuário neo4j acesse o storage (/home/storage/kryonix/brain)
     users.users.neo4j.extraGroups = [ "kryonix" ];
+
+    # Ownership declarativo para evitar drift em upgrades/restarts.
+    systemd.tmpfiles.rules = [
+      "d /var/lib/kryonix/brain/neo4j 0750 neo4j neo4j -"
+      "d /var/lib/kryonix/brain/neo4j/data 0750 neo4j neo4j -"
+      "d /var/lib/kryonix/brain/neo4j/logs 0750 neo4j neo4j -"
+      "d /var/lib/kryonix/brain/neo4j/import 0750 neo4j neo4j -"
+      "d /var/lib/kryonix/brain/neo4j/plugins 0750 neo4j neo4j -"
+      "d /var/lib/kryonix/brain/neo4j/conf 0750 neo4j neo4j -"
+    ];
   };
 }

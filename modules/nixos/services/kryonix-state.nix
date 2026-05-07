@@ -23,9 +23,11 @@ in
 {
   config = mkIf (cfg.enable && cfg.role == "server") {
     systemd.tmpfiles.rules = [
-      "d /home/storage/kryonix 0755 ${cfg.user} ${cfg.group} - -"
+      # Parent directories must stay root-owned to avoid unsafe path transitions
+      # when child service directories are owned by distinct service users.
+      "d /home/storage/kryonix 0755 root root - -"
       "L /var/lib/kryonix - - - - /home/storage/kryonix"
-      "d /home/storage/kryonix/brain 0755 ${cfg.user} ${cfg.group} - -"
+      "d /home/storage/kryonix/brain 0755 root root - -"
       "d /home/storage/kryonix/brain/storage 0755 ${cfg.user} ${cfg.group} - -"
       "d /home/storage/kryonix/brain/cache 0755 ${cfg.user} ${cfg.group} - -"
       "d /home/storage/kryonix/brain/snapshots 0755 ${cfg.user} ${cfg.group} - -"
