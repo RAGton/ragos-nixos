@@ -48,6 +48,7 @@ in
 
   home.packages = with pkgs; [
     atlauncher
+    remmina
   ];
 
   # No AC, a sessao fica ativa. Em bateria, idle e suspend sao controlados

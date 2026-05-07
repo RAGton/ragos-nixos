@@ -74,7 +74,8 @@ in
       ai-launch = "caelestia shell drawers toggle launcher";
       ai-trae = "trae-launcher";
       kb = "kryonix-obsidian";
-    } // lib.optionalAttrs cfg.enableCodex {
+    }
+    // lib.optionalAttrs cfg.enableCodex {
       ai-codex = "codex";
     };
 

@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
 
+if ! declare -F blue_line >/dev/null 2>&1; then
+  blue_line() { printf '\033[34m%s\033[0m\n' "$*"; }
+fi
+if ! declare -F yellow_line >/dev/null 2>&1; then
+  yellow_line() { printf '\033[33m%s\033[0m\n' "$*"; }
+fi
+if ! declare -F green_line >/dev/null 2>&1; then
+  green_line() { printf '\033[32m%s\033[0m\n' "$*"; }
+fi
+if ! declare -F red_line >/dev/null 2>&1; then
+  red_line() { printf '\033[31m%s\033[0m\n' "$*"; }
+fi
+
 kryonix_remote_vnc_status() {
   local tunnel_active=0
   local glacier_wayvnc=0
