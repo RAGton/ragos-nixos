@@ -41,7 +41,7 @@ sudo install -m600 /dev/null /etc/kryonix/neo4j.env
 Escreva o conteúdo (exemplo):
 ```env
 # Variáveis de inicialização do Neo4j
-NEO4J_AUTH=neo4j/SuaSenhaUltraSeguraAqui
+NEO4J_AUTH=<usuario>/<senha-forte>
 ```
 
 > [!WARNING]
@@ -79,14 +79,34 @@ sudo chmod -R 0775 /var/lib/kryonix/brain/neo4j
 ```
 
 ### 2. Redefinir Senha do Administrador via CLI (Caso Esqueça)
-Caso você perca as credenciais administrativas, você pode forçar a redefinição utilizando a ferramenta administrativa do Neo4j no Glacier:
+Sintoma típico no GraphRAG:
+- `/graph/status` retorna `Neo4j HTTP 401 Invalid credential`.
+
+Causa:
+- `NEO4J_AUTH` em `/etc/kryonix/neo4j.env` não corresponde à credencial ativa do banco.
+
+Solução segura (sem expor segredo):
+1. Parar `kryonix-brain-api` e `neo4j`.
+2. Gerar nova senha em memória.
+3. Executar reset com `neo4j-admin` no runtime correto:
 ```bash
-sudo -u neo4j neo4j-admin dbms set-initial-password <nova-senha-segura>
+sudo -u neo4j env \
+  NEO4J_HOME=/var/lib/kryonix/brain/neo4j \
+  NEO4J_CONF=/var/lib/kryonix/brain/neo4j/conf \
+  neo4j-admin dbms set-initial-password "<nova-senha>"
 ```
-Após executar, reinicie o serviço para aplicar:
+4. Atualizar `/etc/kryonix/neo4j.env` atomicamente mantendo `root:root 0600`:
 ```bash
-sudo systemctl restart neo4j
+tmp="$(mktemp)"
+printf "NEO4J_AUTH=neo4j/%s\n" "<nova-senha>" > "$tmp"
+sudo install -m 600 -o root -g root "$tmp" /etc/kryonix/neo4j.env
+rm -f "$tmp"
 ```
+5. Iniciar `neo4j` e reiniciar `kryonix-brain-api`.
+
+Não fazer:
+- `chmod 644 /etc/kryonix/neo4j.env`
+- `chown rocha /etc/kryonix/neo4j.env`
 
 ### 3. Banco de Dados Bloqueado (`Database is locked`)
 Se o processo do Neo4j for encerrado abruptamente (por exemplo, falta de energia no Glacier), um arquivo de lock pode persistir impedindo a reinicialização.
@@ -119,3 +139,30 @@ Conforme definido em `AGENTS.md`, o Neo4j é uma base de dados derivada e 100% r
    sudo systemctl start neo4j
    ```
 4. Execute o script de ingestão do Kryonix Brain para repopular os nós.
+
+---
+
+## ✅ Validação pós-rotação (sem vazar senha)
+
+### 1. Permissão do arquivo secreto
+```bash
+sudo stat -c "%U:%G %a %n" /etc/kryonix/neo4j.env
+```
+Esperado: `root:root 600`.
+
+### 2. Teste de autenticação Bolt
+```bash
+AUTH="$(sudo sed -n 's/^NEO4J_AUTH=//p' /etc/kryonix/neo4j.env)"
+USER="${AUTH%%/*}"
+PASS="${AUTH#*/}"
+cypher-shell -a bolt://127.0.0.1:7687 -u "$USER" -p "$PASS" "RETURN 1 AS ok;"
+unset AUTH USER PASS
+```
+
+### 3. Teste Graph API
+```bash
+K="$(sudo sed -n 's/^KRYONIX_BRAIN_API_KEY=//p' /etc/kryonix/brain.env)"
+curl -fsS -H "X-API-Key: $K" http://127.0.0.1:8000/graph/status | jq .
+curl -fsS -H "X-API-Key: $K" http://127.0.0.1:8000/graph/doctor | jq .
+unset K
+```
