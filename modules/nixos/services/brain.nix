@@ -125,6 +125,12 @@ in
       description = "IP/Host do servidor Brain (usado pelo client).";
     };
 
+    bindHost = mkOption {
+      type = types.str;
+      default = "127.0.0.1";
+      description = "IP/Host de escuta (bind) do servidor Brain (apenas server).";
+    };
+
     port = mkOption {
       type = types.port;
       default = 8000;
@@ -364,7 +370,7 @@ in
         KRYONIX_BRAIN_HOME = "/var/lib/kryonix";
         LIGHTRAG_VAULT_DIR = "${cfg.vaultPath}";
         LIGHTRAG_WORKING_DIR = "${cfg.storagePath}";
-        KRYONIX_BRAIN_API_HOST = "127.0.0.1";
+        KRYONIX_BRAIN_API_HOST = cfg.bindHost;
         KRYONIX_BRAIN_API_PORT = "${toString cfg.port}";
       };
       serviceConfig = {

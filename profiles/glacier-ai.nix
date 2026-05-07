@@ -56,6 +56,7 @@ in
     kryonix.services.brain = {
       enable = true;
       role = "server";
+      bindHost = "0.0.0.0";
 
       # NÃO iniciar automaticamente no boot (se quiser manter disabled).
       # Start manual: kryonix ollama start → systemctl start ollama
