@@ -26,8 +26,7 @@
         "-y",
         "@modelcontextprotocol/server-filesystem",
         "/etc/kryonix",
-        "/home/rocha/.local/share/kryonix/kryonix-vault",
-        "/var/lib/kryonix"
+        "/home/rocha/.local/share/kryonix/kryonix-vault"
       ]
     },
     "github": {
