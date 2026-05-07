@@ -88,5 +88,8 @@ in
     systemd.services.neo4j.serviceConfig.EnvironmentFile = mkIf (cfg.environmentFile != "") [
       cfg.environmentFile
     ];
+
+    # Permitir que o usuário neo4j acesse o storage (/home/storage/kryonix/brain)
+    users.users.neo4j.extraGroups = [ "kryonix" ];
   };
 }
