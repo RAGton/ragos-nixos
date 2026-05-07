@@ -15,7 +15,10 @@
   ];
 
   kryonix.shell.backend = "caelestia";
-  kryonix.programs.aiWorkstation.enable = true;
+  kryonix.programs.aiWorkstation = {
+    enable = true;
+    enableCodex = true;
+  };
 
   kryonix.flatpak.enable = true;
 

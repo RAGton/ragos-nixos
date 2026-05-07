@@ -53,22 +53,29 @@ in
       default = true;
       description = "Instala o wrapper e a entrada desktop do Trae sem empacotar o binario.";
     };
+
+    enableCodex = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Instala o Codex CLI (pode requerer compilacao local lenta).";
+    };
   };
 
   config = lib.mkIf (!pkgs.stdenv.isDarwin && cfg.enable) {
     home.packages = [
       pkgs.nodejs_22
-      inputs.codex.packages.${pkgs.system}.default
       claudeWrapper
     ]
-    ++ lib.optionals cfg.enableTraeLauncher [ traeLauncher ];
+    ++ lib.optionals cfg.enableTraeLauncher [ traeLauncher ]
+    ++ lib.optionals cfg.enableCodex [ pkgs.codex-cli ];
 
     home.shellAliases = {
-      ai-codex = "codex";
       ai-claude = "claude";
       ai-launch = "caelestia shell drawers toggle launcher";
       ai-trae = "trae-launcher";
       kb = "kryonix-obsidian";
+    } // lib.optionalAttrs cfg.enableCodex {
+      ai-codex = "codex";
     };
 
     xdg.desktopEntries = lib.mkIf cfg.enableTraeLauncher {

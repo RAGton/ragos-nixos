@@ -15,6 +15,7 @@
     overlays = [
       outputs.overlays.stable-packages
       outputs.overlays.atlauncher-api-user-agent-workaround
+      outputs.overlays.codex-overlay
     ]
     ++ lib.optionals (!isDarwin) [
       outputs.overlays.openrgb-git

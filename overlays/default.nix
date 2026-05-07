@@ -243,4 +243,33 @@
       });
     });
   };
+
+  # OpenAI Codex: adiciona o pacote corrigido do Codex
+  #
+  # Por quê
+  # - A dependência Git libwebrtc-0.3.26 no Cargo.lock do codex-rs exige
+  #   um outputHash que está ausente na derivação original do repositório upstream.
+  #
+  # Como
+  # - Sobrescreve o cargoDeps chamando rustPlatform.importCargoLock diretamente,
+  #   fornecendo a lista completa de hashes, incluindo a entrada para libwebrtc.
+  codex-overlay = final: prev: {
+    codex-cli = (prev.callPackage "${inputs.codex}/codex-rs" {
+      version = "0.0.0-dev";
+    }).overrideAttrs (oldAttrs: {
+      cargoDeps = prev.rustPlatform.importCargoLock {
+        lockFile = "${inputs.codex}/codex-rs/Cargo.lock";
+        outputHashes = {
+          "ratatui-0.29.0" = "sha256-HBvT5c8GsiCxMffNjJGLmHnvG77A6cqEL+1ARurBXho=";
+          "crossterm-0.28.1" = "sha256-6qCtfSMuXACKFb9ATID39XyFDIEMFDmbx6SSmNe+728=";
+          "nucleo-0.5.0" = "sha256-Hm4SxtTSBrcWpXrtSqeO0TACbUxq3gizg1zD/6Yw/sI=";
+          "nucleo-matcher-0.3.1" = "sha256-Hm4SxtTSBrcWpXrtSqeO0TACbUxq3gizg1zD/6Yw/sI=";
+          "runfiles-0.1.0" = "sha256-uJpVLcQh8wWZA3GPv9D8Nt43EOirajfDJ7eq/FB+tek=";
+          "tokio-tungstenite-0.28.0" = "sha256-hJAkvWxDjB9A9GqansahWhTmj/ekcelslLUTtwqI7lw=";
+          "tungstenite-0.27.0" = "sha256-AN5wql2X2yJnQ7lnDxpljNw0Jua40GtmT+w3wjER010=";
+          "libwebrtc-0.3.26" = "sha256-0HPuwaGcqpuG+Pp6z79bCuDu/DyE858VZSYr3DKZD9o=";
+        };
+      };
+    });
+  };
 }

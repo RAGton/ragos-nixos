@@ -123,6 +123,7 @@
             repoOverlays.stable-packages
             repoOverlays.atlauncher-api-user-agent-workaround
             repoOverlays.xeus-cling-no-checks
+            repoOverlays.codex-overlay
           ];
           config.allowUnfree = true;
         };

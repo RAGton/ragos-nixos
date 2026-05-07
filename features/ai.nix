@@ -52,7 +52,7 @@ in
   config = lib.mkMerge [
     (lib.mkIf cfg.codex.enable {
       environment.systemPackages = [
-        inputs.codex.packages.${pkgs.system}.default
+        pkgs.codex-cli
       ];
     })
 
