@@ -29,6 +29,7 @@ PATHS=(
   "/var/lib/kryonix/brain/neo4j/logs"
   "/var/lib/kryonix/brain/neo4j/import"
   "/var/lib/kryonix/brain/neo4j/plugins"
+  "/var/lib/kryonix/brain/neo4j/conf"
 )
 
 ERR_PERM=0
