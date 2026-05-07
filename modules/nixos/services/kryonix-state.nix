@@ -23,6 +23,7 @@ in
 {
   config = mkIf (cfg.enable && cfg.role == "server") {
     systemd.tmpfiles.rules = [
+      "d /home/storage 0755 root root - -"
       # Parent directories must stay root-owned to avoid unsafe path transitions
       # when child service directories are owned by distinct service users.
       "d /home/storage/kryonix 0755 root root - -"
