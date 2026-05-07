@@ -57,12 +57,12 @@ TMP_ENV=$(mktemp)
 trap 'rm -f "$TMP_ENV"' EXIT
 
 if [[ -f "$ENV_FILE" ]]; then
-  # Preserva todas as variáveis existentes que não sejam KRYONIX_BRAIN_KEY
-  grep -v "^KRYONIX_BRAIN_KEY=" "$ENV_FILE" > "$TMP_ENV" || true
+  # Preserva todas as variáveis existentes que não sejam KRYONIX_BRAIN_API_KEY
+  grep -v "^KRYONIX_BRAIN_API_KEY=" "$ENV_FILE" > "$TMP_ENV" || true
 fi
 
 # Adiciona a nova chave
-echo "KRYONIX_BRAIN_KEY=$new_key" >> "$TMP_ENV"
+echo "KRYONIX_BRAIN_API_KEY=$new_key" >> "$TMP_ENV"
 
 # Gravação segura
 cp "$TMP_ENV" "$ENV_FILE"

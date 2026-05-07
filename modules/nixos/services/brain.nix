@@ -12,8 +12,8 @@
 # - Firewall por interface: apenas LAN (br0) e Tailscale (tailscale0).
 #
 # Riscos:
-# - EnvironmentFile com KRYONIX_BRAIN_KEY deve existir antes do switch.
-#   Criar manualmente: sudo install -m600 /dev/null /etc/kryonix/brain.env
+# - EnvironmentFile com KRYONIX_BRAIN_API_KEY deve existir antes do switch.
+#   Criar com: kryonix brain api-key generate
 # - packageDir aponta para /etc/kryonix/packages/... (requer repo instalado).
 # =============================================================================
 {
@@ -142,9 +142,9 @@ in
       default = "/etc/kryonix/brain.env";
       description = ''
         Arquivo de variáveis de ambiente para Brain API e LightRAG.
-        Deve conter KRYONIX_BRAIN_KEY e variáveis LIGHTRAG_*.
+        Deve conter KRYONIX_BRAIN_API_KEY e variáveis LIGHTRAG_*.
         NUNCA versionar este arquivo — contém secrets.
-        Criar manualmente: sudo install -m600 /dev/null /etc/kryonix/brain.env
+        Criar com: kryonix brain api-key generate
       '';
     };
 

@@ -22,7 +22,7 @@ Este documento descreve o plano de migração do servidor Glacier do Windows 11 
 ## Fase 4: Restauração de Dados
 1. **Transferência**: Mover o backup para o novo Glacier NixOS (via USB ou rede).
 2. **Execução**: Rodar `./scripts/restore-brain-nixos.sh /caminho/do/backup`.
-3. **Configuração**: Criar `/etc/kryonix/brain.env` com a `KRYONIX_BRAIN_KEY`.
+3. **Configuração**: Criar `/etc/kryonix/brain.env` com a `KRYONIX_BRAIN_API_KEY`.
 4. **Permissões**: O script já ajusta para o usuário `kryonix-brain`.
 
 ## Fase 5: Validação Pós-Migração

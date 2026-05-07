@@ -41,4 +41,4 @@ else
     echo "Aviso: Estrutura de storage não encontrada no destino."
 fi
 
-echo "Pronto. Lembre-se de configurar /etc/kryonix/brain.env com a KRYONIX_BRAIN_KEY."
+echo "Pronto. Lembre-se de configurar /etc/kryonix/brain.env com a KRYONIX_BRAIN_API_KEY."

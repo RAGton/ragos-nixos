@@ -39,7 +39,7 @@ O Brain é o motor de conhecimento do projeto.
 1. Verifique `kryonix doctor`.
 2. Confirme se o Tailscale está `active`.
 3. Teste `curl http://100.108.71.36:8000/health`.
-4. Verifique se a `KRYONIX_BRAIN_KEY` no `/etc/kryonix/brain.env` coincide com a do servidor.
+4. Verifique se a `KRYONIX_BRAIN_API_KEY` no `/etc/kryonix/brain.env` coincide com a do servidor.
 
 ### Erros de Avaliação Nix
 1. Rode `kryonix check` para encontrar erros de sintaxe ou opções inexistentes.

@@ -56,7 +56,7 @@ Kryonix uses a distributed Brain architecture to separate heavy AI workloads fro
 ## Security
 
 - **Network**: Communication restricted to LAN (`br0`) and Tailscale (`tailscale0`) via NixOS firewall.
-- **Secrets**: `KRYONIX_BRAIN_KEY` is stored in `/etc/kryonix/brain.env` (permissions 600) and never committed to Git.
+- **Secrets**: `KRYONIX_BRAIN_API_KEY` is stored in `/etc/kryonix/brain.env` (permissions 600) and never committed to Git.
 - **Access**: Managed via `kryonix.services.brain.user` and `group` (Default: `rocha:users`).
 
 ## Operational Workflow

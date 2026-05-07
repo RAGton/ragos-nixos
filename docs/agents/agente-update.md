@@ -162,7 +162,7 @@ tailscale status
 
 ### 2.3 Brain API Key
 
-A `KRYONIX_BRAIN_KEY` é segredo.
+A `KRYONIX_BRAIN_API_KEY` é segredo.
 
 Nunca colocar em:
 
@@ -968,7 +968,7 @@ kryonix test all
 API:
 
 ```bash
-curl -H "X-API-Key: $KRYONIX_BRAIN_KEY" http://<glacier>:8000/stats
+curl -H "X-API-Key: $KRYONIX_BRAIN_API_KEY" http://<glacier>:8000/stats
 ```
 
 Search:

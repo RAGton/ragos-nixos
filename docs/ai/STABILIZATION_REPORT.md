@@ -19,7 +19,7 @@ Este documento resume as ações realizadas para estabilizar o ambiente distribu
 
 ## 3. Acesso Remoto (Tailscale)
 - **Zero Trust**: SSH, Ollama e Brain API estão restritos à interface Tailscale.
-- **Segurança**: Rotação da `KRYONIX_BRAIN_KEY` concluída. A chave está persistida no escopo `Machine` do Glacier.
+- **Segurança**: Rotação da `KRYONIX_BRAIN_API_KEY` concluída. A chave está persistida no escopo `Machine` do Glacier.
 
 ## 4. Manutenção do Repositório
 - **Arquivamento**: ~10 documentos de migração e checklists antigos foram movidos para `docs/legacy/archive-2026-04-28`.
