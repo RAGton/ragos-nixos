@@ -835,8 +835,14 @@ writeShellApplication {
                                     kryonix_brain_health() {
                                       parse_brain_mode "$@"
                                       if brain_should_use_remote "$brain_mode"; then
-                                        brain_remote_curl GET /health
-                                        return $?
+                                        if [[ "''${KRYONIX_JSON_MODE:-}" == "1" ]]; then
+                                          brain_remote_curl GET /health
+                                          return $?
+                                        else
+                                          printf 'Brain remoto: GET %s/health\n' "$(brain_api_url)"
+                                          brain_remote_curl GET /health
+                                          return $?
+                                        fi
                                       fi
 
                                       if [[ "$(kryonix_brain_role)" == "client" ]] && [[ "''${KRYONIX_LOCAL_RAG_ENABLE:-}" != "true" ]]; then
@@ -857,28 +863,28 @@ writeShellApplication {
                                       export_brain_env
 
                                       run_command uv run --project "$project_dir" python -c "
-        import json
-        import os
-        from kryonix_brain_lightrag import config
+import json
+import os
+from kryonix_brain_lightrag import config
 
-        health = {
-            \"status\": \"OK\",
-            \"project_dir\": str(config.PROJECT_DIR),
-            \"vault_dir\": str(config.VAULT_DIR),
-            \"working_dir\": str(config.WORKING_DIR),
-            \"role\": os.environ.get(\"KRYONIX_ROLE\", \"server\")
-        }
+health = {
+    \"status\": \"OK\",
+    \"project_dir\": str(config.PROJECT_DIR),
+    \"vault_dir\": str(config.VAULT_DIR),
+    \"working_dir\": str(config.WORKING_DIR),
+    \"role\": os.environ.get(\"KRYONIX_ROLE\", \"server\")
+}
 
-        if os.environ.get(\"KRYONIX_JSON_MODE\") == \"1\":
-            print(json.dumps(health))
-        else:
-            print(\"Kryonix Brain health (Local)\")
-            print(f\"  project: {health['project_dir']}\")
-            print(f\"  vault:   {health['vault_dir']}\")
-            print(f\"  storage: {health['working_dir']}\")
-            print(f\"  role:    {health['role']}\")
-            print(f\"  status:  {health['status']}\")
-        "
+if os.environ.get(\"KRYONIX_JSON_MODE\") == \"1\":
+    print(json.dumps(health))
+else:
+    print(\"Kryonix Brain health (Local)\")
+    print(f\"  project: {health['project_dir']}\")
+    print(f\"  vault:   {health['vault_dir']}\")
+    print(f\"  storage: {health['working_dir']}\")
+    print(f\"  role:    {health['role']}\")
+    print(f\"  status:  {health['status']}\")
+"
                                     }
 
                                     kryonix_brain_doctor() {
