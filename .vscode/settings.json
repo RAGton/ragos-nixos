@@ -29,5 +29,9 @@
     ],
     "latex-workshop.latex.recipe.default": "first",
     "python-envs.defaultEnvManager": "ms-python.python:system",
-    "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix"
+    "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+    "python.defaultInterpreterPath": "${workspaceFolder}/packages/kryonix-brain-lightrag/.venv/bin/python",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/packages/kryonix-brain-lightrag"
+    ]
 }
