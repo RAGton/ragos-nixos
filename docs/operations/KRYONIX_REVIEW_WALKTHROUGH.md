@@ -48,3 +48,30 @@ Ver tabelas de status (`FUNCTIONAL/PARTIAL/BROKEN/UNKNOWN`) no documento canôni
 ## 10. Rollback
 - Nenhuma mutação de storage/vault/índice foi executada nesta revisão.
 - Rollback de docs: `git restore docs/operations/KRYONIX_*.md`.
+
+## GraphRAG Fase 4.1 — primeira ingestão controlada
+
+Status: FUNCTIONAL
+
+Manifest aplicado:
+- graph-v1-20260507T150910Z-685280cb
+
+Dry-run revisado antes do apply:
+- nodes: 143
+- relationships: 11
+- labels: File, Host, Port, Service
+- relações: DECLARES, DEPENDS_ON, LISTENS_ON, RUNS
+- sem DELETE/DETACH/REMOVE/LOAD CSV/CALL dbms/CALL apoc
+- sem paths de secrets
+
+Validação:
+- backup Neo4j criado antes do apply
+- graph status OK
+- graph schema OK
+- graph doctor OK
+- node_count > 0 após apply
+
+Observação:
+- primeira ingestão real foi controlada e pequena/média
+- vault inteiro ainda não foi ingerido
+- Text2Cypher destrutivo continua proibido
