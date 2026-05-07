@@ -77,7 +77,7 @@ fi
 
 # 3. Verificar Status do Systemd Unit
 echo -e "\n${BLUE}[3/4] Verificando status do serviço no systemd...${NC}"
-if systemctl list-unit-files | grep -q "neo4j.service"; then
+if systemctl show -p LoadState neo4j.service | grep -q "loaded"; then
   ACTIVE_STATE=$(systemctl is-active neo4j || echo "inactive")
   ENABLED_STATE=$(systemctl is-enabled neo4j || echo "disabled")
 
