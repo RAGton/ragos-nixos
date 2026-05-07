@@ -590,11 +590,15 @@ except Exception:
 
 console = Console()
 console.print("\n[bold green][/bold green][black on green]CAG REMOTE STATUS[/black on green][bold green][/bold green]")
-if data.get("status") == "success" or "num_files" in data:
+is_active = "version" in data or "total_files" in data or "num_files" in data
+if is_active:
+    num_files = data.get("total_files", data.get("num_files", 0))
+    size_bytes = data.get("total_bytes", data.get("size_bytes", 0))
+    created_at = data.get("built_at", data.get("created_at", "n/a"))
     console.print(f"  [cyan]Status:[/cyan]      [bold green]Ativo[/bold green]")
-    console.print(f"  [cyan]Ficheiros:[/cyan]   {data.get(\"num_files\", 0)}")
-    console.print(f"  [cyan]Tamanho:[/cyan]     {data.get(\"size_bytes\", 0)} bytes")
-    console.print(f"  [cyan]Gerado em:[/cyan]   {data.get(\"created_at\", \"n/a\")}")
+    console.print(f"  [cyan]Ficheiros:[/cyan]   {num_files}")
+    console.print(f"  [cyan]Tamanho:[/cyan]     {size_bytes} bytes")
+    console.print(f"  [cyan]Gerado em:[/cyan]   {created_at}")
 else:
     console.print(f"  [cyan]Status:[/cyan]      [bold red]Inativo / Não Encontrado[/bold red]")
     console.print("[dim]Use \"kryonix brain cag build\" no servidor para inicializar o CAG.[/dim]")
@@ -635,21 +639,24 @@ except Exception:
 console = Console()
 if "answer" in data:
     console.print("\n[bold green][/bold green][black on green]CAG REMOTE ASK[/black on green][bold green][/bold green]")
-    console.print(Panel(Markdown(data["answer"]), border_style="green", title="[bold green]Kryonix CAG (Remote)[/bold green]", title_align="left"))
+    answer_str = data.get("answer", "")
+    console.print(Panel(Markdown(answer_str), border_style="green", title="[bold green]Kryonix CAG (Remote)[/bold green]", title_align="left"))
     
     sources = data.get("sources", [])
     if sources:
         console.print("\n[bold cyan]Ficheiros usados:[/bold cyan]")
         for i, src in enumerate(sources):
             console.print(f"  {i+1}. [bold white]{src}[/bold white]")
-elif "files" in data:
+elif "matched_files" in data:
     console.print("\n[bold green][/bold green][black on green]CAG REMOTE ROUTING[/black on green][bold green][/bold green]")
     t = Table(show_header=True, header_style="bold green")
     t.add_column("Ficheiro", style="cyan")
     t.add_column("Score", justify="right", style="green")
     
-    for f in data.get("files", []):
-        t.add_row(f.get("path", "n/a"), f"{f.get(\"score\", 0.0):.3f}")
+    for f in data.get("matched_files", []):
+        f_path = f.get("path", "n/a")
+        f_score = f.get("score", 0.0)
+        t.add_row(f_path, f"{f_score:.3f}")
     console.print(t)
 else:
     print(json.dumps(data, indent=2))
