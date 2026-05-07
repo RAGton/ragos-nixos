@@ -204,6 +204,20 @@ brain_remote_curl() {
   return 0
 }
 
+brain_local_curl() {
+  local method="$1"
+  local path="$2"
+  local data="${3:-}"
+
+  if ! curl -sS --max-time 2 -o /dev/null "http://127.0.0.1:8000/health"; then
+    printf 'ERRO: Brain API local (127.0.0.1:8000) não está ativa.\n' >&2
+    return 2
+  fi
+
+  export KRYONIX_REMOTE_BRAIN_URL="http://127.0.0.1:8000"
+  brain_remote_curl "$method" "$path" "$data"
+}
+
 parse_brain_mode() {
   brain_mode="auto"
   brain_passthrough=()
@@ -513,8 +527,7 @@ kryonix_graph_status() {
     brain_remote_curl GET /graph/status
     return $?
   fi
-  printf '%s\n' "kryonix graph status local requer Brain API ativa no host." >&2
-  return 2
+  brain_local_curl GET /graph/status
 }
 
 kryonix_graph_schema() {
@@ -523,8 +536,7 @@ kryonix_graph_schema() {
     brain_remote_curl GET /graph/schema
     return $?
   fi
-  printf '%s\n' "kryonix graph schema local requer Brain API ativa no host." >&2
-  return 2
+  brain_local_curl GET /graph/schema
 }
 
 kryonix_graph_ingest() {
@@ -533,8 +545,11 @@ kryonix_graph_ingest() {
   parse_brain_mode "$@"
 
   if ! brain_should_use_remote "$brain_mode"; then
-    printf '%s\n' "kryonix graph ingest local requer Brain API ativa no host." >&2
-    return 2
+    if ! curl -sS --max-time 2 -o /dev/null "http://127.0.0.1:8000/health"; then
+      printf 'ERRO: Brain API local (127.0.0.1:8000) não está ativa.\n' >&2
+      return 2
+    fi
+    export KRYONIX_REMOTE_BRAIN_URL="http://127.0.0.1:8000"
   fi
 
   case "$mode" in
@@ -565,8 +580,11 @@ kryonix_graph_query() {
   fi
   parse_brain_mode "$@"
   if ! brain_should_use_remote "$brain_mode"; then
-    printf '%s\n' "kryonix graph query local requer Brain API ativa no host." >&2
-    return 2
+    if ! curl -sS --max-time 2 -o /dev/null "http://127.0.0.1:8000/health"; then
+      printf 'ERRO: Brain API local (127.0.0.1:8000) não está ativa.\n' >&2
+      return 2
+    fi
+    export KRYONIX_REMOTE_BRAIN_URL="http://127.0.0.1:8000"
   fi
   local -a query_args
   query_args=("${brain_passthrough[@]}")
@@ -594,8 +612,7 @@ kryonix_graph_doctor() {
     brain_remote_curl GET /graph/doctor
     return $?
   fi
-  printf '%s\n' "kryonix graph doctor local requer Brain API ativa no host." >&2
-  return 2
+  brain_local_curl GET /graph/doctor
 }
 
 kryonix_graph_top() {
