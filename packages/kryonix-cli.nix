@@ -2030,16 +2030,16 @@ else:
                                           if [[ ! -f "$state_file" ]]; then
                                             printf "Criando arquivo de estado em %s\n" "$state_file"
                                             cat <<EOF > "$state_file"
-                # Kryonix AI State
+# Kryonix AI State
 
-                - **Objetivo atual**:
-                - **Último passo concluído**:
-                - **Próximos passos**:
-                - **Serviços verificados**:
-                - **Testes executados**:
-                - **Erros pendentes**:
-                - **Timestamp da última execução**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    EOF
+- **Objetivo atual**:
+- **Último passo concluído**:
+- **Próximos passos**:
+- **Serviços verificados**:
+- **Testes executados**:
+- **Erros pendentes**:
+- **Timestamp da última execução**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+EOF
                                           fi
                                         }
 
@@ -2065,8 +2065,8 @@ else:
 
                                             if [[ ! -f "$checkpoint_file" ]]; then
                                               cat <<EOF > "$checkpoint_file"
-                # Kryonix AI Checkpoints
-    EOF
+# Kryonix AI Checkpoints
+EOF
                                             fi
 
                                             timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
