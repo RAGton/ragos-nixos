@@ -7,6 +7,7 @@ Este documento descreve as políticas e definições de segurança para os hosts
 Os secrets (Tailscale auth key, variáveis de ambiente, etc) **nunca** devem ser "commitados" no repositório.
 
 - O `.mcp.json` real fica em `.gitignore`. O repositório versiona apenas o `.mcp.example.json`.
+- O `.codex/config.toml` do repositório não pode conter secrets. Tokens e chaves continuam fora do repo, no ambiente do usuário.
 - Nenhum acesso de escrita fora do diretório do vault é permitido para o MCP.
 - O NixOS *store* é de leitura pública. Nenhuma credencial sensível deve ser colocada inline dentro das derivações do Nix ou variáveis systemd exportadas em logs de forma pública. Use arquivos no runtime (`/run/secrets`).
 

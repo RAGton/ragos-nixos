@@ -1,15 +1,11 @@
 {
   "mcpServers": {
     "kryonix-brain": {
-      "command": "/run/current-system/sw/bin/uv",
+      "command": "/run/current-system/sw/bin/ssh",
       "args": [
-        "--quiet",
-        "run",
-        "--project",
-        "/etc/kryonix/packages/kryonix-brain-lightrag",
-        "kg-server"
-      ],
-      "cwd": "/etc/kryonix"
+        "glacier",
+        "cd /etc/kryonix && /run/current-system/sw/bin/uv run --project packages/kryonix-brain-lightrag kg-server"
+      ]
     },
     "mcp-nixos": {
       "command": "/run/current-system/sw/bin/uv",

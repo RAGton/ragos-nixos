@@ -53,8 +53,12 @@ Testa o estado da infraestrutura de IA rodando nativamente: Ollama, serviços do
 
 ## Testes via MCP e Vault
 
-- O comando `kryonix mcp check` valida configurações (`.mcp.json`) e secrets ausentes.
-- `./scripts/check-mcp.sh` avalia a existência e sintaxe local.
+- O comando `kryonix mcp check` valida a superfície MCP do Kryonix.
+- `./scripts/check-mcp.sh` avalia `.mcp.json`, `.mcp.example.json` e `.codex/config.toml`.
+- Para o cliente Codex, valide também:
+  ```sh
+  codex mcp list
+  ```
 - Para checar integridade e links no Vault:
   ```sh
   kryonix vault scan

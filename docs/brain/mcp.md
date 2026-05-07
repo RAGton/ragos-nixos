@@ -33,27 +33,34 @@ Para que a IA "aprenda" algo novo ou crie uma nota, ela deve usar as ferramentas
 
 ## Configuração do Cliente
 
-Use o template em `.mcp.example.json` para configurar seu cliente (ex: Claude Desktop, Cursor, Antigravity).
+Para o **Codex**, o caminho canônico agora é `.codex/config.toml`.
+
+```toml
+[mcp_servers.kryonix-brain]
+command = "/run/current-system/sw/bin/ssh"
+args = [
+  "glacier",
+  "cd /etc/kryonix && /run/current-system/sw/bin/uv run --project packages/kryonix-brain-lightrag kg-server",
+]
+required = false
+startup_timeout_sec = 30.0
+```
+
+Para clientes como **Claude Desktop**, **Cursor** e similares, use o template em `.mcp.example.json`.
 
 ```json
 {
   "mcpServers": {
     "kryonix-brain": {
-      "command": "uv",
+      "command": "ssh",
       "args": [
-        "--quiet",
-        "run",
-        "--project",
-        "/etc/kryonix/packages/kryonix-brain-lightrag",
-        "kryonix-brain-mcp"
-      ],
-      "env": {
-        "KRYONIX_BRAIN_KEY": "sua-chave-aqui"
-      }
+        "glacier",
+        "cd /etc/kryonix && uv run --project packages/kryonix-brain-lightrag kg-server"
+      ]
     }
   }
 }
 ```
 
 > [!IMPORTANT]
-> Nunca coloque sua `KRYONIX_BRAIN_KEY` real em arquivos versionados. Use variáveis de ambiente ou o arquivo `.mcp.json` (que está no `.gitignore`).
+> No `inspiron`, o Brain MCP deve vir do `glacier` por SSH. Nao rode um servidor Brain pesado localmente so para satisfazer o cliente MCP.

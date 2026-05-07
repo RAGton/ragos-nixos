@@ -6,11 +6,12 @@ This document describes the threat model, restrictions, and validation gates for
 
 ### HIGH Priority
 
-**Secret Exposure in `.mcp.json`**
-- **Risk:** API keys, GitHub tokens, SSH keys left in `.mcp.json` → leaked if accidentally committed or exposed
+**Secret Exposure in MCP config**
+- **Risk:** API keys, GitHub tokens, SSH keys left in `.mcp.json` or `.codex/config.toml` → leaked if accidentally committed or exposed
 - **Attack:** Attacker steals token, impersonates user on GitHub/APIs
 - **Mitigation:** 
   - `.mcp.json` is in `.gitignore` — never committed
+  - `.codex/config.toml` is versioned and must stay secret-free
   - `kryonix mcp check` scans for exposed secrets (regex: `API_KEY`, `TOKEN`, `private_key`, etc.)
   - Use environment variables (`.env`, `brain.env`) instead
   - Validation fail exit code 1 if secrets detected
@@ -20,7 +21,7 @@ This document describes the threat model, restrictions, and validation gates for
 - **Attack:** Attacker reads `/etc/passwd`, `/root/.ssh/`, or project secrets
 - **Mitigation:**
   - `kryonix mcp check` validates all paths are absolute and not sensitive system roots
-  - Filesystem MCP **must** be bound to vault directory only (e.g., `/home/user/kryonix-vault`)
+  - Filesystem MCP must stay bound to the documented read-only roots only
   - Documentation enforces read-only binding
   - `kryonix mcp check` verifies this constraint
 
@@ -78,7 +79,9 @@ All MCP changes must pass these gates before deployment:
 
 Checks:
 - ✓ `.mcp.json` is valid JSON (syntactically correct)
+- ✓ `.codex/config.toml` is valid TOML (syntactically correct)
 - ✓ `.mcp.json` has required keys: `mcpServers` (dict)
+- ✓ `.codex/config.toml` has required keys: `mcp_servers` (dict)
 - ✓ Each server entry has `command` + `args` (required)
 - ✓ No exposed secrets: regex scan for `API_KEY=`, `TOKEN=`, `private_key=`, `ghp_`, `sk-`, etc.
 - ✓ All filesystem paths are absolute (not relative or `~`)
@@ -95,7 +98,7 @@ Checks:
 **File:** `scripts/check-mcp.sh` (Bash)
 
 Checks:
-- ✓ All the above + JSON parsing via `jq`
+- ✓ All the above + JSON parsing via `jq` and TOML parsing via Python `tomllib`
 - ✓ External server commands exist (e.g., `which uvx`, `which npx`)
 - ✓ File existence: `cwd` directories and binary paths exist
 - ✓ Summary table with server status
@@ -135,7 +138,7 @@ Combines all above + detailed diagnostics:
 **Command:** `kryonix mcp doctor`
 
 Deep inspection:
-- Dumps `.mcp.json` (with secrets masked as `****`)
+- Dumps `.mcp.json` and validates `.codex/config.toml` (with secrets masked as `****` where applicable)
 - Lists available tools per server
 - Attempts STDIO round-trip (sends test JSON-RPC, verifies response)
 - Shows stderr logs (last 10 lines from each server)
@@ -150,14 +153,14 @@ Deep inspection:
 ## Safety Rules (Mandatory)
 
 ### Secrets
-- **NEVER** put API keys, tokens, SSH keys in `.mcp.json`
+- **NEVER** put API keys, tokens, SSH keys in `.mcp.json` or `.codex/config.toml`
 - Use environment variables: `export GITHUB_TOKEN=ghp_...` or add to `.env`
 - `.mcp.json` is in `.gitignore` — even so, don't tempt it
 
 ### Paths
 - **NEVER** use relative paths (e.g., `../vault`, `~/vault`)
 - All paths must be **absolute** (e.g., `/home/user/kryonix-vault`)
-- Filesystem MCP must be **read-only** and bound to vault (or documents root) only
+- Filesystem MCP must be **read-only** and bound only to the documented Kryonix roots (`/etc/kryonix` plus the vault path when applicable)
 - No access to `/`, `/etc/`, `/root/`, or system directories
 
 ### STDIO
@@ -190,6 +193,7 @@ Before declaring MCP work "ready":
 - [ ] `kryonix test client` passes on `inspiron`; Glacier offline is WARN, not FAIL
 - [ ] `kryonix test server` passes on `glacier` before declaring runtime/infra ready
 - [ ] `.mcp.json` is in `.gitignore`
+- [ ] `.codex/config.toml` exists and stays secret-free
 - [ ] `.mcp.example.json` is updated and version controlled
 - [ ] No secrets in git history: `git log -p --all -S 'API_KEY\|ghp_\|sk-' | head -5` (should be empty)
 - [ ] Documentation updated (`docs/mcp/client-configs.md` for new servers)

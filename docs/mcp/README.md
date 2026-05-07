@@ -40,31 +40,74 @@ MCP provides a **two-tier client-server architecture** for agent interaction:
 
 ## Configuration
 
-MCP servers are registered in **`.mcp.json`** (user-scoped, not version controlled):
+Kryonix now keeps two MCP client surfaces on purpose:
+
+- **Codex** reads the repo-scoped file **`.codex/config.toml`** automatically when `/etc/kryonix` is trusted.
+- **Claude/Cursor/other JSON clients** use **`.mcp.json`** (local, ignored) derived from **`.mcp.example.json`**.
+
+The runtime split stays the same on `inspiron`: Brain MCP is remote over `ssh glacier`, while `mcp-nixos` and `vault-readonly` run locally.
+
+### Codex project config
+
+Codex uses the versioned project file `.codex/config.toml`:
+
+```toml
+[mcp_servers.kryonix-brain]
+command = "/run/current-system/sw/bin/ssh"
+args = [
+  "glacier",
+  "cd /etc/kryonix && /run/current-system/sw/bin/uv run --project packages/kryonix-brain-lightrag kg-server",
+]
+required = false
+startup_timeout_sec = 30.0
+
+[mcp_servers.mcp-nixos]
+command = "/run/current-system/sw/bin/uv"
+args = ["tool", "run", "mcp-nixos", "--stdio"]
+
+[mcp_servers.vault-readonly]
+command = "/run/current-system/sw/bin/npx"
+args = [
+  "-y",
+  "@modelcontextprotocol/server-filesystem",
+  "/etc/kryonix",
+  "/home/rocha/.local/share/kryonix/kryonix-vault",
+]
+```
+
+### Claude / Cursor style config
+
+Claude/Cursor-style clients use **`.mcp.json`** (user-scoped, not version controlled):
 
 ```json
 {
   "mcpServers": {
     "mcp-nixos": {
-      "command": "uvx",
-      "args": ["mcp-nixos"]
+      "command": "uv",
+      "args": ["tool", "run", "mcp-nixos", "--stdio"]
     },
     "kryonix-brain": {
       "command": "ssh",
       "args": [
         "glacier",
-        "cd /etc/kryonix && uv run --project packages/kryonix-brain-lightrag python -m kryonix_brain_lightrag.server"
+        "cd /etc/kryonix && uv run --project packages/kryonix-brain-lightrag kg-server"
       ]
     },
     "vault-readonly": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/absolute/path/to/vault"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/etc/kryonix",
+        "/absolute/path/to/vault"
+      ]
     }
   }
 }
 ```
 
 **Key rules:**
+- `.codex/config.toml` is the canonical Codex MCP config for this repo
 - `.mcp.json` is **in `.gitignore`** — user secrets never committed
 - Use `.mcp.example.json` as a template
 - All paths must be **absolute** (not relative or `~`)
@@ -74,7 +117,7 @@ MCP servers are registered in **`.mcp.json`** (user-scoped, not version controll
 
 ## Quick Start: Claude / Cursor
 
-### Step 1: Create `.mcp.json`
+### Step 1: Prepare client config
 
 ```bash
 cp .mcp.example.json .mcp.json
@@ -83,6 +126,8 @@ cp .mcp.example.json .mcp.json
 # Optional HTTP integration for CLI commands:
 export KRYONIX_BRAIN_API=http://glacier:8000
 ```
+
+For Codex, no copy step is needed; it reads `.codex/config.toml` from the trusted repo automatically.
 
 ### Step 2: Validate Configuration
 
@@ -102,6 +147,8 @@ In **Claude** or **Cursor**:
 4. Restart the agent
 
 The servers should now be available in your agent chat context.
+
+For **Codex**, open the trusted `/etc/kryonix` project and verify discovery with `codex mcp list`.
 
 ### Step 4: Verify
 
@@ -141,7 +188,7 @@ All build/configuration gates must pass before a client-side change is ready. Gl
 - **filesystem/github:** Install via `npm install -g @modelcontextprotocol/server-filesystem`
 - **kryonix-brain:** On clients, verify SSH to `glacier`; on Glacier, run `cd /etc/kryonix/packages/kryonix-brain-lightrag && uv sync` to install deps
 
-### Path errors in `.mcp.json`
+### Path errors in `.mcp.json` or `.codex/config.toml`
 
 - All paths must be **absolute** (e.g., `/home/user/kryonix`, not `~/kryonix` or `../`)
 - Use NixOS/Linux absolute paths, for example `/etc/kryonix` and `/home/user/kryonix-vault`.

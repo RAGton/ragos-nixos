@@ -2,12 +2,50 @@
 
 Per-server setup guides for integrating MCP servers with Claude, Cursor, and other AI agents.
 
+Codex uses the repo-scoped file `.codex/config.toml`. The JSON snippets below are for clients that read `.mcp.json` directly.
+
 ## Table of Contents
 
-1. [kryonix-brain (LightRAG)](#kryonix-brain-lightrag)
-2. [mcp-nixos](#mcp-nixos)
-3. [filesystem (Read-only Vault)](#filesystem-read-only-vault)
-4. [GitHub](#github)
+1. [Codex project config](#codex-project-config)
+2. [kryonix-brain (LightRAG)](#kryonix-brain-lightrag)
+3. [mcp-nixos](#mcp-nixos)
+4. [filesystem (Read-only Vault)](#filesystem-read-only-vault)
+5. [GitHub](#github)
+
+---
+
+## Codex project config
+
+Codex should use the versioned project file `.codex/config.toml`:
+
+```toml
+[mcp_servers.kryonix-brain]
+command = "/run/current-system/sw/bin/ssh"
+args = [
+  "glacier",
+  "cd /etc/kryonix && /run/current-system/sw/bin/uv run --project packages/kryonix-brain-lightrag kg-server",
+]
+required = false
+startup_timeout_sec = 30.0
+
+[mcp_servers.mcp-nixos]
+command = "/run/current-system/sw/bin/uv"
+args = ["tool", "run", "mcp-nixos", "--stdio"]
+
+[mcp_servers.vault-readonly]
+command = "/run/current-system/sw/bin/npx"
+args = [
+  "-y",
+  "@modelcontextprotocol/server-filesystem",
+  "/etc/kryonix",
+  "/home/rocha/.local/share/kryonix/kryonix-vault",
+]
+```
+
+Notes:
+- `kryonix-brain` is remote on `glacier`, not local on `inspiron`
+- `required = false` keeps Codex startup healthy when Glacier is offline
+- GitHub is intentionally not added here; use the existing Codex GitHub plugin instead
 
 ---
 
@@ -32,7 +70,7 @@ Add to `.mcp.json`:
       "command": "ssh",
       "args": [
         "glacier",
-        "cd /etc/kryonix && uv run --project packages/kryonix-brain-lightrag python -m kryonix_brain_lightrag.server"
+        "cd /etc/kryonix && uv run --project packages/kryonix-brain-lightrag kg-server"
       ],
       "description": "Kryonix Brain MCP on Glacier"
     }
@@ -142,8 +180,8 @@ Add to `.mcp.json`:
 {
   "mcpServers": {
     "mcp-nixos": {
-      "command": "uvx",
-      "args": ["mcp-nixos"],
+      "command": "uv",
+      "args": ["tool", "run", "mcp-nixos", "--stdio"],
       "description": "Query NixOS packages, options, Home Manager, nix-darwin, flakes"
     }
   }
@@ -151,8 +189,8 @@ Add to `.mcp.json`:
 ```
 
 ### Key Parameters
-- `command`: `uvx` (runs Python package in isolated venv)
-- `args`: `["mcp-nixos"]` (package name)
+- `command`: `uv`
+- `args`: `["tool", "run", "mcp-nixos", "--stdio"]`
 - No `cwd` or `env` needed for basic usage
 
 ### Environment Variables (Optional)
@@ -240,6 +278,7 @@ Add to `.mcp.json`:
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
+        "/etc/kryonix",
         "/ABSOLUTE/PATH/TO/kryonix-vault"
       ],
       "description": "Read-only access to Obsidian vault"
@@ -250,23 +289,24 @@ Add to `.mcp.json`:
 
 ### Key Parameters
 - `command`: `npx` (Node package runner)
-- `args`: Package name (`@modelcontextprotocol/server-filesystem`) + absolute path to vault
+- `args`: Package name (`@modelcontextprotocol/server-filesystem`) + the allowed read-only roots
 - Path must be absolute (e.g., `/home/user/kryonix-vault`, not `~/vault`)
-- **CRITICAL:** This server is read-only; modify config to prevent writes
+- **CRITICAL:** Limit this server to documented read-only roots only
 
 ### Important: Read-Only Enforcement
 
-The filesystem MCP server in `.mcp.json` should be read-only. Ensure `args` only includes the vault path:
+The filesystem MCP server in `.mcp.json` should be read-only. For this repo, keep it limited to the repo root and the vault path:
 
 ```json
 "args": [
   "-y",
   "@modelcontextprotocol/server-filesystem",
+  "/etc/kryonix",
   "/ABSOLUTE/PATH/TO/kryonix-vault"
 ]
 ```
 
-This configuration restricts the server to the vault directory ONLY. Additional path arguments could enable write access or system directory traversal — **DO NOT ADD THEM**.
+This configuration restricts the server to the managed Kryonix checkout and the vault only. Additional path arguments could enable wider filesystem traversal — **DO NOT ADD THEM**.
 
 ### Available Tools
 - `read_file` — Read file content (any format in vault)
@@ -334,8 +374,8 @@ kryonix mcp doctor | grep vault-readonly
 
 **SAFE configuration:**
 ```json
-// ✅ SAFE: Absolute path, vault only
-"args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/kryonix-vault"]
+// ✅ SAFE: Absolute paths, repo root + vault only
+"args": ["-y", "@modelcontextprotocol/server-filesystem", "/etc/kryonix", "/home/user/kryonix-vault"]
 ```
 
 ### Troubleshooting
@@ -373,9 +413,6 @@ Add to `.mcp.json`:
         "-y",
         "@modelcontextprotocol/server-github"
       ],
-      "env": {
-        "GITHUB_TOKEN": "ghp_your_token_here"
-      },
       "description": "GitHub issues, PRs, commits, file access"
     }
   }
@@ -385,7 +422,7 @@ Add to `.mcp.json`:
 ### Key Parameters
 - `command`: `npx`
 - `args`: `@modelcontextprotocol/server-github`
-- `env.GITHUB_TOKEN`: Personal Access Token (never in JSON file directly; use `.env` or pass as environment variable)
+- `GITHUB_TOKEN`: Personal Access Token loaded from the parent environment, never written into `.mcp.json`
 
 ### Creating a GitHub Token
 
@@ -455,7 +492,7 @@ kryonix mcp doctor | grep github
 
 ### Security Rules
 
-- **Token location:** Never put token in `.mcp.json` (it would be in git history if committed)
+- **Token location:** Never put token in `.mcp.json`; export it in the shell or load via `.env`
 - **Token scope:** Use minimal scopes (`public_repo` if possible, `repo` if private access needed)
 - **Token rotation:** Regenerate token every 90 days
 - **Environment:** Load from `.env` or `.envrc`, ensure `.gitignore` protects it

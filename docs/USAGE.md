@@ -46,3 +46,5 @@ O MCP fornece interfaces JSON-RPC seguras para LLMs sob demanda.
 kryonix mcp check        # Valida a configuração local do MCP (secrets, syntax)
 kryonix mcp doctor       # Verifica estado dos servidores MCP definidos
 ```
+
+Para o Codex, o arquivo canônico do projeto é `.codex/config.toml`. Clientes como Claude/Cursor continuam usando `.mcp.json`.
