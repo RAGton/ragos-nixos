@@ -12,46 +12,82 @@ Em uma reinstalação futura, o layout de disco precisa ser cuidadosamente estru
 
 - separar sistema, dados de IA e backups em subvolumes Btrfs independentes;
 - permitir snapshots e rollback por subvolume sem afetar dados de runtime;
-- preservar dados de `/home/storage`, Neo4j, Ollama e Vault mesmo em reinstalação do sistema.
+- preservar dados de `/home/storage`, Neo4j, Ollama e Vault mesmo em reinstalação do sistema;
+- **evitar symlinks** como `/var/lib/kryonix -> /home/storage/kryonix` — o layout final deve montar cada path direto no disco correto.
+
+---
+
+## Decisão arquitetural: `/var` no disco maior
+
+O design anterior usava symlinks para mapear dados pesados do `/var/lib` para o disco de storage.
+Na reinstalação, essa indireção não deve ser necessária.
+
+**Regra:** todo path que precise de storage pesado deve ter seu subvolume montado diretamente no disco maior via Disko/fstab. Sem symlinks.
+
+Em particular:
+- `/var` (ou pelo menos `/var/lib`) fica **no disco maior**, não no NVMe pequeno.
+- `/var/log` pode ficar no NVMe (logs não são pesados e se beneficiam de velocidade).
+- O NVMe fica com `/`, `/nix`, `/boot` e `/var/log` — dados que se beneficiam de velocidade e são recriáveis.
 
 ---
 
 ## Hardware alvo
 
-| Disco | Tipo | Uso |
-|---|---|---|
-| `nvme0n1` ou equivalente | NVMe | SO, Nix, Var, Log |
-| disco secundário (se disponível) | SSD/HDD | Storage IA, backups |
+| Disco | Tipo | Capacidade | Uso |
+|---|---|---|---|
+| `nvme0n1` | NVMe | menor | SO, Nix, Boot, Log |
+| `sda` (ou equivalente) | SSD/HDD | maior | `/var`, `/home`, Storage IA, backups |
+
+> Confirmar IDs reais com: `lsblk -o NAME,TYPE,MODEL,SERIAL,SIZE` e `ls -la /dev/disk/by-id/`
 
 ---
 
 ## Layout de partições (alvo)
 
+### NVMe (disco rápido, sistema)
+
 ```
 nvme0n1
 ├── p1  ESP/FAT32   1G       → /boot           (fmask=0077 dmask=0077)
-└── p2  Btrfs       restante → subvolumes abaixo
+└── p2  Btrfs       restante → subvolumes de sistema
+```
+
+### Disco maior (storage IA/dados)
+
+```
+sda (ou equivalente)
+└── p1  Btrfs       100%     → subvolumes de dados
 ```
 
 ---
 
 ## Subvolumes Btrfs (alvo)
 
-| Subvolume | Mountpoint | Opções | Pode formatar? |
+### NVMe — subvolumes de sistema
+
+| Subvolume | Mountpoint | Opções | Formatável? |
 |---|---|---|---|
 | `@root` | `/` | `compress=zstd,noatime` | ✅ sim |
 | `@nix` | `/nix` | `compress=zstd,noatime` | ✅ sim |
-| `@var` | `/var` | `compress=zstd,noatime` | ⚠️ cuidado com `/var/lib` |
 | `@log` | `/var/log` | `compress=zstd,noatime` | ✅ sim |
+| `@snapshots` | `/.snapshots` | `compress=zstd,noatime` | ✅ sim |
+
+### Disco maior — subvolumes de dados
+
+| Subvolume | Mountpoint | Opções | Formatável? |
+|---|---|---|---|
+| `@var` | `/var` | `compress=zstd,noatime` | ⚠️ cuidado com `/var/lib` |
 | `@home` | `/home` | `compress=zstd,noatime,autodefrag` | ❌ preservar |
 | `@storage` | `/home/storage` | `compress=zstd,noatime` | ❌ preservar (modelos, vault, dados Brain) |
 | `@kryonix` | `/var/lib/kryonix` | `compress=zstd,noatime` | ❌ preservar (Brain storage, LightRAG) |
-| `@ollama` | `/var/lib/ollama` | `compress=zstd,noatime` | ❌ preservar (modelos Ollama) |
+| `@ollama` | `/var/lib/ollama` | `compress=zstd,noatime` | ❌ preservar (modelos Ollama ~50GB+) |
 | `@neo4j` | `/var/lib/neo4j` | `compress=zstd,noatime` | ❌ preservar (grafo) |
 | `@backups` | `/var/backups/kryonix` | `compress=zstd,noatime` | ❌ preservar |
-| `@snapshots` | `/.snapshots` | `compress=zstd,noatime` | ✅ sim |
 
 > Subvolumes marcados como ❌ devem ser **snapshottados antes de qualquer operação destrutiva**.
+
+> `/var/log` fica no NVMe (montado sobre `/var` do disco maior), pois logs se beneficiam de I/O rápido e são efêmeros.
+> A ordem de mount no fstab garante que `/var/log` (NVMe) sobrepõe `/var` (disco maior).
 
 ---
 
@@ -62,6 +98,7 @@ nvme0n1
 { ... }:
 {
   disko.devices = {
+    # ── Disco 1: NVMe (sistema) ──────────────────────────────────
     disk."nvme0n1" = {
       type = "disk";
       device = "/dev/disk/by-id/<id-nvme-glacier>";  # confirmar com: lsblk -o NAME,TYPE,MODEL,SERIAL
@@ -82,18 +119,39 @@ nvme0n1
             size = "100%";
             content = {
               type = "btrfs";
-              extraArgs = [ "-f" "-L" "GLACIER-SYSTEM" ];
+              extraArgs = [ "-f" "-L" "GLACIER-NVME" ];
               subvolumes = {
-                "@root"     = { mountpoint = "/";                    mountOptions = [ "compress=zstd" "noatime" ]; };
-                "@nix"      = { mountpoint = "/nix";                 mountOptions = [ "compress=zstd" "noatime" ]; };
-                "@log"      = { mountpoint = "/var/log";             mountOptions = [ "compress=zstd" "noatime" ]; };
+                "@root"      = { mountpoint = "/";          mountOptions = [ "compress=zstd" "noatime" ]; };
+                "@nix"       = { mountpoint = "/nix";       mountOptions = [ "compress=zstd" "noatime" ]; };
+                "@log"       = { mountpoint = "/var/log";   mountOptions = [ "compress=zstd" "noatime" ]; };
+                "@snapshots" = { mountpoint = "/.snapshots"; mountOptions = [ "compress=zstd" "noatime" ]; };
+              };
+            };
+          };
+        };
+      };
+    };
+
+    # ── Disco 2: Storage (dados IA / persistência) ───────────────
+    disk."storage" = {
+      type = "disk";
+      device = "/dev/disk/by-id/<id-storage-glacier>";  # confirmar com: lsblk -o NAME,TYPE,MODEL,SERIAL
+      content = {
+        type = "gpt";
+        partitions = {
+          data = {
+            size = "100%";
+            content = {
+              type = "btrfs";
+              extraArgs = [ "-f" "-L" "GLACIER-DATA" ];
+              subvolumes = {
+                "@var"      = { mountpoint = "/var";                 mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@home"     = { mountpoint = "/home";                mountOptions = [ "compress=zstd" "noatime" "autodefrag" ]; };
                 "@storage"  = { mountpoint = "/home/storage";        mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@kryonix"  = { mountpoint = "/var/lib/kryonix";     mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@ollama"   = { mountpoint = "/var/lib/ollama";      mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@neo4j"    = { mountpoint = "/var/lib/neo4j";       mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@backups"  = { mountpoint = "/var/backups/kryonix"; mountOptions = [ "compress=zstd" "noatime" ]; };
-                "@snapshots"= { mountpoint = "/.snapshots";          mountOptions = [ "compress=zstd" "noatime" ]; };
               };
             };
           };
@@ -103,6 +161,28 @@ nvme0n1
   };
 }
 ```
+
+### Ordem de montagem
+
+O kernel/fstab monta na ordem correta automaticamente por profundidade de path. A hierarquia resultante:
+
+```
+/                          ← NVMe  @root
+├── boot/                  ← NVMe  ESP
+├── nix/                   ← NVMe  @nix
+├── var/                   ← DISCO MAIOR  @var
+│   ├── lib/
+│   │   ├── kryonix/       ← DISCO MAIOR  @kryonix
+│   │   ├── ollama/        ← DISCO MAIOR  @ollama
+│   │   └── neo4j/         ← DISCO MAIOR  @neo4j
+│   ├── log/               ← NVMe  @log (sobrepõe /var/log do disco maior)
+│   └── backups/kryonix/   ← DISCO MAIOR  @backups
+├── home/                  ← DISCO MAIOR  @home
+│   └── storage/           ← DISCO MAIOR  @storage
+└── .snapshots/            ← NVMe  @snapshots
+```
+
+> Nenhum symlink. Cada path é um subvolume montado diretamente.
 
 ---
 
@@ -114,10 +194,16 @@ nvme0n1
 - [ ] Tailscale conectado e autenticado
 - [ ] IP LAN alvo `10.0.0.2` configurado (estático ou DHCP reservado)
 
-### Secrets (gerados manualmente, fora do Git)
+### Secrets (gerados via CLI, fora do Git)
 
-- [ ] `/etc/kryonix/brain.env` criado com `KRYONIX_BRAIN_API_KEY` (ver README.md)
-- [ ] `/etc/kryonix/neo4j.env` criado com `NEO4J_AUTH` e `NEO4J_PASSWORD`
+```bash
+# Gerar e validar Brain API key
+kryonix brain api-key generate
+kryonix brain api-key validate
+```
+
+- [ ] `/etc/kryonix/brain.env` criado com `KRYONIX_BRAIN_API_KEY` (via `kryonix brain api-key generate`)
+- [ ] `/etc/kryonix/neo4j.env` criado com `NEO4J_AUTH` e `NEO4J_PASSWORD` (manual)
 - [ ] Permissões `root:root 600` em ambos
 
 ### Serviços
@@ -142,6 +228,16 @@ sudo btrfs subvolume snapshot /home/storage       /var/backups/kryonix/pre-insta
 
 ---
 
+## Anti-padrões a evitar
+
+| Anti-padrão | Por quê | Correto |
+|---|---|---|
+| `/var/lib/kryonix -> /home/storage/kryonix` | Symlinks quebram em reinstalação, confundem serviços e complicam backups | Subvolume `@kryonix` montado diretamente em `/var/lib/kryonix` |
+| `/var` no NVMe pequeno | Modelos Ollama (~50GB+), Neo4j e Brain storage enchem o disco | `/var` no disco maior |
+| Tudo num único subvolume | Impossível fazer snapshot/rollback seletivo | Um subvolume por serviço pesado |
+
+---
+
 ## Notas de segurança
 
 - `hosts/glacier/disks.nix` atual pode divergir do hardware real — sempre confirmar com `lsblk -f` antes.
@@ -157,3 +253,4 @@ sudo btrfs subvolume snapshot /home/storage       /var/backups/kryonix/pre-insta
 - [Disko Inspiron](../../hosts/inspiron/disks.nix)
 - [Hardware Glacier](../../hosts/glacier/hardware-configuration.nix) — fonte real do host atual
 - [README — setup API Key](../../README.md#ia-local-e-serviços-do-brain)
+- [API Key Rotation](../operations/API_KEY_ROTATION.md)

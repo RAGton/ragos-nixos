@@ -924,7 +924,7 @@ brain_api_key_generate() {
 
   sudo stat -c '  dono/perm  : %U:%G %a  arquivo: %n' "$env_file"
 
-  if systemctl list-unit-files 2>/dev/null | grep -q '^kryonix-brain-api.service'; then
+  if systemctl list-unit-files 2>/dev/null | grep -q 'kryonix-brain-api.service'; then
     printf '  reiniciando kryonix-brain-api...\n'
     sudo systemctl restart kryonix-brain-api || true
   fi
@@ -994,7 +994,7 @@ brain_api_key_rotate() {
 
   sudo stat -c '  dono/perm  : %U:%G %a  arquivo: %n' "$env_file"
 
-  if systemctl list-unit-files 2>/dev/null | grep -q '^kryonix-brain-api.service'; then
+  if systemctl list-unit-files 2>/dev/null | grep -q 'kryonix-brain-api.service'; then
     printf '  reiniciando kryonix-brain-api...\n'
     sudo systemctl restart kryonix-brain-api || true
     sleep 2
