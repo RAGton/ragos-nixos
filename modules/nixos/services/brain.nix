@@ -148,6 +148,15 @@ in
       '';
     };
 
+    neo4jEnvironmentFile = mkOption {
+      type = types.str;
+      default = "/etc/kryonix/neo4j.env";
+      description = ''
+        Arquivo privado com credenciais do Neo4j (ex.: NEO4J_AUTH=neo4j/<senha>).
+        Lido pelo systemd como root e injetado no ambiente do serviço da Brain API.
+      '';
+    };
+
     repoPath = mkOption {
       type = types.str;
       default = "/etc/kryonix";
@@ -370,13 +379,18 @@ in
         KRYONIX_BRAIN_HOME = "/var/lib/kryonix";
         LIGHTRAG_VAULT_DIR = "${cfg.vaultPath}";
         LIGHTRAG_WORKING_DIR = "${cfg.storagePath}";
+        KRYONIX_NEO4J_URI = "bolt://127.0.0.1:7687";
+        KRYONIX_NEO4J_HTTP_URL = "http://127.0.0.1:7474";
         KRYONIX_BRAIN_API_HOST = cfg.bindHost;
         KRYONIX_BRAIN_API_PORT = "${toString cfg.port}";
       };
       serviceConfig = {
         ExecStart = brainApiStartScript;
         WorkingDirectory = cfg.packageDir;
-        EnvironmentFile = cfg.environmentFile;
+        EnvironmentFile = [
+          cfg.environmentFile
+          cfg.neo4jEnvironmentFile
+        ];
         Restart = "on-failure";
         RestartSec = "10";
         User = cfg.user;
