@@ -73,5 +73,13 @@ in
       storagePath = "/var/lib/kryonix/brain/storage";
       vaultPath = "/var/lib/kryonix/vault";
     };
+
+    # Habilita a infraestrutura de grafos Neo4j para GraphRAG
+    kryonix.services.neo4j = {
+      enable = true;
+      portHttp = 7474;
+      portBolt = 7687;
+      environmentFile = "/etc/kryonix/neo4j.env";
+    };
   };
 }

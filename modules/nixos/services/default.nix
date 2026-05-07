@@ -17,6 +17,7 @@
     ./snapper
     ./tlp
     ./brain.nix
+    ./neo4j.nix
     ./kryonix-state.nix
   ];
 
