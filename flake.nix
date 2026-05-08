@@ -71,6 +71,13 @@
       url = "github:openai/codex";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Kryonix Brain LightRAG (RAG engine)
+    # Fonte pinada no lock do flake.
+    kryonix-brain-lightrag = {
+      url = "github:RAGEnterprise/kryonix-brain-lightrag";
+      flake = false;
+    };
   };
 
   # =============================
