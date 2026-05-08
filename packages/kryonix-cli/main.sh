@@ -2,16 +2,16 @@ print_usage() {
   kryonix_banner
 
   header_line "Uso"
-  blue_line "  kryonix <comando> [opções] [-- args extras]"
+  blue_line "  kryonix <comando> [opcoes] [-- args extras]"
 
-  header_line "Operação do Sistema"
-  blue_line "  switch      Aplica a configuração (switch [all] inclui Home)"
-  blue_line "  boot        Gera e registra a próxima geração (nh os boot)"
-  blue_line "  test        Testa a geração NixOS ou perfis (client/server/MCP)"
+  header_line "Operacao do Sistema"
+  blue_line "  switch      Aplica a configuracao (switch [all] inclui Home)"
+  blue_line "  boot        Gera e registra a proxima geracao (nh os boot)"
+  blue_line "  test        Testa a geracao NixOS ou perfis (client/server/MCP)"
   blue_line "  rebuild     Builda o toplevel sem ativar"
-  blue_line "  diff        Compara sistema atual com o próximo build"
+  blue_line "  diff        Compara sistema atual com o proximo build"
   blue_line "  update      Atualiza os inputs da flake (flake.lock)"
-  blue_line "  clean       Limpa gerações antigas (nh clean all)"
+  blue_line "  clean       Limpa geracoes antigas (nh clean all)"
 
   header_line "Kryonix Home Brain"
   blue_line "  home        Scanner e auditor da Home (scan, report, duplicates, plan)"
@@ -21,34 +21,178 @@ print_usage() {
   blue_line "  graph       Opera o grafo (status, query, ingest, doctor, stats)"
   blue_line "  vault       Opera o vault (scan, index)"
   blue_line "  ollama      Gerencia o serviço Ollama (status, run, vram, pull)"
-  blue_line "  ai          Camada de interação IA (continue, checkpoint)"
+  blue_line "  ai          Camada de interacao IA (continue, checkpoint)"
 
   header_line "Infraestrutura & Git"
-  blue_line "  sync        Pull + Validação + Deploy completo"
+  blue_line "  sync        Pull + Validacao + Deploy completo"
   blue_line "  deploy      Aplica o estado do checkout local no host"
   blue_line "  pull        Git fetch + Pull rebase (/etc/kryonix)"
-  blue_line "  git-status  Status detalhado do repositório Kryonix"
-  blue_line "  doctor      Diagnóstico de integridade do sistema"
-  blue_line "  check       Validação estrutural (nix flake check)"
+  blue_line "  git-status  Status detalhado do repositorio Kryonix"
+  blue_line "  doctor      Diagnostico de integridade do sistema"
+  blue_line "  check       Validacao estrutural (nix flake check)"
 
   header_line "Recursos & Ferramentas"
   blue_line "  remote      Acesso remoto e tunelamento (vnc, tunnel)"
   blue_line "  rgb         Controle de iluminação (OpenRGB)"
-  blue_line "  vm          Gestão de máquinas virtuais (libvirt)"
-  blue_line "  iso         Geração de mídia de instalação Kryonix"
+  blue_line "  vm          Gestao de maquinas virtuais (libvirt)"
+  blue_line "  iso         Geração de midia de instalação Kryonix"
   blue_line "  fmt         Formatador de código Nix"
   blue_line "  repl        Nix REPL no contexto da flake"
 
-  header_line "Opções Globais"
-  blue_line "  --host <h>  Força o host alvo (ex: glacier)"
+  header_line "Opcoes Globais"
+  blue_line "  --host <h>  Forca o host alvo (ex: glacier)"
   blue_line "  --user <u>  Usuário para operações na Home"
   blue_line "  --flake <p> Caminho da flake personalizada"
-  blue_line "  --update    Força atualização de inputs"
-  blue_line "  --dry       Simulação de execução (Dry-run)"
+  blue_line "  --update    Forca atualizacao de inputs"
+  blue_line "  --dry       Simulação de execucao (Dry-run)"
   blue_line "  --verbose   Log detalhado e debug"
 
   printf '\n'
-  magenta_line "Dica: Use 'kryonix <comando> --help' para detalhes específicos."
+  magenta_line "Dica: Use 'kryonix <comando> --help' para detalhes especificos."
+}
+
+show_command_usage() {
+  local target_cmd="$1"
+  case "$target_cmd" in
+    switch|boot)
+      header_line "Ajuda: kryonix $target_cmd"
+      magenta_line "Aplica ou registra a configuracao do host atual ou de um host específico."
+      printf '\n'
+      blue_line "Uso:"
+      blue_line "  kryonix $target_cmd [host] [all] [opcoes]"
+      printf '\n'
+      blue_line "Argumentos:"
+      blue_line "  host      Nome do host alvo (ex: inspiron, glacier)"
+      blue_line "  all       Aplica também a configuracao do Home Manager"
+      printf '\n'
+      blue_line "Opcoes:"
+      blue_line "  --update  Atualiza os inputs da flake antes de aplicar"
+      blue_line "  --dry     Simula a operação sem realizar mudanças"
+      blue_line "  --verbose Mostra logs detalhados do build"
+      printf '\n'
+      blue_line "Exemplos:"
+      blue_line "  kryonix $target_cmd all"
+      blue_line "  kryonix $target_cmd glacier --update"
+      ;;
+    home)
+      header_line "Ajuda: kryonix home"
+      magenta_line "Scanner determinístico e organizador inteligente da Home (Home Brain)."
+      printf '\n'
+      blue_line "Subcomandos:"
+      blue_line "  scan        Escaneia a Home e gera um snapshot JSON"
+      blue_line "  report      Exibe o relatório do último escaneamento"
+      blue_line "  duplicates  Lista arquivos com conteúdo SHA256 idêntico"
+      blue_line "  plan        Gera um plano de organização sugerido (dry-run)"
+      printf '\n'
+      blue_line "Opcoes:"
+      blue_line "  --user <user>  Especifica o usuario (default: rocha)"
+      printf '\n'
+      blue_line "Exemplos:"
+      blue_line "  kryonix home scan"
+      blue_line "  kryonix home duplicates"
+      ;;
+    brain)
+      header_line "Ajuda: kryonix brain"
+      magenta_line "Interface de interacao com o Kryonix AI Brain (RAG & Knowledge)."
+      printf '\n'
+      blue_line "Subcomandos:"
+      blue_line "  health      Verifica a saude e conectividade da API"
+      blue_line "  stats       Estatisticas de entidades, relacoes e documentos"
+      blue_line "  search      Busca semantica fundamentada no grafo (RAG)"
+      blue_line "  ask         Pergunta direta ao cerebro"
+      blue_line "  cag         Opera o Context-Aware Graph (status, build, query)"
+      blue_line "  api-key     Gestao da chave de acesso (status, generate, rotate)"
+      blue_line "  doctor      Diagnostico completo do ambiente de IA"
+      blue_line "  remote      Configura o endereco do servidor remoto"
+      printf '\n'
+      blue_line "Opcoes:"
+      blue_line "  --remote    Forca consulta ao servidor (Glacier)"
+      blue_line "  --local     Forca execucao no host local (se disponivel)"
+      printf '\n'
+      blue_line "Exemplos:"
+      blue_line "  kryonix brain search \"Como funciona o pipeline RAG?\""
+      blue_line "  kryonix brain stats --remote"
+      ;;
+    graph)
+      header_line "Ajuda: kryonix graph"
+      magenta_line "Operações estruturais no grafo de conhecimento técnico."
+      printf '\n'
+      blue_line "Subcomandos:"
+      blue_line "  status      Estado da base de dados e conectividade"
+      blue_line "  schema      Visualiza o esquema de nós e relacoes"
+      blue_line "  query       Executa consultas Cypher (read-only)"
+      blue_line "  ingest      Processa manifestos para o grafo (--dry-run, --apply)"
+      blue_line "  stats       Métricas detalhadas de entidades"
+      blue_line "  top         Nós com maior centralidade no grafo"
+      blue_line "  doctor      Verifica inconsistências estruturais"
+      blue_line "  repair      Repara o grafo em caso de corrupção (Server-only)"
+      printf '\n'
+      blue_line "Exemplos:"
+      blue_line "  kryonix graph query --cypher \"MATCH (n:Host) RETURN n LIMIT 5\""
+      blue_line "  kryonix graph ingest --dry-run"
+      ;;
+    test)
+      header_line "Ajuda: kryonix test"
+      magenta_line "Conjunto de testes de validacao para o ecossistema Kryonix."
+      printf '\n'
+      blue_line "Alvos:"
+      blue_line "  all         Roda todos os testes disponiveis"
+      blue_line "  client      Valida o perfil Inspiron/Workstation"
+      blue_line "  server      Valida o perfil Glacier/Server"
+      blue_line "  mcp         Valida a configuracao e servidores MCP"
+      blue_line "  brain       Valida a integracao com o Brain API"
+      printf '\n'
+      blue_line "Exemplos:"
+      blue_line "  kryonix test all"
+      blue_line "  kryonix test mcp"
+      ;;
+    mcp)
+      header_line "Ajuda: kryonix mcp"
+      magenta_line "Gerenciamento de servidores e clientes MCP (Model Context Protocol)."
+      printf '\n'
+      blue_line "Subcomandos:"
+      blue_line "  check       Valida se os servidores respondem corretamente"
+      blue_line "  doctor      Diagnostico de configuracao e dependencias"
+      blue_line "  list        Lista servidores ativos e capacidades"
+      blue_line "  logs        Exibe logs de erro dos servidores"
+      printf '\n'
+      blue_line "Exemplos:"
+      blue_line "  kryonix mcp check"
+      blue_line "  kryonix mcp doctor"
+      ;;
+    vault)
+      header_line "Ajuda: kryonix vault"
+      magenta_line "Operacoes no vault de conhecimento (Obsidian)."
+      printf '\n'
+      blue_line "Subcomandos:"
+      blue_line "  scan        Detecta novas notas e mudancas estruturais"
+      blue_line "  index       Forca a reindexacao no LightRAG"
+      blue_line "  stats       Metricas de tamanho e cobertura do vault"
+      printf '\n'
+      blue_line "Exemplos:"
+      blue_line "  kryonix vault scan"
+      blue_line "  kryonix vault stats"
+      ;;
+    ollama)
+      header_line "Ajuda: kryonix ollama"
+      magenta_line "Interface de controle para o backend Ollama (Server-only)."
+      printf '\n'
+      blue_line "Subcomandos:"
+      blue_line "  status      Estado do serviço e GPU/VRAM"
+      blue_line "  run         Executa um modelo interativamente"
+      blue_line "  pull        Baixa um novo modelo"
+      blue_line "  vram        Exibe uso de VRAM em tempo real"
+      blue_line "  list        Modelos instalados localmente"
+      printf '\n'
+      blue_line "Exemplos:"
+      blue_line "  kryonix ollama status"
+      blue_line "  kryonix ollama run deepseek-coder:6.7b"
+      ;;
+    *)
+      # Fallback para o help global se não houver um focado
+      print_usage
+      ;;
+  esac
 }
 
 # --- Inicialização ---
@@ -113,7 +257,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --help|-h)
-      if [[ "$subcommand" == "home" || "$subcommand" == "graph" || "$subcommand" == "brain" || "$subcommand" == "mcp" || "$subcommand" == "vault" || "$subcommand" == "remote" ]]; then
+      if [[ -n "$subcommand" ]]; then
         extra_args+=("$1")
       else
         print_usage
@@ -217,6 +361,11 @@ fi
 
 case "$subcommand" in
   switch|boot)
+    if [[ "${extra_args[0]:-}" == "--help" || "${extra_args[0]:-}" == "-h" ]]; then
+       show_command_usage "$subcommand"
+       exit 0
+    fi
+
     target_all=0
     if [[ "${extra_args[0]:-}" == "all" ]]; then
        target_all=1
@@ -242,6 +391,11 @@ case "$subcommand" in
     ;;
 
   test)
+    if [[ "${extra_args[0]:-}" == "--help" || "${extra_args[0]:-}" == "-h" ]]; then
+       show_command_usage test
+       exit 0
+    fi
+
     if is_kryonix_test_target "${extra_args[0]:-}"; then
       run_kryonix_test_target "${extra_args[0]}"
     else
@@ -256,7 +410,12 @@ case "$subcommand" in
     ;;
 
   home)
-    # Delegação para o binário Rust kryonix-home (Home Brain)
+    if [[ "${extra_args[0]:-}" == "--help" || "${extra_args[0]:-}" == "-h" ]]; then
+       show_command_usage home
+       exit 0
+    fi
+
+    # Verifica se o primeiro argumento é um dos subcomandos do Rust kryonix-home (Home Brain)
     if [[ "${#extra_args[@]}" -gt 0 ]]; then
       case "${extra_args[0]}" in
         scan|report|duplicates|plan|help|--help|-h)
@@ -394,6 +553,11 @@ case "$subcommand" in
     ;;
 
   brain)
+    if [[ "${extra_args[0]:-}" == "--help" || "${extra_args[0]:-}" == "-h" ]]; then
+       show_command_usage brain
+       exit 0
+    fi
+
     if [[ "${#extra_args[@]}" -eq 0 ]]; then
       brain_sub="help"
     else
@@ -447,6 +611,11 @@ case "$subcommand" in
     ;;
 
   graph)
+    if [[ "${extra_args[0]:-}" == "--help" || "${extra_args[0]:-}" == "-h" ]]; then
+       show_command_usage graph
+       exit 0
+    fi
+
     if [[ "${#extra_args[@]}" -eq 0 ]]; then
       graph_sub="help"
     else
@@ -497,6 +666,11 @@ case "$subcommand" in
     ;;
 
   mcp)
+    if [[ "${extra_args[0]:-}" == "--help" || "${extra_args[0]:-}" == "-h" ]]; then
+       show_command_usage mcp
+       exit 0
+    fi
+
     if [[ "${#extra_args[@]}" -eq 0 ]]; then
       mcp_sub="print-config"
     else
@@ -522,8 +696,13 @@ case "$subcommand" in
     ;;
 
   vault)
+    if [[ "${extra_args[0]:-}" == "--help" || "${extra_args[0]:-}" == "-h" ]]; then
+       show_command_usage vault
+       exit 0
+    fi
+
     if [[ "${#extra_args[@]}" -eq 0 ]]; then
-      printf 'Uso: kryonix vault <scan|index|curate|sync-docs>\n' >&2
+      show_command_usage vault
       exit 1
     fi
     vault_sub="${extra_args[0]}"
@@ -544,6 +723,10 @@ case "$subcommand" in
     ;;
 
   ollama)
+    if [[ "${extra_args[0]:-}" == "--help" || "${extra_args[0]:-}" == "-h" ]]; then
+       show_command_usage ollama
+       exit 0
+    fi
     kryonix_ollama "${extra_args[@]}"
     ;;
 
