@@ -181,6 +181,22 @@
         "type": "github"
       }
     },
+    "kryonix-brain-lightrag": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1778180916,
+        "narHash": "sha256-KzwcP1J+2DvF+JEpCFMvvIbv7GpjE2TgeltNr8Gm9qE=",
+        "owner": "RAGEnterprise",
+        "repo": "kryonix-brain-lightrag",
+        "rev": "02be0d86889b77c1efcaf14c82dd941695f05de7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "RAGEnterprise",
+        "repo": "kryonix-brain-lightrag",
+        "type": "github"
+      }
+    },
     "kryonix-home": {
       "flake": false,
       "locked": {
@@ -275,6 +291,7 @@
         "disko": "disko",
         "hardware": "hardware",
         "home-manager": "home-manager",
+        "kryonix-brain-lightrag": "kryonix-brain-lightrag",
         "kryonix-home": "kryonix-home",
         "nix-flatpak": "nix-flatpak",
         "nixpkgs": "nixpkgs",
