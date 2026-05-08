@@ -39,18 +39,18 @@ pub fn run() -> Result<()> {
             let scan = scanner::run_scan()?;
             scanner::save_scan(&scan)?;
             report::print_scan_summary(&scan);
-            println!("\nNenhuma alteração foi feita.");
+            eprintln!("\nNenhuma alteração foi feita.");
         }
         Commands::Report => {
             let scan = scanner::load_latest_scan()?;
             report::print_full_report(&scan);
-            println!("\nNenhuma alteração foi feita.");
+            eprintln!("\nNenhuma alteração foi feita.");
         }
         Commands::Duplicates => {
             let scan = scanner::load_latest_scan()?;
             let groups = hashing::find_duplicates(&scan)?;
             report::print_duplicates(&groups);
-            println!("\nNenhuma alteração foi feita.");
+            eprintln!("\nNenhuma alteração foi feita.");
         }
         Commands::Plan { json, .. } => {
             let scan = scanner::load_latest_scan()?;
@@ -59,8 +59,8 @@ pub fn run() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&plan)?);
             } else {
                 report::print_plan(&plan);
+                eprintln!("\nNenhuma alteração foi feita. Modo: dry-run.");
             }
-            println!("\nNenhuma alteração foi feita. Modo: dry-run.");
         }
     }
 

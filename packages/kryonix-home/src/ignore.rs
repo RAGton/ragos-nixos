@@ -66,6 +66,21 @@ pub fn should_ignore_dir(path: &Path) -> bool {
     false
 }
 
+/// Retorna true se o arquivo deve ser ignorado pelo scanner.
+pub fn should_ignore_file(path: &Path) -> bool {
+    let name = match path.file_name().and_then(|n| n.to_str()) {
+        Some(n) => n,
+        None => return true,
+    };
+
+    // Ignorar arquivos ocultos (começam com .)
+    if name.starts_with('.') {
+        return true;
+    }
+
+    false
+}
+
 /// Retorna true se o diretório contém marcadores de projeto e deve ser pulado inteiramente.
 pub fn is_project_dir(path: &Path) -> bool {
     PROJECT_MARKERS

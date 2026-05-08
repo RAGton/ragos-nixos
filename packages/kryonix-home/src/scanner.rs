@@ -151,8 +151,8 @@ fn walk_directory(root: &Path, files: &mut Vec<FileMetadata>) {
         let path = entry.path();
         let is_symlink = entry.file_type().is_symlink();
 
-        // Ignorar arquivos secretos
-        if ignore::is_secret_file(path) {
+        // Ignorar arquivos secretos ou ocultos
+        if ignore::should_ignore_file(path) || ignore::is_secret_file(path) {
             files.push(FileMetadata {
                 path: path.to_string_lossy().to_string(),
                 filename: path
