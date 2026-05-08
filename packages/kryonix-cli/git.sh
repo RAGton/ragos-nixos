@@ -107,17 +107,31 @@ kryonix_deploy_repo() {
   ensure_kryonix_git_state "$repo_path" || return 1
 
   # Validação antes do deploy
+  header_line "Validação de Build"
   run_command nix flake check "$repo_path" --keep-going || {
-    printf '%s\n' "ERRO: falha na validação da flake em $repo_path." >&2
+    error_line "Falha na validação da flake em $repo_path."
     return 1
   }
 
+  # OS Switch
+  header_line "Deploy: NixOS"
+  magenta_line "Alvo: $flake_host"
   cmd=(nh os switch "$repo_path" -H "$flake_host")
   cmd+=("${verbose_args[@]}" "${dry_args[@]}" "${extra_args[@]}")
-  run_command "${cmd[@]}"
+  run_command "${cmd[@]}" || return 1
+
+  # Home Manager Switch
+  header_line "Deploy: Home Manager"
+  magenta_line "Alvo: $home_target"
+  cmd=(nh home switch "$repo_path" -c "$home_target")
+  cmd+=("${verbose_args[@]}" "${dry_args[@]}")
+  run_command "${cmd[@]}" || return 1
+
+  success_line "Deploy Kryonix finalizado com sucesso."
 }
 
 kryonix_sync_repo() {
+  header_line "Sincronização Total"
   kryonix_pull_repo || return 1
   kryonix_deploy_repo
 }
@@ -128,11 +142,11 @@ print_git_changes() {
 
   changes="$(git_short_changes "$repo_path")"
   if [[ -z "$changes" ]]; then
-    blue_line '  mudanças locais : nenhuma'
+    success_line "Mudanças locais: nenhuma (limpo)"
     return 0
   fi
 
-  blue_line '  mudanças locais :'
+  warn_line "Mudanças locais detectadas:"
   printf '%s\n' "$changes"
 }
 
@@ -140,30 +154,29 @@ print_kryonix_git_status() {
   local repo_path repo_root branch origin
 
   repo_path="$(kryonix_git_repo_path)"
-  blue_line 'Kryonix git-status'
-  blue_line "  path            : $repo_path"
+  header_line "Status do Repositório"
+  magenta_line "  Path            : $repo_path"
   if [[ -L "$repo_path" ]]; then
-    blue_line "  symlink         : $(readlink "$repo_path")"
+    magenta_line "  Symlink         : $(readlink "$repo_path")"
   fi
 
   if ! is_git_repo "$repo_path"; then
-    blue_line '  status          : ERRO'
-    printf '%s\n' "ERRO: $repo_path não é um git repo válido." >&2
+    error_line "$repo_path não é um repositório git válido."
     return 1
   fi
 
   repo_root="$(git -C "$repo_path" rev-parse --show-toplevel)"
   branch="$(git_current_branch "$repo_path")"
   origin="$(git_origin_url "$repo_path")"
-  blue_line "  repo root       : $repo_root"
-  blue_line "  branch          : ${branch:-desconhecida}"
-  blue_line "  remoto origin   : ${origin:-ausente}"
+  magenta_line "  Repo root       : $repo_root"
+  magenta_line "  Branch          : ${branch:-desconhecida}"
+  magenta_line "  Remoto origin   : ${origin:-ausente}"
 
   if [[ "$branch" != "main" ]]; then
-    blue_line '  ATENÇÃO         : branch ativa não é main'
+    warn_line "Branch ativa não é 'main'!"
   fi
   if [[ -z "$origin" ]]; then
-    blue_line '  ATENÇÃO         : remote origin ausente'
+    warn_line "Remote 'origin' ausente!"
   fi
 
   print_git_changes "$repo_path"

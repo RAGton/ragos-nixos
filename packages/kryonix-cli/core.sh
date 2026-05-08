@@ -3,33 +3,80 @@ current_hostname() {
 }
 
 init_colors() {
-  blue=""
   reset=""
+  bold=""
+  dim=""
+  blue=""
+  magenta=""
+  cyan=""
+  green=""
+  yellow=""
+  red=""
 
   if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
-    blue=$'\033[34m'
     reset=$'\033[0m'
+    bold=$'\033[1m'
+    dim=$'\033[2m'
+    blue=$'\033[34m'
+    magenta=$'\033[35m'
+    cyan=$'\033[36m'
+    green=$'\033[32m'
+    yellow=$'\033[33m'
+    red=$'\033[31m'
   fi
 }
 
-blue_line() {
-  local text="$1"
+kryonix_banner() {
+  if [[ "${json_mode:-0}" -eq 1 ]]; then return 0; fi
+  printf '%b' "$magenta$bold"
+  cat <<'EOF'
+   __  __  ____  __  __  _____   _   _  ___ __  __
+  |  |/  ||  _ \|  ||  ||     | | \ | ||_ _|\ \/ /
+  |     / | |_) |  ||  ||  _  | |  \| | | |  \  / 
+  |  |\  \|  _ < \    / | | | | | . ` | | |  /  \ 
+  |__| \__||_| \_\ |__|  |_| |_| |_|\_||___|/_/\_\
+EOF
+  printf '%b\n' "$reset"
+  printf '%b\n' "$dim  Modular NixOS Workstation & AI Brain$reset"
+  printf '\n'
+}
+
+styled_line() {
+  local color="$1"
+  local icon="$2"
+  local text="$3"
+  local target="${4:-stdout}"
 
   if [[ "${json_mode:-0}" -eq 1 ]]; then
-    if [[ -n "$blue" ]]; then
-      printf '%b%s%b\n' "$blue" "$text" "$reset" >&2
+    if [[ "$target" == "stderr" ]]; then
+       printf '%s %s\n' "$icon" "$text" >&2
     else
-      printf '%s\n' "$text" >&2
+       printf '%s %s\n' "$icon" "$text"
     fi
     return 0
   fi
 
-  if [[ -n "$blue" ]]; then
-    printf '%b%s%b\n' "$blue" "$text" "$reset"
+  local out
+  if [[ -n "$color" ]]; then
+    out="$(printf '%b%s %s%b' "$color" "$icon" "$text" "$reset")"
   else
-    printf '%s\n' "$text"
+    out="$(printf '%s %s' "$icon" "$text")"
+  fi
+
+  if [[ "$target" == "stderr" ]]; then
+    printf '%s\n' "$out" >&2
+  else
+    printf '%s\n' "$out"
   fi
 }
+
+blue_line()    { styled_line "$blue"    "󰀘" "$1"; }
+magenta_line() { styled_line "$magenta" "󱄅" "$1"; }
+cyan_line()    { styled_line "$cyan"    "󰋙" "$1"; }
+success_line() { styled_line "$green"   "󰄬" "$1"; }
+warn_line()    { styled_line "$yellow"  "󱈸" "$1"; }
+error_line()   { styled_line "$red"     "󰅚" "$1" "stderr"; }
+header_line()  { printf '\n%b%s %b%s%b\n' "$bold$cyan" "󰘧" "$reset$bold" "$1" "$reset"; }
 
 init_colors
 

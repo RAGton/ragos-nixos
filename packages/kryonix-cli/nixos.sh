@@ -315,18 +315,18 @@ update_flake_if_requested() {
 
 print_flake_resolution() {
   if (( verbose > 0 )); then
-    blue_line 'Kryonix CLI'
-    blue_line "  host atual      : $(current_hostname)"
-    blue_line "  modo detectado   : $flake_mode"
-    blue_line "  flake resolvida  : $flake_ref"
+    header_line "Resolução de Contexto"
+    cyan_line "  Host atual      : $(current_hostname)"
+    cyan_line "  Modo detectado  : $flake_mode"
+    cyan_line "  Flake resolvida : $flake_ref"
     if [[ -n "$flake_root" ]]; then
-      blue_line "  flake raiz       : $flake_root"
+      cyan_line "  Flake raiz      : $flake_root"
     fi
     if [[ -n "$flake_workdir" ]]; then
-      blue_line "  diretório exec   : $flake_workdir"
+      cyan_line "  Workdir         : $flake_workdir"
     fi
-    blue_line "  flake host       : $flake_host"
-    blue_line "  update          : $(if (( update )); then printf 'sim'; else printf 'não'; fi)"
+    cyan_line "  Alvo (host)     : $flake_host"
+    cyan_line "  Auto-update     : $(if (( update )); then printf 'sim'; else printf 'não'; fi)"
     if (( bootstrap_performed || bootstrap_repo_created || bootstrap_host_created || bootstrap_local_created || bootstrap_symlink_created || bootstrap_conflict_detected )); then
       blue_line '  bootstrap        : sim'
       if [[ -n "$bootstrap_repo_source" ]]; then

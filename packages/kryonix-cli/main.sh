@@ -1,80 +1,54 @@
 print_usage() {
-  local usage_lines=(
-    "Kryonix CLI"
-    "Uso:"
-    "  kryonix <comando> [opcoes] [-- args extras]"
-    "Comandos:"
-    "  switch    Aplica o host com nh os switch"
-    "  boot      Gera e registra a proxima geracao com nh os boot"
-    "  test      Testa a geracao NixOS ou os perfis code/client/server/MCP"
-    "  home      Organiza e audita arquivos da Home (scan, report, duplicates, plan)"
-    "  update    Atualiza os inputs da flake"
-    "  pull      Atualiza /etc/kryonix com git fetch + git pull --rebase"
-    "  deploy    Valida a flake e aplica /etc/kryonix no host atual"
-    "  sync      Pull + validacao + deploy do checkout /etc/kryonix"
-    "  rebuild   Builda o toplevel do host sem ativar"
-    "  clean     Limpa geracoes antigas com nh clean all"
-    "  diff      Compara /run/current-system com o proximo toplevel"
-    "  repl      Abre nix repl na flake"
-    "  doctor    Mostra diagnostico rapido do host e do repositorio"
-    "  git-status Mostra branch, origin e mudancas locais de /etc/kryonix"
-    "  vm        Lista VMs via libvirt"
-    "  iso       Builda a ISO publica do Kryonix"
-    "  fmt       Roda o formatter da flake"
-    "  check     Roda nix flake check --keep-going"
-    "  brain     Acessa o Kryonix Brain (health, doctor, stats, search, ask, cag, api-key)"
-    "  graph     Opera o grafo do Brain (status, schema, ingest, query, doctor, stats, top, heal, repair)"
-    "  mcp       Valida e imprime a configuracao MCP"
-    "  vault     Opera o vault via Brain (scan, index)"
-    "  ollama    Controla o serviço Ollama (start, stop, status, run, vram, pull)"
-    "  ai        Interage com a camada de IA (continue, status, checkpoint)"
-    "  rgb       Controla LEDs via OpenRGB (off, list, set)"
-    "  remote    Gerencia o acesso e servicos remotos (vnc status, start, stop)"
-    "Opcoes globais:"
-    "  --host <host>    Forca o alvo da flake (ex.: glacier)"
-    "  --user <user>    Usuario para o comando home"
-    "  --flake <path>   Caminho ou flake ref a usar"
-    "  --update         Atualiza inputs quando suportado"
-    "  --no-update      Usa o flake.lock atual"
-    "  --verbose        Aumenta verbosidade"
-    "  --dry            Dry-run quando suportado"
-    "  --help           Mostra esta ajuda"
-    "Exemplos:"
-    "  kryonix switch"
-    "  kryonix switch inspiron"
-    "  kryonix switch --update --verbose"
-    "  kryonix boot --update"
-    "  kryonix home --user rocha"
-    "  kryonix rebuild"
-    "  kryonix diff"
-    "  kryonix doctor"
-    "  kryonix git-status"
-    "  kryonix brain stats"
-    "  kryonix brain doctor --remote"
-    "  kryonix brain search \"Como funciona o pipeline RAG do Kryonix?\""
-    "  kryonix brain cag route \"Qual o host do Ollama?\""
-    "  kryonix brain cag ask \"Como funciona o Glacier?\""
-    "  kryonix brain api-key status"
-    "  kryonix brain api-key generate"
-    "  kryonix brain remote status"
-    "  kryonix brain remote configure --url http://rve-glacier:8000 --key-stdin"
-    "  kryonix graph status"
-    "  kryonix graph schema"
-    "  kryonix graph ingest --dry-run"
-    "  kryonix graph query --cypher \"MATCH (h:Host) RETURN h LIMIT 20\""
-    "  kryonix graph examples"
-    "  kryonix graph top --limit 10"
-    "  kryonix mcp check"
-    "  kryonix test all"
-    "  kryonix test client"
-    "  kryonix test server"
-    "  kryonix iso"
-  )
-  local line
+  kryonix_banner
 
-  for line in "${usage_lines[@]}"; do
-    blue_line "$line"
-  done
+  header_line "Uso"
+  blue_line "  kryonix <comando> [opções] [-- args extras]"
+
+  header_line "Operação do Sistema"
+  blue_line "  switch      Aplica a configuração (switch [all] inclui Home)"
+  blue_line "  boot        Gera e registra a próxima geração (nh os boot)"
+  blue_line "  test        Testa a geração NixOS ou perfis (client/server/MCP)"
+  blue_line "  rebuild     Builda o toplevel sem ativar"
+  blue_line "  diff        Compara sistema atual com o próximo build"
+  blue_line "  update      Atualiza os inputs da flake (flake.lock)"
+  blue_line "  clean       Limpa gerações antigas (nh clean all)"
+
+  header_line "Kryonix Home Brain"
+  blue_line "  home        Scanner e auditor da Home (scan, report, duplicates, plan)"
+
+  header_line "Kryonix AI Brain & Graph"
+  blue_line "  brain       Acessa o Brain (health, stats, search, ask, cag, api-key)"
+  blue_line "  graph       Opera o grafo (status, query, ingest, doctor, stats)"
+  blue_line "  vault       Opera o vault (scan, index)"
+  blue_line "  ollama      Gerencia o serviço Ollama (status, run, vram, pull)"
+  blue_line "  ai          Camada de interação IA (continue, checkpoint)"
+
+  header_line "Infraestrutura & Git"
+  blue_line "  sync        Pull + Validação + Deploy completo"
+  blue_line "  deploy      Aplica o estado do checkout local no host"
+  blue_line "  pull        Git fetch + Pull rebase (/etc/kryonix)"
+  blue_line "  git-status  Status detalhado do repositório Kryonix"
+  blue_line "  doctor      Diagnóstico de integridade do sistema"
+  blue_line "  check       Validação estrutural (nix flake check)"
+
+  header_line "Recursos & Ferramentas"
+  blue_line "  remote      Acesso remoto e tunelamento (vnc, tunnel)"
+  blue_line "  rgb         Controle de iluminação (OpenRGB)"
+  blue_line "  vm          Gestão de máquinas virtuais (libvirt)"
+  blue_line "  iso         Geração de mídia de instalação Kryonix"
+  blue_line "  fmt         Formatador de código Nix"
+  blue_line "  repl        Nix REPL no contexto da flake"
+
+  header_line "Opções Globais"
+  blue_line "  --host <h>  Força o host alvo (ex: glacier)"
+  blue_line "  --user <u>  Usuário para operações na Home"
+  blue_line "  --flake <p> Caminho da flake personalizada"
+  blue_line "  --update    Força atualização de inputs"
+  blue_line "  --dry       Simulação de execução (Dry-run)"
+  blue_line "  --verbose   Log detalhado e debug"
+
+  printf '\n'
+  magenta_line "Dica: Use 'kryonix <comando> --help' para detalhes específicos."
 }
 
 # --- Inicialização ---
@@ -163,6 +137,8 @@ while [[ $# -gt 0 ]]; do
       elif accepts_positional_host && [[ -z "$host_arg" && "$1" != -* ]]; then
         if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" ]]; then
           extra_args+=("$1")
+        elif [[ "$subcommand" == "switch" || "$subcommand" == "boot" ]] && [[ "$1" == "all" ]]; then
+          extra_args+=("$1")
         else
           host_arg="$1"
         fi
@@ -241,13 +217,28 @@ fi
 
 case "$subcommand" in
   switch|boot)
+    target_all=0
+    if [[ "${extra_args[0]:-}" == "all" ]]; then
+       target_all=1
+       extra_args=("${extra_args[@]:1}")
+    fi
+
     update_flake_if_requested
+
+    # NixOS switch/boot
     cmd=(nh os "$subcommand" "$flake_ref" -H "$flake_host")
     cmd+=("${verbose_args[@]}" "${dry_args[@]}")
     if [[ "${#extra_args[@]}" -gt 0 ]]; then
       cmd+=("--" "${extra_args[@]}")
     fi
-    run_flake_command "${cmd[@]}"
+    run_flake_command "${cmd[@]}" || exit $?
+
+    if (( target_all )); then
+       blue_line "Aplicando Home Manager para $home_target..."
+       cmd=(nh home switch "$flake_ref" -c "$home_target")
+       cmd+=("${verbose_args[@]}" "${dry_args[@]}")
+       run_flake_command "${cmd[@]}"
+    fi
     ;;
 
   test)
