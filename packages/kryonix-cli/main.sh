@@ -180,9 +180,21 @@ while [[ $# -gt 0 ]]; do
         exit 1
       fi
 
-      if [[ "$subcommand" == "test" ]] && is_kryonix_test_target "$1"; then
+      # Verificação de target de teste
+      is_test_target=0
+      case "$1" in
+        all|client|server|code|mcp) is_test_target=1 ;;
+      esac
+
+      # Verificação de host posicional
+      is_positional_host=0
+      case "$subcommand" in
+        switch|boot|test|rebuild|diff|repl|doctor) is_positional_host=1 ;;
+      esac
+
+      if [[ "$subcommand" == "test" ]] && [[ $is_test_target -eq 1 ]]; then
         extra_args+=("$1")
-      elif accepts_positional_host && [[ -z "$host_arg" && "$1" != -* ]]; then
+      elif [[ $is_positional_host -eq 1 ]] && [[ -z "$host_arg" && "$1" != -* ]]; then
         if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" ]]; then
           extra_args+=("$1")
         else
