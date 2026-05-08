@@ -118,6 +118,19 @@ print_subcommand_help() {
       printf '    list       Lista servidores MCP ativos\n'
       printf '    doctor     Valida conectividade JSON-RPC\n'
       ;;
+    rgb)
+      printf '  🌈 \033[1mRGB\033[0m\n'
+      printf '  Uso: kryonix rgb [on|off|color|mode] [args]\n\n'
+      printf '    on/off     Alterna iluminação global\n'
+      printf '    color      Define cor estática (ex: FF0000)\n'
+      printf '    mode       Altera padrão de animação\n'
+      ;;
+    all)
+      printf '  ⚡ \033[1mALL\033[0m\n'
+      printf '  Uso: kryonix all [--update] [--dry]\n\n'
+      printf '  Executa a unificação total: NixOS Rebuild + Home Manager Switch.\n'
+      printf '  É o comando recomendado para manter o sistema 100%% sincronizado.\n'
+      ;;
     *)
       printf '  ℹ️  Ajuda específica para \033[1m%s\033[0m ainda não implementada.\n' "$sub"
       ;;
@@ -187,7 +200,9 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --help|-h)
-      if [[ "$subcommand" == "home" || "$subcommand" == "graph" || "$subcommand" == "brain" || "$subcommand" == "mcp" || "$subcommand" == "vault" || "$subcommand" == "remote" ]]; then
+      if [[ "$subcommand" == "home" || "$subcommand" == "graph" || "$subcommand" == "brain" || "$subcommand" == "mcp" || \
+            "$subcommand" == "vault" || "$subcommand" == "remote" || "$subcommand" == "switch" || "$subcommand" == "boot" || \
+            "$subcommand" == "ollama" || "$subcommand" == "ai" || "$subcommand" == "rgb" || "$subcommand" == "all" ]]; then
         extra_args+=("$1")
       else
         print_usage
