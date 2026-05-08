@@ -28,6 +28,7 @@ print_usage() {
     "  vault     Opera o vault via Brain (scan, index)"
     "  ollama    Controla o serviço Ollama (start, stop, status, run, vram, pull)"
     "  ai        Interage com a camada de IA (continue, status, checkpoint)"
+    "  graph     Gerencia a memoria estrutural do Brain (status, query, ingest)"
     "  rgb       Controla LEDs via OpenRGB (off, list, set)"
     "  remote    Gerencia o acesso e servicos remotos (vnc status, start, stop)"
     "Opcoes globais:"
@@ -157,7 +158,11 @@ while [[ $# -gt 0 ]]; do
       if [[ "$subcommand" == "test" ]] && is_kryonix_test_target "$1"; then
         extra_args+=("$1")
       elif accepts_positional_host && [[ -z "$host_arg" && "$1" != -* ]]; then
-        host_arg="$1"
+        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" ]]; then
+          extra_args+=("$1")
+        else
+          host_arg="$1"
+        fi
       else
         extra_args+=("$1")
       fi
@@ -185,6 +190,14 @@ case "$subcommand" in
 
   test)
     if is_kryonix_test_target "${extra_args[0]:-}"; then
+      needs_flake=0
+    else
+      needs_flake=1
+    fi
+    ;;
+
+  home)
+    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" ]]; then
       needs_flake=0
     else
       needs_flake=1
@@ -249,13 +262,17 @@ case "$subcommand" in
     ;;
 
   home)
-    update_flake_if_requested
-    cmd=(nh home switch "$flake_ref" -c "$home_target")
-    cmd+=("${verbose_args[@]}" "${dry_args[@]}")
-    if [[ "${#extra_args[@]}" -gt 0 ]]; then
-      cmd+=("--" "${extra_args[@]}")
+    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" ]]; then
+      kryonix_home "${extra_args[@]}"
+    else
+      update_flake_if_requested
+      cmd=(nh home switch "$flake_ref" -c "$home_target")
+      cmd+=("${verbose_args[@]}" "${dry_args[@]}")
+      if [[ "${#extra_args[@]}" -gt 0 ]]; then
+        cmd+=("--" "${extra_args[@]}")
+      fi
+      run_flake_command "${cmd[@]}"
     fi
-    run_flake_command "${cmd[@]}"
     ;;
 
   rebuild)

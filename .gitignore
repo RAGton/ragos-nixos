@@ -42,3 +42,4 @@ kryonix-artifacts/
 *.token
 id_ed25519
 id_ed25519.*
+packages/kryonix-home/target/
