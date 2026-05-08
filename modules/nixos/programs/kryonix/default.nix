@@ -20,8 +20,8 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = outputs.packages.${pkgs.system}.kryonix;
-      defaultText = lib.literalExpression "outputs.packages.\${pkgs.system}.kryonix";
+      default = outputs.packages.${pkgs.stdenv.hostPlatform.system}.kryonix;
+      defaultText = lib.literalExpression "outputs.packages.\${pkgs.stdenv.hostPlatform.system}.kryonix";
       description = "Pacote da CLI `kryonix` exposto no PATH do sistema.";
     };
   };
