@@ -92,6 +92,32 @@ print_subcommand_help() {
       printf '    ingest     Ingestão de dados no grafo\n'
       printf '    query      Consulta Cypher direta\n'
       ;;
+    ollama)
+      printf '  ⚡ \033[1mOLLAMA\033[0m\n'
+      printf '  Uso: kryonix ollama [list|run|pull|rm] [modelo]\n\n'
+      printf '    list       Lista modelos carregados\n'
+      printf '    run        Inicia chat interativo\n'
+      printf '    pull       Baixa novo modelo do registro\n'
+      ;;
+    ai)
+      printf '  🤖 \033[1mAI\033[0m\n'
+      printf '  Uso: kryonix ai [status|doctor|models]\n\n'
+      printf '    status     Visão geral do ecossistema de IA\n'
+      printf '    doctor     Diagnóstico de dependências e GPU\n'
+      ;;
+    remote)
+      printf '  🌐 \033[1mREMOTE\033[0m\n'
+      printf '  Uso: kryonix remote [vnc|ssh|tunnel] [alvo]\n\n'
+      printf '    vnc        Inicia/Conecta via WayVNC\n'
+      printf '    ssh        Acesso seguro via terminal\n'
+      printf '    tunnel     Gerecia túneis via Tailscale/SSH\n'
+      ;;
+    mcp)
+      printf '  🔌 \033[1mMCP\033[0m\n'
+      printf '  Uso: kryonix mcp [list|status|doctor]\n\n'
+      printf '    list       Lista servidores MCP ativos\n'
+      printf '    doctor     Valida conectividade JSON-RPC\n'
+      ;;
     *)
       printf '  ℹ️  Ajuda específica para \033[1m%s\033[0m ainda não implementada.\n' "$sub"
       ;;
