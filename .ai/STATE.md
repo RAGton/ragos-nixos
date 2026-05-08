@@ -1,7 +1,12 @@
 # Kryonix AI State
 
-- **Objetivo atual**: Brain global operacional. Indexação TOTAL do projeto + vault.
-- **Último passo concluído**: VS Code Insiders activated and Zen Browser set as default browser. (2026-05-02T11:08:54Z)
+- **Objetivo atual**: Brain global operacional + Remote Desktop Estável.
+- **Último passo concluído**: S7 — Acesso Remoto WayVNC seguro implementado e validado. (2026-05-07T20:26:00Z)
+  - CLI `kryonix remote vnc` host-aware e educativa.
+  - Túnel SSH isolado em porta local `5901`.
+  - WayVNC servidor limpo e estável no Glacier.
+  - Remmina instalado declarativamente no Inspiron.
+- **Estado anterior**: VS Code Insiders activated and Zen Browser set as default browser. (2026-05-02T11:08:54Z)
   - Backup criado em `backups/pre-full-index-20260502-000103`
   - **Llama 3.1:8b** configurado como modelo padrão para extração de qualidade.
   - Storage resetado para garantir indexação limpa e consistente.
@@ -16,4 +21,4 @@
 - **Status do grafo**: INDEXANDO (Llama 3.1:8b)
 - **Status do Obsidian**: ✅ 644 links reais + 11 notas canônicas
 - **Ollama**: rodando, modelos: `nomic-embed-text:latest`, `qwen2.5-coder:7b`, `llama3.1:8b` ✅
-- **Timestamp da última execução**: 2026-05-02T00:26:00Z
+- **Timestamp da última execução**: 2026-05-07T20:26:00Z

@@ -218,6 +218,26 @@ curl -fsS -H "X-API-Key: <chave>" http://10.0.0.2:8000/search \
 
 ---
 
+## Acesso remoto seguro ao Glacier
+
+Status: Implementado e validado.
+
+O Kryonix utiliza um pipeline seguro para acesso ao desktop do servidor, garantindo que o tráfego VNC nunca seja exposto à rede pública.
+
+Fluxo:
+- **Glacier (Servidor):** Roda WayVNC escutando exclusivamente em `127.0.0.1:5900`.
+- **Inspiron (Cliente):** Cria um túnel SSH local apontando `127.0.0.1:5901` para o servidor.
+- **Visualização:** Remmina (VNC) conectando em `127.0.0.1:5901`.
+
+Comandos:
+```sh
+kryonix remote vnc start   # Inicia servidor (no Glacier) ou túnel (no Inspiron)
+kryonix remote vnc status  # Mostra o estado de ambos os lados
+kryonix remote vnc stop    # Para os serviços correspondentes
+```
+
+---
+
 ## Documentação
 
 - [Operação diária e CLI](docs/OPERATIONS.md)

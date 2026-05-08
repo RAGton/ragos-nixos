@@ -19,6 +19,7 @@ Kryonix e uma plataforma NixOS declarativa para uso real em workstation, gaming,
 - Caelestia como shell/rice principal.
 - GDM, GRUB, Plymouth e branding Kryonix.
 - KVM/libvirt para virtualizacao.
+- Acesso remoto seguro via **WayVNC** + Túnel SSH.
 - Podman/Docker opcionais via features.
 - Shell scripts empacotados por Nix (`writeShellApplication`).
 - GitHub Actions com Determinate Nix.

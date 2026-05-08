@@ -15,6 +15,7 @@ A base atual entrega:
 - `hosts/common/default.nix` como agregador compartilhado
 - `features/` e `profiles/` reais
 - stack desktop **Hyprland** com **Caelestia** como shell principal
+- acesso remoto seguro via **WayVNC** + Túnel SSH validado
 - CLI operacional primária `kryonix`
 - `nixosConfigurations`, `homeConfigurations`, `overlays`, `formatter` e `checks`
 

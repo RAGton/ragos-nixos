@@ -1,5 +1,7 @@
 # Acesso Remoto Gráfico via WayVNC (Glacier)
 
+Status: **Implementado e Validado**
+
 Este documento descreve a topologia e as premissas de segurança para o acesso remoto gráfico ao servidor **Glacier** através do **WayVNC**.
 
 ## Arquitetura de Segurança
@@ -15,20 +17,18 @@ Topologia:
 1. **WayVNC no Glacier:** Roda através de um User Systemd Service (`kryonix-wayvnc.service`). Ocupa a porta TCP 5900 apenas para `127.0.0.1`.
 2. **Túnel no Inspiron:** Roda através de um User Systemd Service (`kryonix-glacier-vnc-tunnel.service`). Redireciona a porta local TCP 5901 para a porta remota do Glacier, utilizando `glacier-publico` como alvo.
 
-## Como Usar (CLI)
-
-O Kryonix CLI abstrai o gerenciamento dos túneis na máquina do cliente (Inspiron).
+O Kryonix CLI abstrai o gerenciamento dos serviços. O comando é **host-aware**, ou seja, ele sabe se deve gerenciar o servidor (no Glacier) ou o túnel (no Inspiron).
 
 - **Checar o status da conexão VNC:**
-  Verifica se o túnel local está rodando e tenta validar se o serviço do Glacier está ativo (via SSH).
+  Mostra o estado do túnel no cliente e do servidor de vídeo no Glacier.
   ```bash
   kryonix remote vnc status
   ```
 
-- **Iniciar o túnel:**
+- **Iniciar o acesso:**
+  No Glacier, inicia o WayVNC. No Inspiron, inicia o túnel SSH.
   ```bash
   kryonix remote vnc start
-  # ou kryonix remote vnc tunnel
   ```
 
 - **Parar o túnel:**

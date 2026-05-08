@@ -168,3 +168,23 @@ Próxima fase:
   - kryonix graph ports
   - kryonix graph files
   - kryonix graph host-services <host>
+
+## S7 — WayVNC Seguro (Acesso Remoto)
+
+Status: **FUNCTIONAL & VALIDATED**
+
+Diagnóstico:
+- Acesso remoto via VNC estava instável devido a conflitos de processos no Glacier e falta de inteligência na CLI.
+- O Remmina não estava presente de forma declarativa no Inspiron.
+
+Correções:
+- CLI `kryonix remote vnc` refatorada para ser **host-aware**.
+- Logic de limpeza de processos zumbis adicionada ao serviço `kryonix-wayvnc`.
+- `remmina` adicionado aos pacotes do usuário no `inspiron`.
+- Túnel SSH isolado em porta local `5901`.
+
+Validação:
+- `kryonix remote vnc status` reportando `ATIVO` em ambos os hosts.
+- Conexão bem sucedida via Remmina em `127.0.0.1:5901`.
+- Captura de tela confirmando visualização do desktop Caelestia do Glacier no Inspiron.
+- Mensagens educativas na CLI quando executada no host incorreto.
