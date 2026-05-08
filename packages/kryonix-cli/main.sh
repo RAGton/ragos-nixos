@@ -7,7 +7,7 @@ print_usage() {
     "  switch    Aplica o host com nh os switch"
     "  boot      Gera e registra a proxima geracao com nh os boot"
     "  test      Testa a geracao NixOS ou os perfis code/client/server/MCP"
-    "  home      Aplica o Home Manager do usuario atual"
+    "  home      Organiza e audita arquivos da Home (scan, report, duplicates, plan)"
     "  update    Atualiza os inputs da flake"
     "  pull      Atualiza /etc/kryonix com git fetch + git pull --rebase"
     "  deploy    Valida a flake e aplica /etc/kryonix no host atual"
@@ -139,8 +139,12 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --help|-h)
-      print_usage
-      exit 0
+      if [[ "$subcommand" == "home" || "$subcommand" == "graph" || "$subcommand" == "brain" || "$subcommand" == "mcp" || "$subcommand" == "vault" || "$subcommand" == "remote" ]]; then
+        extra_args+=("$1")
+      else
+        print_usage
+        exit 0
+      fi
       ;;
     --)
       shift
@@ -261,17 +265,24 @@ case "$subcommand" in
     ;;
 
   home)
-    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" ]]; then
-      kryonix_home "${extra_args[@]}"
-    else
-      update_flake_if_requested
-      cmd=(nh home switch "$flake_ref" -c "$home_target")
-      cmd+=("${verbose_args[@]}" "${dry_args[@]}")
-      if [[ "${#extra_args[@]}" -gt 0 ]]; then
-        cmd+=("--" "${extra_args[@]}")
-      fi
-      run_flake_command "${cmd[@]}"
+    # Delegação para o binário Rust kryonix-home (Home Brain)
+    if [[ "${#extra_args[@]}" -gt 0 ]]; then
+      case "${extra_args[0]}" in
+        scan|report|duplicates|plan|help|--help|-h)
+          kryonix_home "${extra_args[@]}"
+          exit $?
+          ;;
+      esac
     fi
+
+    # Comportamento legado: Home Manager switch via nh
+    update_flake_if_requested
+    cmd=(nh home switch "$flake_ref" -c "$home_target")
+    cmd+=("${verbose_args[@]}" "${dry_args[@]}")
+    if [[ "${#extra_args[@]}" -gt 0 ]]; then
+      cmd+=("--" "${extra_args[@]}")
+    fi
+    run_flake_command "${cmd[@]}"
     ;;
 
   rebuild)
