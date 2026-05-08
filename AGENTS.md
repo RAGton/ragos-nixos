@@ -2125,3 +2125,34 @@ escrever no Neo4j;
 ativar daemon automático.
 
 Duplicata exata só pode ser marcada com SHA256 igual. Arquivos parecidos devem ser marcados como POSSIVEL_DUPLICATA e exigem revisão manual.
+---
+
+## Kryonix Home Brain — contexto de implementação
+
+Antes de modificar qualquer coisa relacionada ao comando `kryonix home`, organização da Home, scanner de arquivos, deduplicação, classificação de documentos, RAG/CAG de arquivos locais ou integração com Neo4j, leia obrigatoriamente:
+
+```txt
+.agents/kryonix-home-brain-implementation/README.md
+.agents/kryonix-home-brain-implementation/01-PLANO_IMPLEMENTACAO.md
+.agents/kryonix-home-brain-implementation/02-ARQUITETURA.md
+.agents/kryonix-home-brain-implementation/03-PROMPT_GEMINI_3_FLASH.md
+.agents/kryonix-home-brain-implementation/04-CHECKLIST_VALIDACAO.md
+.agents/kryonix-home-brain-implementation/05-POLITICA_SEGURANCA.md
+.agents/kryonix-home-brain-implementation/07-ROADMAP.md
+
+Regra obrigatória:
+
+A Fase 1 do Kryonix Home Brain é somente:
+scan -> report -> duplicates -> plan --dry-run
+
+Proibido na Fase 1:
+
+mover arquivos;
+renomear arquivos;
+apagar arquivos;
+chamar LLM;
+escrever no Brain;
+escrever no Neo4j;
+ativar daemon automático.
+
+Duplicata exata só pode ser marcada com SHA256 igual. Arquivos parecidos devem ser marcados como POSSIVEL_DUPLICATA e exigem revisão manual.
