@@ -21,9 +21,9 @@
   openssl,
   zlib,
   openrgb,
+  kryonixHome,
 }:
 let
-  kryonixHome = callPackage ./kryonix-home.nix { };
   runtimeLibPath = lib.makeLibraryPath [
     stdenv.cc.cc.lib
     zlib

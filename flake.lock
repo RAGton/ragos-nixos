@@ -181,6 +181,22 @@
         "type": "github"
       }
     },
+    "kryonix-home": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1778262626,
+        "narHash": "sha256-K+48EG+M5ReG2Kio9NNPEmkNF5mxztl44NSz68rurw8=",
+        "owner": "RAGton",
+        "repo": "KRYONIX-HOME",
+        "rev": "fda25b7d766cc2585481017e3f87403ef45ce645",
+        "type": "github"
+      },
+      "original": {
+        "owner": "RAGton",
+        "repo": "KRYONIX-HOME",
+        "type": "github"
+      }
+    },
     "nix-flatpak": {
       "locked": {
         "lastModified": 1739444422,
@@ -259,6 +275,7 @@
         "disko": "disko",
         "hardware": "hardware",
         "home-manager": "home-manager",
+        "kryonix-home": "kryonix-home",
         "nix-flatpak": "nix-flatpak",
         "nixpkgs": "nixpkgs",
         "nixpkgs-stable": "nixpkgs-stable"

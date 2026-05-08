@@ -71,6 +71,11 @@
       url = "github:openai/codex";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Kryonix Home Brain (scanner determinístico)
+    kryonix-home = {
+      url = "github:RAGton/KRYONIX-HOME";
+      flake = false;
+    };
   };
 
   # =============================

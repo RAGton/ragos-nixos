@@ -6,8 +6,12 @@ lib.forAllSystems (
       inherit system;
       config.allowUnfree = true;
     };
-    kryonixCli = pkgs.callPackage ../packages/kryonix-cli.nix { };
-    kryonixHome = pkgs.callPackage ../packages/kryonix-home.nix { };
+    kryonixHome = pkgs.callPackage ../packages/kryonix-home.nix {
+      kryonixHomeSrc = inputs.kryonix-home;
+    };
+    kryonixCli = pkgs.callPackage ../packages/kryonix-cli.nix {
+      inherit kryonixHome;
+    };
     denoCacheOnly = lib.mkDenoCacheOnly pkgs;
   in
   {
