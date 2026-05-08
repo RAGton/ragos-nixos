@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  outputs,
   ...
 }:
 let
@@ -19,8 +20,8 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.callPackage ../../../../packages/kryonix-cli.nix { };
-      defaultText = lib.literalExpression "pkgs.callPackage ../../../../packages/kryonix-cli.nix { }";
+      default = outputs.packages.${pkgs.system}.kryonix;
+      defaultText = lib.literalExpression "outputs.packages.\${pkgs.system}.kryonix";
       description = "Pacote da CLI `kryonix` exposto no PATH do sistema.";
     };
   };
