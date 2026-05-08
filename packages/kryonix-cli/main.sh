@@ -28,7 +28,6 @@ print_usage() {
     "  vault     Opera o vault via Brain (scan, index)"
     "  ollama    Controla o serviço Ollama (start, stop, status, run, vram, pull)"
     "  ai        Interage com a camada de IA (continue, status, checkpoint)"
-    "  graph     Gerencia a memoria estrutural do Brain (status, query, ingest)"
     "  rgb       Controla LEDs via OpenRGB (off, list, set)"
     "  remote    Gerencia o acesso e servicos remotos (vnc status, start, stop)"
     "Opcoes globais:"
