@@ -319,6 +319,7 @@ case "$subcommand" in
     run_flake_command "${cmd[@]}" || exit $?
 
     # Home Switch
+    home_target="${user_arg}@${flake_host}"
     blue_line "─── Aplicando Home Manager (Kryonix All) ───"
     cmd=(nh home switch "$flake_ref" -c "$home_target")
     cmd+=("${verbose_args[@]}" "${dry_args[@]}")
