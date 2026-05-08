@@ -1,13 +1,14 @@
 {
   rustPlatform,
   lib,
+  kryonixHomeSrc,
 }:
 rustPlatform.buildRustPackage {
   pname = "kryonix-home";
   version = "0.1.0";
 
-  src = ./kryonix-home;
-  cargoLock.lockFile = ./kryonix-home/Cargo.lock;
+  src = kryonixHomeSrc;
+  cargoLock.lockFile = "${kryonixHomeSrc}/Cargo.lock";
 
   meta = {
     description = "Kryonix Home Brain — scanner determinístico e organizador seguro da Home";
