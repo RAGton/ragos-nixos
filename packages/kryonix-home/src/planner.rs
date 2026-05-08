@@ -56,7 +56,7 @@ fn classify_file(file: &FileMetadata) -> Option<PlanProposal> {
 
     let (new_dir, reason, confidence) = match mime {
         // Documentos
-        m if m == "application/pdf" => ("Documentos/Revisar", "PDF detectado por MIME", 0.85),
+        "application/pdf" => ("Documentos/Revisar", "PDF detectado por MIME", 0.85),
         m if m.starts_with("text/") && matches!(ext, "md" | "txt" | "rst" | "org") => {
             ("Documentos/Revisar", "Documento de texto detectado", 0.80)
         }
@@ -81,20 +81,14 @@ fn classify_file(file: &FileMetadata) -> Option<PlanProposal> {
         m if m.starts_with("audio/") => ("Midia/Audio", "Áudio detectado por MIME", 0.90),
 
         // Compactados
-        m if matches!(
-            m,
-            "application/zip"
-                | "application/x-tar"
-                | "application/gzip"
-                | "application/x-7z-compressed"
-                | "application/x-rar-compressed"
-                | "application/x-bzip2"
-                | "application/x-xz"
-                | "application/zstd"
-        ) =>
-        {
-            ("Arquivos/Compactados", "Arquivo compactado detectado", 0.88)
-        }
+        "application/zip"
+        | "application/x-tar"
+        | "application/gzip"
+        | "application/x-7z-compressed"
+        | "application/x-rar-compressed"
+        | "application/x-bzip2"
+        | "application/x-xz"
+        | "application/zstd" => ("Arquivos/Compactados", "Arquivo compactado detectado", 0.88),
 
         // ISOs
         m if m == "application/x-iso9660-image" || matches!(ext, "iso" | "img") => {

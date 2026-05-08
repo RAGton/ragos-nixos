@@ -45,7 +45,7 @@ pub fn collect(path: &Path, is_symlink: bool) -> FileMetadata {
 
     let (size_bytes, modified_at) = match std::fs::metadata(path) {
         Ok(meta) => {
-            let mtime = meta.modified().ok().map(|t| DateTime::<Utc>::from(t));
+            let mtime = meta.modified().ok().map(DateTime::<Utc>::from);
             (meta.len(), mtime)
         }
         Err(_) => (0, None),

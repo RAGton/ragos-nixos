@@ -59,7 +59,7 @@ pub fn should_ignore_dir(path: &Path) -> bool {
     }
 
     // Ignorar diretórios da lista negra
-    if IGNORED_DIRS.iter().any(|d| name == *d) {
+    if IGNORED_DIRS.contains(&name) {
         return true;
     }
 
@@ -95,7 +95,7 @@ pub fn is_secret_file(path: &Path) -> bool {
         None => return true,
     };
 
-    if SECRET_FILES.iter().any(|s| name == *s) {
+    if SECRET_FILES.contains(&name) {
         return true;
     }
 

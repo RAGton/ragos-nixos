@@ -59,7 +59,7 @@ pub fn find_duplicates(scan: &ScanResult) -> Result<Vec<DuplicateGroup>> {
     // Passo 2: hash apenas candidatos (2+ arquivos com mesmo tamanho)
     let mut groups: Vec<DuplicateGroup> = Vec::new();
 
-    for (_size, candidates) in &by_size {
+    for candidates in by_size.values() {
         if candidates.len() < 2 {
             continue;
         }
