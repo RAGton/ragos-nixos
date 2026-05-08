@@ -395,6 +395,19 @@ Se uma tarefa não tiver um workflow correspondente em `.agents/workflows/`:
 - Ou crie um workflow novo, pequeno e específico.
 - **Nunca improvise** sem registrar as regras e a validação em um workflow ou plano.
 
+### 9.2 Proteção de arquivos não rastreados
+
+Antes de executar `rm`, `git clean`, `git checkout`, `git restore`, `git reset` ou qualquer limpeza de working tree, o agente deve listar arquivos não rastreados e criar backup.
+
+Comando obrigatório:
+
+```bash
+git status --short
+git ls-files --others --exclude-standard
+```
+
+Arquivos `??` nunca devem ser apagados sem backup explícito. Para limpar escopo, preferir mover para um diretório de backup temporário fora do repositório (ex: `/tmp/kryonix-untracked-backup/`).
+
 ---
 
 ## 10. Diretórios que não devem ser varridos sem motivo
@@ -2125,34 +2138,15 @@ escrever no Neo4j;
 ativar daemon automático.
 
 Duplicata exata só pode ser marcada com SHA256 igual. Arquivos parecidos devem ser marcados como POSSIVEL_DUPLICATA e exigem revisão manual.
----
 
-## Kryonix Home Brain — contexto de implementação
+--- 
 
-Antes de modificar qualquer coisa relacionada ao comando `kryonix home`, organização da Home, scanner de arquivos, deduplicação, classificação de documentos, RAG/CAG de arquivos locais ou integração com Neo4j, leia obrigatoriamente:
+# 3. Validar
 
-```txt
-.agents/kryonix-home-brain-implementation/README.md
-.agents/kryonix-home-brain-implementation/01-PLANO_IMPLEMENTACAO.md
-.agents/kryonix-home-brain-implementation/02-ARQUITETURA.md
-.agents/kryonix-home-brain-implementation/03-PROMPT_GEMINI_3_FLASH.md
-.agents/kryonix-home-brain-implementation/04-CHECKLIST_VALIDACAO.md
-.agents/kryonix-home-brain-implementation/05-POLITICA_SEGURANCA.md
-.agents/kryonix-home-brain-implementation/07-ROADMAP.md
+```bash
+cd /etc/kryonix
 
-Regra obrigatória:
+rg -n "Kryonix Home Brain|kryonix home|POSSIVEL_DUPLICATA|03-PROMPT_GEMINI_3_FLASH" AGENTS.md .agents/kryonix-home-brain-implementation
 
-A Fase 1 do Kryonix Home Brain é somente:
-scan -> report -> duplicates -> plan --dry-run
-
-Proibido na Fase 1:
-
-mover arquivos;
-renomear arquivos;
-apagar arquivos;
-chamar LLM;
-escrever no Brain;
-escrever no Neo4j;
-ativar daemon automático.
-
-Duplicata exata só pode ser marcada com SHA256 igual. Arquivos parecidos devem ser marcados como POSSIVEL_DUPLICATA e exigem revisão manual.
+git diff --check
+git diff --stat
