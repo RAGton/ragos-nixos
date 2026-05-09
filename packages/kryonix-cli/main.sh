@@ -70,12 +70,19 @@ print_subcommand_help() {
       ;;
     home)
       printf '  🏠 \033[1mHOME\033[0m\n'
-      printf '  Uso: kryonix home [scan|report|duplicates|plan] [args]\n\n'
+      printf '  Uso: kryonix home [subcomando] [args]\n\n'
       printf '  Sem argumentos: Aplica perfil Home Manager via nh.\n'
-      printf '  Subcomandos Brain:\n'
-      printf '    scan       Mapeia diretórios da home\n'
-      printf '    report     Gera relatório de uso\n'
-      printf '    duplicates Busca arquivos duplicados\n'
+      printf '  Subcomandos Home Brain:\n'
+      printf '    scan             Escaneia diretórios seguros da Home\n'
+      printf '    report           Mostra relatório do último scan\n'
+      printf '    duplicates       Lista duplicatas exatas por SHA256\n'
+      printf '    plan --dry-run   Gera plano de organização sem mutação\n'
+      printf '    plan --json      Gera plano em JSON\n'
+      printf '    manifest create  Cria manifesto auditável do plano\n'
+      printf '    manifest show    Mostra resumo do manifesto mais recente\n'
+      printf '    apply --dry-run  Simula manifesto sem alterar arquivos\n'
+      printf '    apply --confirm  Aplica ações seguras com auditoria\n'
+      printf '    rollback         Reverte último apply auditado\n'
       ;;
     brain)
       printf '  🧠 \033[1mBRAIN\033[0m\n'
@@ -236,7 +243,7 @@ while [[ $# -gt 0 ]]; do
       if [[ "$subcommand" == "test" ]] && [[ $is_test_target -eq 1 ]]; then
         extra_args+=("$1")
       elif [[ $is_positional_host -eq 1 ]] && [[ -z "$host_arg" && "$1" != -* ]]; then
-        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" ]]; then
+        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" || "$1" == "manifest" || "$1" == "apply" || "$1" == "rollback" ]]; then
           extra_args+=("$1")
         else
           host_arg="$1"
@@ -290,7 +297,7 @@ case "$subcommand" in
     ;;
 
   home)
-    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" ]]; then
+    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" || "${extra_args[0]}" == "manifest" || "${extra_args[0]}" == "apply" || "${extra_args[0]}" == "rollback" ]]; then
       needs_flake=0
     else
       needs_flake=1
@@ -385,7 +392,7 @@ case "$subcommand" in
     # Delegação para o binário Rust kryonix-home (Home Brain)
     if [[ "${#extra_args[@]}" -gt 0 ]]; then
       case "${extra_args[0]}" in
-        scan|report|duplicates|plan|help|--help|-h)
+        scan|report|duplicates|plan|manifest|apply|rollback|help|--help|-h)
           kryonix_home "${extra_args[@]}"
           exit $?
           ;;
