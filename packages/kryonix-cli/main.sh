@@ -248,7 +248,7 @@ while [[ $# -gt 0 ]]; do
       if [[ "$subcommand" == "test" ]] && [[ $is_test_target -eq 1 ]]; then
         extra_args+=("$1")
       elif [[ $is_positional_host -eq 1 ]] && [[ -z "$host_arg" && "$1" != -* ]]; then
-        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" || "$1" == "manifest" || "$1" == "apply" || "$1" == "rollback" ]]; then
+        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" || "$1" == "manifest" || "$1" == "apply" || "$1" == "rollback" || "$1" == "categories" || "$1" == "explain" ]]; then
           extra_args+=("$1")
         else
           host_arg="$1"
@@ -269,7 +269,7 @@ fi
 # Detecção de ajuda focada
 # Para 'home' com subcomando Brain, não interceptar --help aqui;
 # delegar ao binário Rust kryonix-home para que ele mostre seu próprio help.
-if ! { [[ "$subcommand" == "home" ]] && [[ "${#extra_args[@]}" -gt 0 ]] && case "${extra_args[0]}" in scan|report|duplicates|plan|manifest|apply|rollback) true ;; *) false ;; esac; }; then
+if ! { [[ "$subcommand" == "home" ]] && [[ "${#extra_args[@]}" -gt 0 ]] && case "${extra_args[0]}" in scan|report|duplicates|plan|manifest|apply|rollback|categories|explain) true ;; *) false ;; esac; }; then
   for arg in "${extra_args[@]}"; do
     if [[ "$arg" == "--help" || "$arg" == "-h" ]]; then
       print_subcommand_help "$subcommand"
@@ -306,7 +306,7 @@ case "$subcommand" in
     ;;
 
   home)
-    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" || "${extra_args[0]}" == "manifest" || "${extra_args[0]}" == "apply" || "${extra_args[0]}" == "rollback" ]]; then
+    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" || "${extra_args[0]}" == "manifest" || "${extra_args[0]}" == "apply" || "${extra_args[0]}" == "rollback" || "${extra_args[0]}" == "categories" || "${extra_args[0]}" == "explain" ]]; then
       needs_flake=0
     else
       needs_flake=1
@@ -401,7 +401,7 @@ case "$subcommand" in
     # Delegação para o binário Rust kryonix-home (Home Brain)
     if [[ "${#extra_args[@]}" -gt 0 ]]; then
       case "${extra_args[0]}" in
-        scan|report|duplicates|plan|manifest|apply|rollback|help|--help|-h)
+        scan|report|duplicates|plan|manifest|apply|rollback|categories|explain|help|--help|-h)
           kryonix_home "${extra_args[@]}"
           exit $?
           ;;
