@@ -73,16 +73,22 @@ print_subcommand_help() {
       printf '  Uso: kryonix home [subcomando] [args]\n\n'
       printf '  Sem argumentos: Aplica perfil Home Manager via nh.\n'
       printf '  Subcomandos Home Brain:\n'
-      printf '    scan             Escaneia diretórios seguros da Home\n'
-      printf '    report           Mostra relatório do último scan\n'
-      printf '    duplicates       Lista duplicatas exatas por SHA256\n'
-      printf '    plan --dry-run   Gera plano de organização sem mutação\n'
-      printf '    plan --json      Gera plano em JSON\n'
-      printf '    manifest create  Cria manifesto auditável do plano\n'
-      printf '    manifest show    Mostra resumo do manifesto mais recente\n'
-      printf '    apply --dry-run  Simula manifesto sem alterar arquivos\n'
-      printf '    apply --confirm  Aplica ações seguras com auditoria\n'
-      printf '    rollback         Reverte último apply auditado\n'
+      printf '    scan                  Escaneia diretórios seguros da Home\n'
+      printf '    report                Mostra relatório do último scan\n'
+      printf '    duplicates            Lista duplicatas exatas por SHA256\n'
+      printf '    projects              Lista projetos detectados como unidades\n'
+      printf '    categories            Lista categorias da taxonomia\n'
+      printf '    explain <arquivo>     Explica classificação de arquivo/projeto\n'
+      printf '    plan                  Gera plano seguro\n'
+      printf '    plan --summary        Mostra dashboard curto\n'
+      printf '    plan --only-projects  Mostra apenas projetos\n'
+      printf '    plan --limit N        Limita propostas exibidas\n'
+      printf '    manifest create       Cria manifesto auditável\n'
+      printf '    manifest show         Mostra manifesto mais recente\n'
+      printf '    apply --dry-run       Simula manifesto\n'
+      printf '    apply --confirm       Aplica manifesto revisado\n'
+      printf '    rollback              Reverte último apply\n'
+      printf '    export-memory         Exporta eventos JSONL\n'
       printf '\n'
       printf '  Home Manager:\n'
       printf '    kryonix home     Aplica perfil Home Manager via nh\n'
@@ -248,7 +254,7 @@ while [[ $# -gt 0 ]]; do
       if [[ "$subcommand" == "test" ]] && [[ $is_test_target -eq 1 ]]; then
         extra_args+=("$1")
       elif [[ $is_positional_host -eq 1 ]] && [[ -z "$host_arg" && "$1" != -* ]]; then
-        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" || "$1" == "manifest" || "$1" == "apply" || "$1" == "rollback" || "$1" == "categories" || "$1" == "explain" ]]; then
+        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" || "$1" == "manifest" || "$1" == "apply" || "$1" == "rollback" || "$1" == "categories" || "$1" == "explain" || "$1" == "export-memory" || "$1" == "projects" ]]; then
           extra_args+=("$1")
         else
           host_arg="$1"
@@ -269,7 +275,7 @@ fi
 # Detecção de ajuda focada
 # Para 'home' com subcomando Brain, não interceptar --help aqui;
 # delegar ao binário Rust kryonix-home para que ele mostre seu próprio help.
-if ! { [[ "$subcommand" == "home" ]] && [[ "${#extra_args[@]}" -gt 0 ]] && case "${extra_args[0]}" in scan|report|duplicates|plan|manifest|apply|rollback|categories|explain) true ;; *) false ;; esac; }; then
+if ! { [[ "$subcommand" == "home" ]] && [[ "${#extra_args[@]}" -gt 0 ]] && case "${extra_args[0]}" in scan|report|duplicates|plan|manifest|apply|rollback|categories|explain|export-memory|projects) true ;; *) false ;; esac; }; then
   for arg in "${extra_args[@]}"; do
     if [[ "$arg" == "--help" || "$arg" == "-h" ]]; then
       print_subcommand_help "$subcommand"
@@ -306,7 +312,7 @@ case "$subcommand" in
     ;;
 
   home)
-    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" || "${extra_args[0]}" == "manifest" || "${extra_args[0]}" == "apply" || "${extra_args[0]}" == "rollback" || "${extra_args[0]}" == "categories" || "${extra_args[0]}" == "explain" ]]; then
+    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" || "${extra_args[0]}" == "manifest" || "${extra_args[0]}" == "apply" || "${extra_args[0]}" == "rollback" || "${extra_args[0]}" == "categories" || "${extra_args[0]}" == "explain" || "${extra_args[0]}" == "export-memory" || "${extra_args[0]}" == "projects" ]]; then
       needs_flake=0
     else
       needs_flake=1
@@ -401,7 +407,7 @@ case "$subcommand" in
     # Delegação para o binário Rust kryonix-home (Home Brain)
     if [[ "${#extra_args[@]}" -gt 0 ]]; then
       case "${extra_args[0]}" in
-        scan|report|duplicates|plan|manifest|apply|rollback|categories|explain|help|--help|-h)
+        scan|report|duplicates|plan|manifest|apply|rollback|categories|explain|export-memory|projects|help|--help|-h)
           kryonix_home "${extra_args[@]}"
           exit $?
           ;;
