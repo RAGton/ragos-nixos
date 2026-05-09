@@ -135,11 +135,12 @@ validate_event_fields() {
 
     # 2. Extract and assert required fields
     local fields=(
-        "event_id" "timestamp" "hostname" "user" "source_type" "file_path"
-        "file_hash" "mime" "size" "action" "category_id" "category_label"
-        "category_dir" "taxonomy_score" "matched_keywords" "suggested_dir"
-        "suggested_filename" "naming_profile" "taxonomy_profile"
-        "manifest_id" "audit_id" "action_status" "reason" "source_path" "target_path"
+        "schema_version" "event_id" "timestamp" "hostname" "user" "source_type"
+        "source_run_id" "file_path" "file_hash" "mime" "size" "action" "category_id"
+        "category_label" "category_dir" "taxonomy_score" "matched_keywords"
+        "suggested_dir" "suggested_filename" "naming_profile" "taxonomy_profile"
+        "manifest_id" "audit_id" "action_status" "reason" "source_path"
+        "target_path" "content_exported"
     )
 
     for field in "${fields[@]}"; do
@@ -162,6 +163,14 @@ validate_event_fields() {
     actual_source_type="$(echo "$line" | jq -r '.source_type')"
     if [[ "$actual_source_type" != "$source_type" ]]; then
         log_error "Expected source_type '$source_type', got '$actual_source_type'"
+        return 1
+    fi
+    
+    # 5. Verify content_exported is exactly false
+    local content_exported
+    content_exported="$(echo "$line" | jq -r '.content_exported')"
+    if [[ "$content_exported" != "false" ]]; then
+        log_error "content_exported MUST be false! Got: $content_exported"
         return 1
     fi
 
