@@ -14,15 +14,25 @@ Em um repositório já clonado:
 git submodule update --init --recursive
 ```
 
-## Fluxo de Desenvolvimento (ex: kryonix-home)
+## Arquitetura de Submódulos (Opção A)
+
+O Kryonix adotou o padrão "Opção A" para o gerenciamento de submódulos, que consiste em:
+- **Submódulo local (`packages/<pacote>`)**: Utilizado apenas para desenvolvimento, visualização do código-fonte e auditoria.
+- **Flake Input Remoto (`flake.nix`)**: Fonte oficial para o build do Nix.
+- **`flake.lock`**: Garante a pinagem da versão reproduzível usada pelo sistema.
+
+### Pacotes Atuais neste Padrão
+- `packages/kryonix-home`
+- `packages/kryonix-brain-lightrag`
+
+## Fluxo de Desenvolvimento
 
 Para editar um pacote que é submódulo:
 
 1. **Edição Local**:
    ```bash
-   cd packages/kryonix-home
+   cd packages/<pacote>
    # fazer alterações
-   cargo test
    git add .
    git commit -m "feat: nova funcionalidade"
    git push origin main
@@ -32,9 +42,9 @@ Para editar um pacote que é submódulo:
    O superprojeto (Kryonix) rastreia tanto o ponteiro do Git quanto o input do Flake.
    ```bash
    cd /etc/kryonix
-   nix flake lock --update-input kryonix-home
-   git add packages/kryonix-home flake.lock
-   git commit -m "chore(home): update kryonix-home"
+   nix flake lock --update-input <pacote>
+   git add packages/<pacote> flake.lock
+   git commit -m "chore(<pacote>): update <pacote>"
    ```
 
 ## Regras de Ouro

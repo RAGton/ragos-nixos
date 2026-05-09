@@ -36,10 +36,10 @@ O Kryonix CLI abstrai o gerenciamento dos serviços. O comando é **host-aware**
   kryonix remote vnc stop
   ```
 
-Após iniciar o túnel (quando o status informar que a "Conexão VNC está pronta"), basta abrir o cliente VNC no Inspiron apontando para a porta roteada **5901**:
+Após iniciar o túnel (quando o status informar que a "Conexão VNC está pronta"), basta abrir o seu cliente VNC (como o **Remmina**) no Inspiron e conectar no endereço roteado:
 
 ```bash
-vncviewer 127.0.0.1:5901
+# Servidor: 127.0.0.1:5901
 ```
 
 ## Validação e Solução de Problemas
