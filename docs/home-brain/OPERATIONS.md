@@ -93,3 +93,24 @@ Após o rollback, o sistema volta a ficar no estado rigorosamente idêntico ao e
 > 2. **NUNCA altere arquivos de estado JSON manualmente** (como `active_transaction.json`) a menos que seja um sysadmin sênior depurando uma falha extrema, pois isso quebrará a integridade do rollback.
 > 3. **NUNCA execute `apply --confirm` sem revisar o manifesto previamente** através de `kryonix home manifest show` ou `apply --dry-run`.
 > 4. **NUNCA force movimentações em pastas com privilégios administrativos** (`/root`, `/etc`, etc.) através da CLI de usuário comum.
+
+---
+
+## 5. Validação em Sandbox (Suíte de Testes)
+
+Para garantir que a lógica determinística de taxonomia, rebatimento de empates, rollback perfeito e proteção contra overwrite estão operando com 100% de estabilidade e segurança, existe uma suíte de testes automatizados executada em sandbox temporário isolado (`mktemp -d`).
+
+Essa validação simula perfeitamente tanto o binário nativo compilado quanto o wrapper de execução do NixOS (`nix run .#kryonix -- home`).
+
+### Executando a validação:
+
+```bash
+cd /etc/kryonix
+./scripts/validate-home-brain-phase3b.sh
+```
+
+### O que esta suíte valida:
+1. **Perfil Customizado de Taxonomia (TOML)**: Cria e injeta `home-taxonomy.toml` via diretório `$HOME` emulado, validando que o motor o detecta e aplica a categoria `teste.custom`.
+2. **Resolução Determinística de Conflitos (Empate)**: Simula o arquivo `boleto cnh contrato.pdf` que causa colisão idêntica de pesos e valida que ele é remetido com segurança a `Documentos/00_Inbox/Conflitos/` sob a regra `taxonomy_tie_breaking`.
+3. **Rollback Físico Perfeito**: Compara a listagem física de todos os arquivos antes e após a movimentação, garantindo consistência binária absoluta.
+4. **Proteção Anti-Sobrescrita (Anti-Overwrite)**: Cria um conflito de destino com hashes criptográficos (SHA-256) diferentes e assegura que o arquivo existente permanece intocado e o arquivo de origem é preservado na origem sem perdas.
