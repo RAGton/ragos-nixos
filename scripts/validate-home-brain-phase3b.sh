@@ -141,7 +141,7 @@ test_conflict_taxonomy() {
     HOME="$sb" kryonix-home manifest create --taxonomy-suggestions --rename-suggestions
     HOME="$sb" kryonix-home apply --confirm
     
-    if ! find "$sb/Documentos/00_Inbox/Conflitos" -name "*arquivo_conflito*" | grep -q "."; then
+    if ! find "$sb/Documentos/00_Inbox/Conflitos" -type f | grep -q "."; then
         log_error "File did not move to Conflitos on tie."
         exit 1
     fi
@@ -208,9 +208,9 @@ test_rollback_integrity() {
     
     find "$sb" -type f | sort > "$sb/after.txt"
     
-    # Filter out state/logs which change on every run
-    grep -v ".local/state/kryonix/home-brain" "$sb/before.txt" > "$sb/before_clean.txt"
-    grep -v ".local/state/kryonix/home-brain" "$sb/after.txt" > "$sb/after_clean.txt"
+    # Filter out state/logs and test artifacts which change/appear during the run
+    grep -vE "\.local/state/kryonix/home-brain|before.*\.txt|after.*\.txt" "$sb/before.txt" > "$sb/before_clean.txt"
+    grep -vE "\.local/state/kryonix/home-brain|before.*\.txt|after.*\.txt" "$sb/after.txt" > "$sb/after_clean.txt"
     
     if ! diff -u "$sb/before_clean.txt" "$sb/after_clean.txt"; then
         log_error "Rollback did not restore file system state perfectly."

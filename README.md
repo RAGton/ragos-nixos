@@ -227,6 +227,7 @@ Fases concluídas:
 - **Fase 2**: manifest / apply / rollback
 - **Fase 3A**: renomeação determinística ABNT-like
 - **Fase 3B**: taxonomia determinística e declarativa baseada em regras
+- **Fase 4A**: Memory Bridge (exportação JSONL auditável para o Brain)
 
 ### Fluxo Seguro de Operação
 
@@ -245,6 +246,9 @@ kryonix home apply --confirm
 
 # 4. Se arrepender ou errar, reverta 100% da transação instantaneamente
 kryonix home rollback
+
+# 5. Exportar memória para o Kryonix Brain (RAG/Graph)
+kryonix home export-memory --from latest-manifest --jsonl
 ```
 
 Para detalhes de arquitetura, configurações de TOML e guias operacionais, consulte a [Documentação do Home Brain](docs/home-brain/README.md).
