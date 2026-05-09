@@ -200,11 +200,11 @@
     "kryonix-home": {
       "flake": false,
       "locked": {
-        "lastModified": 1778334526,
-        "narHash": "sha256-biIHa0/uwWP9O9FxZ8Vs4RqfcfjEtczvlNrjlA9tSRw=",
+        "lastModified": 1778334730,
+        "narHash": "sha256-LNBIZAgnrskFngXNygDPS8TCZLoKGKjO70m8P0JBNtQ=",
         "ref": "refs/heads/main",
-        "rev": "06d85d23ee0394985bb449d673aa6a5d805cdbdd",
-        "revCount": 10,
+        "rev": "0e51069a23195720e4dcf9abf2516a4e2108abe0",
+        "revCount": 11,
         "type": "git",
         "url": "file:./packages/kryonix-home"
       },
