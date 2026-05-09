@@ -83,6 +83,11 @@ print_subcommand_help() {
       printf '    apply --dry-run  Simula manifesto sem alterar arquivos\n'
       printf '    apply --confirm  Aplica ações seguras com auditoria\n'
       printf '    rollback         Reverte último apply auditado\n'
+      printf '\n'
+      printf '  Home Manager:\n'
+      printf '    kryonix home     Aplica perfil Home Manager via nh\n'
+      printf '\n'
+      printf '  ⚠ apply --confirm nunca deve ser usado sem revisar o manifesto.\n'
       ;;
     brain)
       printf '  🧠 \033[1mBRAIN\033[0m\n'
@@ -262,12 +267,16 @@ if [[ "$subcommand" == "test" ]] && [[ "$EUID" -eq 0 ]]; then
 fi
 
 # Detecção de ajuda focada
-for arg in "${extra_args[@]}"; do
-  if [[ "$arg" == "--help" || "$arg" == "-h" ]]; then
-    print_subcommand_help "$subcommand"
-    exit 0
-  fi
-done
+# Para 'home' com subcomando Brain, não interceptar --help aqui;
+# delegar ao binário Rust kryonix-home para que ele mostre seu próprio help.
+if ! { [[ "$subcommand" == "home" ]] && [[ "${#extra_args[@]}" -gt 0 ]] && case "${extra_args[0]}" in scan|report|duplicates|plan|manifest|apply|rollback) true ;; *) false ;; esac; }; then
+  for arg in "${extra_args[@]}"; do
+    if [[ "$arg" == "--help" || "$arg" == "-h" ]]; then
+      print_subcommand_help "$subcommand"
+      exit 0
+    fi
+  done
+fi
 
 flake_host="${host_arg:-$(map_runtime_host)}"
 # Mapeamento do alias 'all'
