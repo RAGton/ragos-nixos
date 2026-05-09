@@ -218,6 +218,39 @@ curl -fsS -H "X-API-Key: <chave>" http://10.0.0.2:8000/search \
 
 ---
 
+## Kryonix Home Brain
+
+O **Kryonix Home Brain** organiza e estrutura arquivos pessoais da sua Home de forma segura, declarativa e auditável.
+
+Fases concluídas:
+- **Fase 1**: scan / report / duplicates / plan
+- **Fase 2**: manifest / apply / rollback
+- **Fase 3A**: renomeação determinística ABNT-like
+- **Fase 3B**: taxonomia determinística e declarativa baseada em regras
+
+### Fluxo Seguro de Operação
+
+Por segurança de dados, **não existe auto-delete**. Todas as decisões são descritas em um manifesto estruturado e aplicadas somente com confirmação explícita:
+
+```sh
+# 1. Planejar as movimentações com explicabilidade das heurísticas
+kryonix home plan --taxonomy-suggestions --rename-suggestions --why
+
+# 2. Criar o manifesto de ações físicas
+kryonix home manifest create --taxonomy-suggestions --rename-suggestions
+
+# 3. Simular (dry-run) ou aplicar (confirm)
+kryonix home apply --dry-run
+kryonix home apply --confirm
+
+# 4. Se arrepender ou errar, reverta 100% da transação instantaneamente
+kryonix home rollback
+```
+
+Para detalhes de arquitetura, configurações de TOML e guias operacionais, consulte a [Documentação do Home Brain](docs/home-brain/README.md).
+
+---
+
 ## Acesso remoto seguro ao Glacier
 
 Status: Implementado e validado.
