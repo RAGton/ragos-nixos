@@ -200,14 +200,18 @@
     "kryonix-home": {
       "flake": false,
       "locked": {
-        "path": "./packages/kryonix-home",
-        "type": "path"
+        "lastModified": 1778334526,
+        "narHash": "sha256-biIHa0/uwWP9O9FxZ8Vs4RqfcfjEtczvlNrjlA9tSRw=",
+        "ref": "refs/heads/main",
+        "rev": "06d85d23ee0394985bb449d673aa6a5d805cdbdd",
+        "revCount": 10,
+        "type": "git",
+        "url": "file:./packages/kryonix-home"
       },
       "original": {
-        "path": "./packages/kryonix-home",
-        "type": "path"
-      },
-      "parent": []
+        "type": "git",
+        "url": "file:./packages/kryonix-home"
+      }
     },
     "nix-flatpak": {
       "locked": {
