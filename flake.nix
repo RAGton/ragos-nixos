@@ -73,7 +73,7 @@
     };
     # Kryonix Home Brain (scanner determinístico)
     kryonix-home = {
-      url = "github:RAGton/KRYONIX-HOME";
+      url = "path:./packages/kryonix-home";
       flake = false;
     };
 

@@ -200,18 +200,14 @@
     "kryonix-home": {
       "flake": false,
       "locked": {
-        "lastModified": 1778331016,
-        "narHash": "sha256-RRvMSGitQyMnwuzqQ1gk/HbjnqCgVieYh870pEk8gFA=",
-        "owner": "RAGton",
-        "repo": "KRYONIX-HOME",
-        "rev": "0dac85c41e5c604f2634ad2e4fa6b4d43a4a48ee",
-        "type": "github"
+        "path": "./packages/kryonix-home",
+        "type": "path"
       },
       "original": {
-        "owner": "RAGton",
-        "repo": "KRYONIX-HOME",
-        "type": "github"
-      }
+        "path": "./packages/kryonix-home",
+        "type": "path"
+      },
+      "parent": []
     },
     "nix-flatpak": {
       "locked": {
