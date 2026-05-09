@@ -7,7 +7,7 @@ lib.forAllSystems (
       config.allowUnfree = true;
     };
     kryonixHome = pkgs.callPackage ../packages/kryonix-home.nix {
-      kryonixHomeSrc = inputs.kryonix-home;
+      kryonixHomeSrc = ../packages/kryonix-home;
     };
     kryonixBrainLightrag = pkgs.callPackage ../packages/kryonix-brain-lightrag.nix {
       kryonix-brain-lightrag-src = inputs.kryonix-brain-lightrag;
