@@ -81,6 +81,7 @@
   # BOOT (hardware-specific)
   # =========================
   boot = {
+    supportedFilesystems = [ "btrfs" ];
     loader = {
       systemd-boot.enable = lib.mkForce false;
       grub = {
@@ -98,7 +99,6 @@
       };
     };
 
-    initrd.kernelModules = lib.mkForce [ ];
     initrd.systemd.enable = true;
   };
 
