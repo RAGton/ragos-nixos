@@ -350,7 +350,7 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = lightragWarmupScript;
-        EnvironmentFile = cfg.environmentFile;
+        EnvironmentFile = "-${cfg.environmentFile}";
         User = cfg.user;
         Group = cfg.group;
         WorkingDirectory = cfg.packageDir;
@@ -388,8 +388,8 @@ in
         ExecStart = brainApiStartScript;
         WorkingDirectory = cfg.packageDir;
         EnvironmentFile = [
-          cfg.environmentFile
-          cfg.neo4jEnvironmentFile
+          "-${cfg.environmentFile}"
+          "-${cfg.neo4jEnvironmentFile}"
         ];
         Restart = "on-failure";
         RestartSec = "10";
