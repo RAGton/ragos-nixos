@@ -88,6 +88,7 @@ print_subcommand_help() {
       printf '    apply --dry-run       Simula manifesto\n'
       printf '    apply --confirm       Aplica manifesto revisado\n'
       printf '    rollback              Reverte último apply\n'
+      printf '    downloads             Gera planejamento focado em limpar ~/Downloads\n'
       printf '    export-memory         Exporta eventos JSONL\n'
       printf '\n'
       printf '  Home Manager:\n'

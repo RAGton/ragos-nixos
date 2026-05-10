@@ -34,74 +34,136 @@ kryonix_ollama() {
   local ollama_sub="$1"
   shift
 
-  case "$ollama_sub" in
-    start)
-      printf '🚀 Iniciando Ollama...\n'
-      sudo systemctl start ollama
-      # Polling até porta 11434 responder (max 30s)
-      for _i in $(seq 1 30); do
-        if curl -s -o /dev/null -w "" http://127.0.0.1:11434/ 2>/dev/null; then
-          printf '✅ Ollama ativo na porta 11434\n'
-          # Mostrar VRAM
-          if command -v nvidia-smi &>/dev/null; then
-            nvidia-smi --query-gpu=memory.used,memory.free,memory.total --format=csv,noheader
+  local host; host="$(map_runtime_host)"
+
+  if [[ "$host" == "glacier" ]]; then
+    # Local Ollama service on Glacier
+    case "$ollama_sub" in
+      start)
+        printf '🚀 Iniciando Ollama local no Glacier...\n'
+        sudo systemctl start ollama
+        # Polling até porta 11434 responder (max 30s)
+        for _i in $(seq 1 30); do
+          if curl -s -o /dev/null -w "" http://127.0.0.1:11434/ 2>/dev/null; then
+            printf '✅ Ollama ativo na porta 11434\n'
+            # Mostrar VRAM
+            if command -v nvidia-smi &>/dev/null; then
+              nvidia-smi --query-gpu=memory.used,memory.free,memory.total --format=csv,noheader
+            fi
+            return 0
           fi
-          return 0
-        fi
-        sleep 1
-      done
-      printf '⚠️  Ollama não respondeu em 30s. Verifique: journalctl -u ollama --no-pager -n 20\n' >&2
-      return 1
-      ;;
-    stop)
-      printf '🛑 Parando Ollama...\n'
-      sudo systemctl stop ollama
-      printf '✅ Ollama parado.\n'
-      if command -v nvidia-smi &>/dev/null; then
-        printf 'VRAM livre: '
-        nvidia-smi --query-gpu=memory.free --format=csv,noheader
-      fi
-      ;;
-    status)
-      systemctl status ollama --no-pager 2>/dev/null || printf 'Ollama não está rodando.\n'
-      if command -v nvidia-smi &>/dev/null; then
-        printf '\n── GPU VRAM ──\n'
-        nvidia-smi --query-gpu=memory.used,memory.free,memory.total --format=csv,noheader
-      fi
-      ;;
-    run)
-      local model="${1:-qwen2.5-coder:7b}"
-      # Garante que Ollama está rodando
-      if ! curl -s -o /dev/null http://127.0.0.1:11434/ 2>/dev/null; then
-        printf '🚀 Ollama não está ativo. Iniciando...\n'
-        sudo systemctl start ollama
-        sleep 3
-      fi
-      exec ollama run "$model"
-      ;;
-    vram)
-      if command -v nvidia-smi &>/dev/null; then
-        nvidia-smi --query-gpu=name,memory.used,memory.free,memory.total,temperature.gpu --format=csv,noheader
-      else
-        printf 'nvidia-smi não encontrado.\n' >&2
+          sleep 1
+        done
+        printf '⚠️  Ollama não respondeu em 30s. Verifique: journalctl -u ollama --no-pager -n 20\n' >&2
         return 1
-      fi
-      ;;
-    pull)
-      local model="${1:-qwen2.5-coder:7b}"
-      # Garante que Ollama está rodando para pull
-      if ! curl -s -o /dev/null http://127.0.0.1:11434/ 2>/dev/null; then
-        printf '🚀 Ollama não está ativo. Iniciando para pull...\n'
-        sudo systemctl start ollama
-        sleep 3
-      fi
-      ollama pull "$model"
-      ;;
-    *)
-      printf 'Uso: kryonix ollama <start|stop|status|run|vram|pull> [model]\n' >&2
-      return 1
-      ;;
-  esac
+        ;;
+      stop)
+        printf '🛑 Parando Ollama local no Glacier...\n'
+        sudo systemctl stop ollama
+        printf '✅ Ollama parado.\n'
+        if command -v nvidia-smi &>/dev/null; then
+          printf 'VRAM livre: '
+          nvidia-smi --query-gpu=memory.free --format=csv,noheader
+        fi
+        ;;
+      status)
+        systemctl status ollama --no-pager 2>/dev/null || printf 'Ollama não está rodando.\n'
+        if command -v nvidia-smi &>/dev/null; then
+          printf '\n── GPU VRAM ──\n'
+          nvidia-smi --query-gpu=memory.used,memory.free,memory.total --format=csv,noheader
+        fi
+        ;;
+      run)
+        local model="${1:-qwen2.5-coder:7b}"
+        # Garante que Ollama está rodando
+        if ! curl -s -o /dev/null http://127.0.0.1:11434/ 2>/dev/null; then
+          printf '🚀 Ollama não está ativo. Iniciando...\n'
+          sudo systemctl start ollama
+          sleep 3
+        fi
+        exec ollama run "$model"
+        ;;
+      vram)
+        if command -v nvidia-smi &>/dev/null; then
+          nvidia-smi --query-gpu=name,memory.used,memory.free,memory.total,temperature.gpu --format=csv,noheader
+        else
+          printf 'nvidia-smi não encontrado.\n' >&2
+          return 1
+        fi
+        ;;
+      pull)
+        local model="${1:-qwen2.5-coder:7b}"
+        if ! curl -s -o /dev/null http://127.0.0.1:11434/ 2>/dev/null; then
+          printf '🚀 Ollama não está ativo. Iniciando para pull...\n'
+          sudo systemctl start ollama
+          sleep 3
+        fi
+        ollama pull "$model"
+        ;;
+      *)
+        printf 'Uso: kryonix ollama <start|stop|status|run|vram|pull> [model]\n' >&2
+        return 1
+        ;;
+    esac
+  else
+    # Remote Ollama client on Inspiron/Other clients via SSH tunnel to Glacier
+    case "$ollama_sub" in
+      start)
+        printf '🚀 Iniciando túnel SSH para o Ollama remoto no Glacier...\n'
+        systemctl --user start kryonix-ollama-tunnel
+        # Polling até porta 11434 responder (max 30s)
+        for _i in $(seq 1 30); do
+          if curl -s -o /dev/null -w "" http://127.0.0.1:11434/ 2>/dev/null; then
+            printf '✅ Túnel ativo! Ollama remoto pronto na porta local 11434\n'
+            return 0
+          fi
+          sleep 1
+        done
+        printf '⚠️  Túnel/Ollama remoto não respondeu na porta local 11434 em 30s.\n' >&2
+        printf 'Verifique com: systemctl --user status kryonix-ollama-tunnel\n' >&2
+        return 1
+        ;;
+      stop)
+        printf '🛑 Parando túnel SSH do Ollama remoto...\n'
+        systemctl --user stop kryonix-ollama-tunnel
+        printf '✅ Túnel parado.\n'
+        ;;
+      status)
+        systemctl --user status kryonix-ollama-tunnel --no-pager 2>/dev/null || printf 'Túnel do Ollama não está rodando.\n'
+        if curl -s -o /dev/null http://127.0.0.1:11434/ 2>/dev/null; then
+          printf '✅ Ollama remoto está RESPONDENDO via túnel na porta local 11434\n'
+        else
+          printf '❌ Ollama remoto NÃO está respondendo na porta local 11434\n'
+        fi
+        ;;
+      run)
+        local model="${1:-qwen2.5-coder:7b}"
+        if ! curl -s -o /dev/null http://127.0.0.1:11434/ 2>/dev/null; then
+          printf '🚀 Túnel Ollama remoto não está ativo. Iniciando...\n'
+          systemctl --user start kryonix-ollama-tunnel
+          sleep 3
+        fi
+        exec ollama run "$model"
+        ;;
+      vram)
+        printf 'Verificando GPU VRAM no Glacier remoto via SSH...\n'
+        ssh glacier-public nvidia-smi --query-gpu=name,memory.used,memory.free,memory.total,temperature.gpu --format=csv,noheader 2>/dev/null || printf 'Não foi possível conectar ao Glacier via SSH.\n'
+        ;;
+      pull)
+        local model="${1:-qwen2.5-coder:7b}"
+        if ! curl -s -o /dev/null http://127.0.0.1:11434/ 2>/dev/null; then
+          printf '🚀 Túnel Ollama remoto não está ativo. Iniciando para pull...\n'
+          systemctl --user start kryonix-ollama-tunnel
+          sleep 3
+        fi
+        ollama pull "$model"
+        ;;
+      *)
+        printf 'Uso: kryonix ollama <start|stop|status|run|vram|pull> [model]\n' >&2
+        return 1
+        ;;
+    esac
+  fi
 }
 
 kryonix_ai() {

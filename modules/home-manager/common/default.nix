@@ -79,6 +79,7 @@ in
     ../services/kryonix-brain-tunnel
     ../services/kryonix-wayvnc
     ../services/kryonix-glacier-vnc-tunnel
+    ../services/kryonix-ollama-tunnel
   ];
 
   # Habilita Jupyter via módulo declarativo.
