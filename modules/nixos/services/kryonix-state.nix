@@ -100,6 +100,8 @@ in
       "d ${stateDir}/brain/ingest/processed 0755 ${brainCfg.user} ${brainCfg.group} - -"
       "d ${stateDir}/brain/ingest/failed 0755 ${brainCfg.user} ${brainCfg.group} - -"
       "d ${stateDir}/brain/ingest/quarantine 0755 ${brainCfg.user} ${brainCfg.group} - -"
+      "d ${stateDir}/ollama 0755 ollama ollama - -"
+      "d ${stateDir}/ollama/models 0755 ollama ollama - -"
       "d /var/log/kryonix 0755 ${brainCfg.user} ${brainCfg.group} - -"
       "d /run/kryonix 0755 ${brainCfg.user} ${brainCfg.group} - -"
     ];

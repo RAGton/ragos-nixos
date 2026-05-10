@@ -233,7 +233,7 @@ in
 
     brainHome = mkOption {
       type = types.path;
-      default = "/home/storage";
+      default = "/var/lib/kryonix/brain";
       description = "Diretório home do Brain.";
     };
 
@@ -296,7 +296,7 @@ in
         port = 11434;
         user = "ollama";
         group = "ollama";
-        models = "/home/storage/ollama/models";
+        models = "/var/lib/kryonix/ollama/models";
         # keep_alive=0: modelo descarregado da VRAM imediatamente após uso.
         # Crítico para liberar GPU quando Ollama para (kryonix ollama stop).
         environmentVariables = {
@@ -404,7 +404,7 @@ in
       isSystemUser = true;
       group = "kryonix";
       description = "Kryonix Brain Service User";
-      home = "/home/storage";
+      home = "/var/lib/kryonix/brain";
       createHome = true;
       homeMode = "0770";
     };

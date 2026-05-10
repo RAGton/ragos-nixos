@@ -85,8 +85,9 @@ in
     };
 
     # Injetar variáveis de ambiente para criptografia e autenticação inicial do Neo4j
+    # O prefixo '-' torna o arquivo opcional (não impede o boot se ausente).
     systemd.services.neo4j.serviceConfig.EnvironmentFile = mkIf (cfg.environmentFile != "") [
-      cfg.environmentFile
+      "-${cfg.environmentFile}"
     ];
 
     # Permitir que o usuário neo4j acesse o storage (/home/storage/kryonix/brain)
