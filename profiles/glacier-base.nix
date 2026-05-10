@@ -29,8 +29,11 @@ in
     # Performance de servidor
     powerManagement.cpuFreqGovernor = lib.mkDefault "performance";
 
-    # NVIDIA RTX 4060 — driver proprietário, sem PRIME (desktop fixo)
-    services.xserver.videoDrivers = [ "nvidia" ];
+    # NVIDIA RTX 4060 — driver proprietário, sem PRIME (desktop fixo) + iGPU AMD
+    services.xserver.videoDrivers = [
+      "nvidia"
+      "amdgpu"
+    ];
     hardware.nvidia = {
       modesetting.enable = true;
       open = false;

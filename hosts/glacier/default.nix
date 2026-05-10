@@ -27,6 +27,8 @@
     inputs.hardware.nixosModules.common-cpu-amd-pstate
     inputs.hardware.nixosModules.common-gpu-nvidia
 
+    # ATENÇÃO: disks.nix e ragenterprise-disko.nix são apenas para referência de provisionamento.
+    # Não importar aqui para layouts de instalação manual Btrfs real.
     ./hardware-configuration.nix
     ./rve-compat.nix
 
@@ -63,8 +65,8 @@
   kernelZen = {
     enable = true;
     kernel = "zen";
-    forceLocalBuild = true;
-    useLLVMStdenv = true;
+    forceLocalBuild = lib.mkDefault false;
+    useLLVMStdenv = lib.mkDefault false;
     extraMakeFlags = [ ];
     disableMitigations = lib.mkDefault false;
     extraKernelParams = [ ];

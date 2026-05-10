@@ -7,6 +7,7 @@
 - [CLI Kryonix](cli/README.md)
 - [Acesso Remoto (VNC)](operations/REMOTE_DESKTOP_WAYVNC.md)
 - [Status da Rede e Tailscale](operations/KRYONIX_NETWORK_STATUS.md)
+- [Instalação Btrfs Manual no Glacier](operations/GLACIER_BTRFS_INSTALL.md)
 
 A CLI `kryonix` é o ponto de entrada operacional do projeto. O fluxo oficial é NixOS/Linux, com checkout em `/etc/kryonix` nos hosts instalados.
 

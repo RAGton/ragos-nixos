@@ -200,11 +200,11 @@
     "kryonix-home": {
       "flake": false,
       "locked": {
-        "lastModified": 1778341706,
-        "narHash": "sha256-s4Me0SPcVVHSPbbAcsmoMR5y9g6NdqAjZwYBP+/Hr1E=",
+        "lastModified": 1778426060,
+        "narHash": "sha256-wMxC0MgTY5R7hOKnPD91p3/vcyebQ9wG3ighJ3Frci8=",
         "owner": "RAGton",
         "repo": "KRYONIX-HOME",
-        "rev": "092a10538dfa31885c82bbb6155699595a9db685",
+        "rev": "41d5237a0ae2d3ee5df4f07fd8065f9c9d504931",
         "type": "github"
       },
       "original": {
