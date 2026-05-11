@@ -334,7 +334,7 @@ case "$subcommand" in
     ;;
 
   home)
-    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" || "${extra_args[0]}" == "manifest" || "${extra_args[0]}" == "apply" || "${extra_args[0]}" == "rollback" || "${extra_args[0]}" == "categories" || "${extra_args[0]}" == "explain" || "${extra_args[0]}" == "export-memory" || "${extra_args[0]}" == "projects" ]]; then
+    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" || "${extra_args[0]}" == "manifest" || "${extra_args[0]}" == "apply" || "${extra_args[0]}" == "rollback" || "${extra_args[0]}" == "categories" || "${extra_args[0]}" == "explain" || "${extra_args[0]}" == "export-memory" || "${extra_args[0]}" == "projects" || "${extra_args[0]}" == "dashboard" || "${extra_args[0]}" == "inbox" || "${extra_args[0]}" == "review" || "${extra_args[0]}" == "diagnose" ]]; then
       needs_flake=0
     else
       needs_flake=1
@@ -429,7 +429,7 @@ case "$subcommand" in
     # Delegação para o binário Rust kryonix-home (Home Brain)
     if [[ "${#extra_args[@]}" -gt 0 ]]; then
       case "${extra_args[0]}" in
-        scan|report|duplicates|plan|manifest|apply|rollback|categories|explain|export-memory|projects|diagnose|help|--help|-h)
+        scan|report|duplicates|plan|manifest|apply|rollback|categories|explain|export-memory|projects|diagnose|dashboard|inbox|review|help|--help|-h)
           kryonix_home "${extra_args[@]}"
           exit $?
           ;;

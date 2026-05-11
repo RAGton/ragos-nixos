@@ -33,5 +33,7 @@
     "python.defaultInterpreterPath": "${workspaceFolder}/packages/kryonix-brain-lightrag/.venv/bin/python",
     "python.analysis.extraPaths": [
         "${workspaceFolder}/packages/kryonix-brain-lightrag"
-    ]
+    ],
+    "editor.selectionHighlightMultiline": true,
+    "terminal.integrated.fontLigatures.enabled": true
 }
