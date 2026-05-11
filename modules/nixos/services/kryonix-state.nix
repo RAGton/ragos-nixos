@@ -21,7 +21,7 @@ with lib;
 let
   cfg = config.kryonix.services.state;
   brainCfg = config.kryonix.services.brain;
-  stateDir = if cfg.legacySymlink.enable then "/home/storage/kryonix" else "/var/lib/kryonix";
+  stateDir = "/var/lib/kryonix";
 in
 {
   options.kryonix.services.state = {
@@ -31,43 +31,15 @@ in
       description = "Habilita o gerenciamento do estado canônico do Kryonix.";
     };
 
-    legacySymlink = {
-      enable = mkOption {
-        type = types.bool;
-        default = false;
-        description = ''
-          Se true, cria /var/lib/kryonix como link simbólico para /home/storage/kryonix (padrão legado).
-          Se false, cria /var/lib/kryonix como diretório normal para receber o mount real do Btrfs.
-        '';
-      };
-    };
   };
 
   config = mkIf (cfg.enable && brainCfg.enable && brainCfg.role == "server") {
     assertions = [
-      {
-        assertion = !(cfg.legacySymlink.enable && (config.fileSystems ? "/var/lib/kryonix"));
-        message = ''
-          kryonix.services.state.legacySymlink.enable=true não pode ser usado quando /var/lib/kryonix é um mount real.
-          Desative o legacySymlink ou remova o mount /var/lib/kryonix em fileSystems.
-        '';
-      }
     ];
 
     systemd.tmpfiles.rules = [
-      "d /home/storage 0755 root root - -"
+      "d /var/lib/kryonix 0755 root root - -"
     ]
-    ++ (
-      if cfg.legacySymlink.enable then
-        [
-          "d /home/storage/kryonix 0755 root root - -"
-          "L /var/lib/kryonix - - - - /home/storage/kryonix"
-        ]
-      else
-        [
-          "d /var/lib/kryonix 0755 root root - -"
-        ]
-    )
     ++ [
       "d ${stateDir}/brain 0755 root root - -"
       "f ${stateDir}/brain/graph_audit.jsonl 0640 ${brainCfg.user} ${brainCfg.group} - -"

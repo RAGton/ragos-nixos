@@ -12,8 +12,14 @@ lib.forAllSystems (
     kryonixBrainLightrag = pkgs.callPackage ../packages/kryonix-brain-lightrag.nix {
       kryonix-brain-lightrag-src = inputs.kryonix-brain-lightrag;
     };
+    kryonixHardwareProbe = pkgs.callPackage ../packages/kryonix-hardware-probe.nix { };
+    kryonixDiskPlanner = pkgs.callPackage ../packages/kryonix-disk-planner.nix { };
+    kryonixInstaller = pkgs.callPackage ../packages/kryonix-installer.nix { };
     kryonixCli = pkgs.callPackage ../packages/kryonix-cli.nix {
       inherit kryonixHome;
+      kryonix-hardware-probe = kryonixHardwareProbe;
+      kryonix-disk-planner = kryonixDiskPlanner;
+      kryonix-installer = kryonixInstaller;
     };
     denoCacheOnly = lib.mkDenoCacheOnly pkgs;
   in
@@ -22,6 +28,9 @@ lib.forAllSystems (
     kryonix = kryonixCli;
     kryonix-home = kryonixHome;
     kryonix-brain-lightrag = kryonixBrainLightrag;
+    kryonix-hardware-probe = kryonixHardwareProbe;
+    kryonix-disk-planner = kryonixDiskPlanner;
+    kryonix-installer = kryonixInstaller;
     "deno-cache-only" = denoCacheOnly;
   }
 )

@@ -22,6 +22,9 @@
   zlib,
   openrgb,
   kryonixHome,
+  kryonix-hardware-probe,
+  kryonix-disk-planner,
+  kryonix-installer,
 }:
 let
   runtimeLibPath = lib.makeLibraryPath [
@@ -50,6 +53,9 @@ writeShellApplication {
     uv
     openrgb
     kryonixHome
+    kryonix-hardware-probe
+    kryonix-disk-planner
+    kryonix-installer
   ];
   text =
     "set -euo pipefail\ntrap 'stty sane opost onlcr echo icanon isig 2>/dev/null || true' EXIT INT TERM\n"
@@ -61,5 +67,6 @@ writeShellApplication {
     + builtins.readFile ./kryonix-cli/services.sh
     + builtins.readFile ./kryonix-cli/remote.sh
     + builtins.readFile ./kryonix-cli/home.sh
+    + builtins.readFile ./kryonix-cli/installer.sh
     + builtins.readFile ./kryonix-cli/main.sh;
 }

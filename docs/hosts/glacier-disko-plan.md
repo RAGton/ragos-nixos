@@ -12,8 +12,8 @@ Em uma reinstalação futura, o layout de disco precisa ser cuidadosamente estru
 
 - separar sistema, dados de IA e backups em subvolumes Btrfs independentes;
 - permitir snapshots e rollback por subvolume sem afetar dados de runtime;
-- preservar dados de `/home/storage`, Neo4j, Ollama e Vault mesmo em reinstalação do sistema;
-- **evitar symlinks** como `/var/lib/kryonix -> /home/storage/kryonix` — o layout final deve montar cada path direto no disco correto.
+- preservar dados de `/var/lib/kryonix`, Neo4j, Ollama e Vault mesmo em reinstalação do sistema;
+- **evitar symlinks** como `/var/lib/kryonix -> /some/other/path` — o layout final deve montar cada path direto no disco correto.
 
 ---
 
@@ -77,7 +77,6 @@ sda (ou equivalente)
 | `@var` | `/var` | `compress=zstd,noatime` | ⚠️ cuidado com `/var/lib` |
 | `@log` | `/var/log` | `compress=zstd,noatime` | ✅ sim |
 | `@home` | `/home` | `compress=zstd,noatime,autodefrag` | ❌ preservar |
-| `@storage` | `/home/storage` | `compress=zstd,noatime` | ❌ preservar (modelos, vault, dados Brain) |
 | `@kryonix` | `/var/lib/kryonix` | `compress=zstd,noatime` | ❌ preservar (Brain storage, LightRAG) |
 | `@ollama` | `/var/lib/ollama` | `compress=zstd,noatime` | ❌ preservar (modelos Ollama ~50GB+) |
 | `@neo4j` | `/var/lib/neo4j` | `compress=zstd,noatime` | ❌ preservar (grafo) |
@@ -145,7 +144,6 @@ sda (ou equivalente)
                 "@var"      = { mountpoint = "/var";                 mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@log"      = { mountpoint = "/var/log";             mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@home"     = { mountpoint = "/home";                mountOptions = [ "compress=zstd" "noatime" "autodefrag" ]; };
-                "@storage"  = { mountpoint = "/home/storage";        mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@kryonix"  = { mountpoint = "/var/lib/kryonix";     mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@ollama"   = { mountpoint = "/var/lib/ollama";      mountOptions = [ "compress=zstd" "noatime" ]; };
                 "@neo4j"    = { mountpoint = "/var/lib/neo4j";       mountOptions = [ "compress=zstd" "noatime" ]; };
@@ -176,7 +174,6 @@ O kernel/fstab monta na ordem correta automaticamente por profundidade de path. 
 │   ├── log/               ← DISCO MAIOR  @log
 │   └── backups/kryonix/   ← DISCO MAIOR  @backups
 ├── home/                  ← DISCO MAIOR  @home
-│   └── storage/           ← DISCO MAIOR  @storage
 └── .snapshots/            ← NVMe  @snapshots
 ```
 
@@ -219,9 +216,6 @@ Antes de formatar, fazer snapshot ou backup de:
 ```bash
 # Subvolumes críticos
 sudo btrfs subvolume snapshot /var/lib/kryonix    /var/backups/kryonix/pre-install-kryonix
-sudo btrfs subvolume snapshot /var/lib/ollama     /var/backups/kryonix/pre-install-ollama
-sudo btrfs subvolume snapshot /var/lib/neo4j      /var/backups/kryonix/pre-install-neo4j
-sudo btrfs subvolume snapshot /home/storage       /var/backups/kryonix/pre-install-storage
 ```
 
 ---
@@ -230,7 +224,7 @@ sudo btrfs subvolume snapshot /home/storage       /var/backups/kryonix/pre-insta
 
 | Anti-padrão | Por quê | Correto |
 |---|---|---|
-| `/var/lib/kryonix -> /home/storage/kryonix` | Symlinks quebram em reinstalação, confundem serviços e complicam backups | Subvolume `@kryonix` montado diretamente em `/var/lib/kryonix` |
+| `/var/lib/kryonix -> /mnt/data/kryonix` | Symlinks quebram em reinstalação, confundem serviços e complicam backups | Subvolume `@kryonix` montado diretamente em `/var/lib/kryonix` |
 | `/var` no NVMe pequeno | Modelos Ollama (~50GB+), Neo4j e Brain storage enchem o disco | `/var` no disco maior |
 | Tudo num único subvolume | Impossível fazer snapshot/rollback seletivo | Um subvolume por serviço pesado |
 

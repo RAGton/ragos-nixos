@@ -90,7 +90,7 @@ in
       "-${cfg.environmentFile}"
     ];
 
-    # Permitir que o usuário neo4j acesse o storage (/home/storage/kryonix/brain)
+    # Permitir que o usuário neo4j acesse o storage (/var/lib/kryonix/brain)
     users.users.neo4j.extraGroups = [ "kryonix" ];
 
     # Ownership declarativo para evitar drift em upgrades/restarts.

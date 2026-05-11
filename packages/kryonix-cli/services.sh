@@ -6,6 +6,14 @@ kryonix_rgb() {
   local rgb_sub="$1"
   shift
 
+  # Detecção de host para roteamento remoto
+  local host; host="$(map_runtime_host)"
+  if [[ "$(hostname)" != "RVE-GLACIER" && "$host" == "glacier" ]]; then
+    printf '🌐 Encaminhando comando RGB para o Glacier...\n'
+    ssh -p 2224 rocha@10.0.0.2 "kryonix rgb $rgb_sub $*"
+    return $?
+  fi
+
   case "$rgb_sub" in
     off)
       printf '🌑 Desligando todos os LEDs...\n'

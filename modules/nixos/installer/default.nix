@@ -33,6 +33,10 @@
           util-linux
           e2fsprogs
           btrfs-progs
+          gptfdisk
+          parted
+          dosfstools
+          cryptsetup
         ];
         text = ''
           set -euo pipefail
@@ -221,6 +225,9 @@
       rag-install
       kryonix-install-tui
       rag-install-tui
+      pkgs.kryonix-hardware-probe
+      pkgs.kryonix-disk-planner
+      pkgs.kryonix-installer
     ];
 
   networking.networkmanager.enable = lib.mkDefault true;

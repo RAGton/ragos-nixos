@@ -23,6 +23,7 @@
       outputs.overlays.python312-docs-stub
       outputs.overlays.openldap-no-checks
       outputs.overlays.wireshark-hash-fix
+      outputs.overlays.kryonix-installer-tools
     ];
 
     config = {

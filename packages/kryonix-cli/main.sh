@@ -28,6 +28,9 @@ print_usage() {
   printf '    rebuild    Compila o sistema sem ativar\n'
   printf '    clean      Limpa gerações antigas\n'
   printf '    diff       Compara mudanças de sistema\n'
+  printf '    install    Instalador Kryonix (Fase 1: API & Dry-run)\n'
+  printf '    hardware   Diagnóstico e scan de hardware\n'
+  printf '    disk       Gestão e planejamento de discos\n'
   printf '\n'
   printf '  🏠 \033[1mHome & Auditoria\033[0m\n'
   printf '    home       Gestão de Home Manager e Brain Scan\n'
@@ -149,6 +152,24 @@ print_subcommand_help() {
       printf '  Executa a unificação total: NixOS Rebuild + Home Manager Switch.\n'
       printf '  É o comando recomendado para manter o sistema 100%% sincronizado.\n'
       ;;
+    install)
+      printf '  🏗️  \033[1mINSTALL\033[0m\n'
+      printf '  Uso: kryonix install [server|gui|tui]\n\n'
+      printf '    server     Inicia o backend Axum na porta 3000\n'
+      printf '    gui        Inicia interface gráfica (Fase 2)\n'
+      printf '    tui        Inicia interface de terminal (Fase 2)\n'
+      ;;
+    hardware)
+      printf '  🔍 \033[1mHARDWARE\033[0m\n'
+      printf '  Uso: kryonix hardware scan [--json]\n\n'
+      printf '    scan       Executa o probe de hardware e exibe relatório\n'
+      ;;
+    disk)
+      printf '  💾 \033[1mDISK\033[0m\n'
+      printf '  Uso: kryonix disk [list|plan]\n\n'
+      printf '    list       Lista discos detectados via lsblk\n'
+      printf '    plan       Gera sugestão de particionamento (dry-run)\n'
+      ;;
     *)
       printf '  ℹ️  Ajuda específica para \033[1m%s\033[0m ainda não implementada.\n' "$sub"
       ;;
@@ -220,7 +241,8 @@ while [[ $# -gt 0 ]]; do
     --help|-h)
       if [[ "$subcommand" == "home" || "$subcommand" == "graph" || "$subcommand" == "brain" || "$subcommand" == "mcp" || \
             "$subcommand" == "vault" || "$subcommand" == "remote" || "$subcommand" == "switch" || "$subcommand" == "boot" || \
-            "$subcommand" == "ollama" || "$subcommand" == "ai" || "$subcommand" == "rgb" || "$subcommand" == "all" ]]; then
+            "$subcommand" == "ollama" || "$subcommand" == "ai" || "$subcommand" == "rgb" || "$subcommand" == "all" || \
+            "$subcommand" == "install" || "$subcommand" == "hardware" || "$subcommand" == "disk" ]]; then
         extra_args+=("$1")
       else
         print_usage
@@ -299,7 +321,7 @@ case "$subcommand" in
     exit 0
     ;;
 
-  clean|vm|git-status|pull|deploy|sync|brain|graph|mcp|vault|rgb|ollama|ai|remote)
+  clean|vm|git-status|pull|deploy|sync|brain|graph|mcp|vault|rgb|ollama|ai|remote|install|hardware|disk)
     needs_flake=0
     ;;
 
@@ -701,6 +723,25 @@ case "$subcommand" in
 
   remote)
     kryonix_remote "${extra_args[@]}"
+    ;;
+  
+  install)
+    kryonix_install "${extra_args[@]}"
+    ;;
+
+  hardware)
+    case "${extra_args[0]:-}" in
+      scan) kryonix_hardware_scan "${extra_args[@]:1}" ;;
+      *) kryonix_hardware_scan "${extra_args[@]}" ;;
+    esac
+    ;;
+
+  disk)
+    case "${extra_args[0]:-}" in
+      list) kryonix_disk_list "${extra_args[@]:1}" ;;
+      plan) kryonix_disk_plan "${extra_args[@]:1}" ;;
+      *) kryonix_disk_list "${extra_args[@]}" ;;
+    esac
     ;;
 
   *)

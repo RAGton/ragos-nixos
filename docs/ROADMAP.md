@@ -183,16 +183,25 @@ RISCOS:
 
 ## ISO Instalável Kryonix
 
-STATUS: NOT_IMPLEMENTED
+STATUS: PARTIAL
 
 DESCRIÇÃO:
 Sistema de build em CI/CD ou local para gerar uma ISO standalone (USB bootable) para deploy da distro Kryonix.
 
-EVIDÊNCIA ATUAL:
-- Declaração `iso` incompleta no flake (falha de checagem/build).
+- STATUS: **PARTIAL** (Fase 1: Probe, Plan & Backend implementados)
+- Hardware probe em Rust (JSON)
+- Disk planner em Rust (Dry-run)
+- Backend Axum (Stub/REST)
+- Integração CLI `kryonix`
+- Geração de `install-plan.json`
+- Próximo: Fase 2 (TUI/GUI & Partitioning Engine)
 
-GAPS:
-- O módulo de provisionamento e live-cd com o desktop básico.
+EVIDÊNCIA ATUAL:
+- `nix eval .#nixosConfigurations.iso.config.system.build.isoImage.drvPath` passa.
+- `kryonix hardware scan` operacional.
+- `kryonix disk plan` operacional (dry-run).
+- `kryonix install server` operacional (stub backend).
+- live-cd com o desktop básico.
 
 CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
 - impacto documentado em ARCHITECTURE.md ou USAGE.md

@@ -31,6 +31,7 @@
     # Não importar aqui para layouts de instalação manual Btrfs real.
     ./hardware-configuration.nix
     ./rve-compat.nix
+    ./bluetooth.nix
 
     # Kernel e rede
     ../../modules/kernel/zen.nix
@@ -105,5 +106,10 @@
   # =========================
   # SYSTEM
   # =========================
+  users.users.rocha.extraGroups = [
+    "bluetooth"
+    "lp"
+  ];
+
   system.stateVersion = "26.05";
 }

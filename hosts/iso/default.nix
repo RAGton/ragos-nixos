@@ -18,6 +18,7 @@
 
     # Nosso módulo de instalador automatizado
     ../../modules/nixos/installer
+    ../../modules/shared/nixpkgs
   ];
 
   networking.hostName = hostname;
@@ -27,6 +28,8 @@
 
   # Ajuda no debug e instalação
   environment.systemPackages = with pkgs; [
+    kryonix
+    kryonix-hardware-probe
     git
     curl
     jq

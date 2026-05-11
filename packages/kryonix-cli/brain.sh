@@ -114,7 +114,7 @@ brain_api_url() {
   local url
   url="${KRYONIX_REMOTE_BRAIN_URL:-${KRYONIX_BRAIN_URL:-${KRYONIX_BRAIN_API:-}}}"
   if [[ -z "$url" ]] && [[ "$(kryonix_brain_role)" == "client" ]]; then
-    url="http://glacier-publico:8000"
+    url="http://10.0.0.2:8000"
   fi
   printf '%s\n' "${url%/}"
 }
@@ -437,7 +437,7 @@ console.print(t)
 
 kryonix_brain_vault_scan() {
   local vault_dir
-  vault_dir="/home/rocha/.local/share/kryonix/kryonix-vault/vault"
+  vault_dir="${KRYONIX_VAULT_DIR:-/home/rocha/.local/share/kryonix/kryonix-vault/vault}"
 
   # Tenta rodar a ferramenta Rust se compilada
   if [[ -x "$(brain_project_dir)/rust-core/target/debug/kryonix-vault-scan" ]]; then

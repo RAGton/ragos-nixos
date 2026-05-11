@@ -98,11 +98,11 @@ sudo mount -o subvol=@snapshots,${BTRFS_OPTS} /dev/nvme0n1p2 /mnt/.snapshots
 sudo mount /dev/nvme0n1p1 /mnt/boot
 
 # 5. Criar pontos de montagem para os volumes de dados dedicados
-sudo mkdir -p /mnt/{var/lib/kryonix,home/storage/ollama}
+sudo mkdir -p /mnt/var/lib/kryonix/ollama
 
 # 6. Montar subvolumes do disco de dados (/dev/nvme1n1p1)
 sudo mount -o subvol=@kryonix-state,${BTRFS_OPTS} /dev/nvme1n1p1 /mnt/var/lib/kryonix
-sudo mount -o subvol=@ollama,${BTRFS_OPTS} /dev/nvme1n1p1 /mnt/home/storage/ollama
+sudo mount -o subvol=@ollama,${BTRFS_OPTS} /dev/nvme1n1p1 /mnt/var/lib/kryonix/ollama
 ```
 
 ---

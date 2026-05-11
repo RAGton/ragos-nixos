@@ -360,6 +360,8 @@
       mesa
       podman
       distrobox
+      nh
+      home-manager
 
       # =========================
       # Python (global)
