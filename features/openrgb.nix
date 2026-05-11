@@ -27,9 +27,8 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = openrgbPackage;
-      defaultText = lib.literalExpression "pkgs.openrgb";
-      description = "Pacote OpenRGB usado pelo serviço, CLI e regras udev.";
+      default = pkgs.openrgb-git;
+      description = "Pacote OpenRGB a ser utilizado.";
     };
 
     offAtBoot = lib.mkOption {
@@ -44,6 +43,8 @@ in
     hardware.i2c.enable = true;
 
     # Carrega módulos de kernel necessários para I2C e OpenRGB
+    # Blacklist sp5100_tco para evitar conflito com SMBus (RAM RGB no AM5)
+    boot.blacklistedKernelModules = [ "sp5100_tco" ];
     boot.kernelModules = [ "i2c-dev" "i2c-piix4" ];
 
     services.hardware.openrgb = {
@@ -54,14 +55,18 @@ in
     # Serviço para desligar LEDs no boot
     systemd.services.kryonix-rgb-off = lib.mkIf cfg.offAtBoot {
       description = "Desliga LEDs via OpenRGB no boot";
-      after = [ "network.target" "multi-user.target" "openrgb.service" ];
+      after = [ "openrgb.service" ];
       requires = [ "openrgb.service" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         Type = "oneshot";
         ExecStartPre = "${pkgs.coreutils}/bin/sleep 2"; # Aguarda servidor estabilizar
-        ExecStart = "${cfg.package}/bin/openrgb --mode static --color 000000";
-        ExecStartPost = "${cfg.package}/bin/openrgb --mode off"; # Tenta fallback off se disponível
+        # Tenta múltiplos modos para garantir desligamento total (RAM, Motherboard, Keyboard)
+        ExecStart = pkgs.writeShellScript "rgb-off-sequence" ''
+          ${cfg.package}/bin/openrgb --mode static --color 000000 || true
+          ${cfg.package}/bin/openrgb --mode Direct --color 000000 || true
+          ${cfg.package}/bin/openrgb --mode off || true
+        '';
         RemainAfterExit = true;
         User = "root"; # Executa como root para garantir acesso inicial
       };

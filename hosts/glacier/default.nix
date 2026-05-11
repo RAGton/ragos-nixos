@@ -32,6 +32,7 @@
     ./hardware-configuration.nix
     ./rve-compat.nix
     ./bluetooth.nix
+    ./storage.nix
 
     # Kernel e rede
     ../../modules/kernel/zen.nix
