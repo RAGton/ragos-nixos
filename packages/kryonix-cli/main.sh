@@ -276,7 +276,7 @@ while [[ $# -gt 0 ]]; do
       if [[ "$subcommand" == "test" ]] && [[ $is_test_target -eq 1 ]]; then
         extra_args+=("$1")
       elif [[ $is_positional_host -eq 1 ]] && [[ -z "$host_arg" && "$1" != -* ]]; then
-        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" || "$1" == "manifest" || "$1" == "apply" || "$1" == "rollback" || "$1" == "categories" || "$1" == "explain" || "$1" == "export-memory" || "$1" == "projects" || "$1" == "diagnose" || "$1" == "dashboard" || "$1" == "inbox" || "$1" == "review" ]]; then
+        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" || "$1" == "manifest" || "$1" == "apply" || "$1" == "rollback" || "$1" == "categories" || "$1" == "explain" || "$1" == "export-memory" || "$1" == "projects" || "$1" == "diagnose" || "$1" == "dashboard" || "$1" == "inbox" || "$1" == "review" || "$1" == "state" ]]; then
           extra_args+=("$1")
         else
           host_arg="$1"
@@ -297,7 +297,7 @@ fi
 # Detecção de ajuda focada
 # Para 'home' com subcomando Brain, não interceptar --help aqui;
 # delegar ao binário Rust kryonix-home para que ele mostre seu próprio help.
-if ! { [[ "$subcommand" == "home" ]] && [[ "${#extra_args[@]}" -gt 0 ]] && case "${extra_args[0]}" in scan|report|duplicates|plan|manifest|apply|rollback|categories|explain|export-memory|projects|diagnose|dashboard|inbox|review) true ;; *) false ;; esac; }; then
+if ! { [[ "$subcommand" == "home" ]] && [[ "${#extra_args[@]}" -gt 0 ]] && case "${extra_args[0]}" in scan|report|duplicates|plan|manifest|apply|rollback|categories|explain|export-memory|projects|diagnose|dashboard|inbox|review|state) true ;; *) false ;; esac; }; then
   for arg in "${extra_args[@]}"; do
     if [[ "$arg" == "--help" || "$arg" == "-h" ]]; then
       print_subcommand_help "$subcommand"
