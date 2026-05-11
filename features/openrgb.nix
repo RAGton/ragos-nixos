@@ -31,15 +31,36 @@ in
       defaultText = lib.literalExpression "pkgs.openrgb";
       description = "Pacote OpenRGB usado pelo serviço, CLI e regras udev.";
     };
+
+    offAtBoot = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Se verdadeiro, desliga todos os LEDs no boot.";
+    };
   };
 
   config = lib.mkIf enableOpenrgb {
     # Habilita I2C para controle de DRAM e periféricos
     hardware.i2c.enable = true;
 
+    # Carrega módulos de kernel necessários para I2C e OpenRGB
+    boot.kernelModules = [ "i2c-dev" "i2c-piix4" ];
+
     services.hardware.openrgb = {
       enable = true;
       package = cfg.package;
+    };
+
+    # Serviço para desligar LEDs no boot
+    systemd.services.kryonix-rgb-off = lib.mkIf cfg.offAtBoot {
+      description = "Desliga LEDs via OpenRGB no boot";
+      after = [ "network.target" "multi-user.target" "openrgb.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${cfg.package}/bin/openrgb --mode static --color 000000";
+        RemainAfterExit = true;
+      };
     };
 
     # Garante que o usuário rocha tenha acesso ao hardware sem sudo

@@ -16,8 +16,10 @@ kryonix_rgb() {
 
   case "$rgb_sub" in
     off)
-      printf '🌑 Desligando todos os LEDs...\n'
-      openrgb --mode static --color 000000
+      printf '🌑 Desligando todos os LEDs (incluindo teclado e periféricos)...\n'
+      # Tenta múltiplos métodos para garantir desligamento total
+      openrgb --mode static --color 000000 || true
+      openrgb --mode off || true
       ;;
     list)
       openrgb --list-devices
