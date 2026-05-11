@@ -12,6 +12,8 @@
         Experimental = true;
         FastConnectable = true;
         Enable = "Source,Sink,Media,Socket";
+        ControllerMode = "dual";
+        JustWorksRepairing = "always";
       };
 
       Policy = {
