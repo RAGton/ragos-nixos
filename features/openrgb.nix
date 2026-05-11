@@ -55,19 +55,32 @@ in
     systemd.services.kryonix-rgb-off = lib.mkIf cfg.offAtBoot {
       description = "Desliga LEDs via OpenRGB no boot";
       after = [ "network.target" "multi-user.target" "openrgb.service" ];
+      requires = [ "openrgb.service" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         Type = "oneshot";
+        ExecStartPre = "${pkgs.coreutils}/bin/sleep 2"; # Aguarda servidor estabilizar
         ExecStart = "${cfg.package}/bin/openrgb --mode static --color 000000";
+        ExecStartPost = "${cfg.package}/bin/openrgb --mode off"; # Tenta fallback off se disponível
         RemainAfterExit = true;
+        User = "root"; # Executa como root para garantir acesso inicial
       };
     };
 
-    # Garante que o usuário rocha tenha acesso ao hardware sem sudo
+    # Garante que o usuário rocha e o grupo kryonix tenham acesso ao hardware sem sudo
+    # Isso é essencial para operação via SSH onde uaccess pode falhar
+    services.udev.extraRules = ''
+      # Acesso OpenRGB para o grupo kryonix
+      SUBSYSTEM=="hidraw", MODE="0660", GROUP="kryonix", TAG+="uaccess"
+      SUBSYSTEM=="usb", MODE="0660", GROUP="kryonix", TAG+="uaccess"
+      SUBSYSTEM=="i2c-dev", MODE="0660", GROUP="kryonix", TAG+="uaccess"
+    '';
+
     users.users.rocha.extraGroups = [
       "i2c"
       "video"
       "input"
+      "kryonix"
     ];
 
     environment.systemPackages = [ cfg.package ];

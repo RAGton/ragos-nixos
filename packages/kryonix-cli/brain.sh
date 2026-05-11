@@ -114,7 +114,12 @@ brain_api_url() {
   local url
   url="${KRYONIX_REMOTE_BRAIN_URL:-${KRYONIX_BRAIN_URL:-${KRYONIX_BRAIN_API:-}}}"
   if [[ -z "$url" ]] && [[ "$(kryonix_brain_role)" == "client" ]]; then
-    url="http://10.0.0.2:8000"
+    # Tenta DNS primeiro, fallback para IP local se o DNS falhar ou estiver inacessível
+    if timeout 0.5 ping -c 1 glacier-publico >/dev/null 2>&1; then
+      url="http://glacier-publico:8000"
+    else
+      url="http://10.0.0.2:8000"
+    fi
   fi
   printf '%s\n' "${url%/}"
 }
