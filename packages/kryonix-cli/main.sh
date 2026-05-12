@@ -91,6 +91,7 @@ print_subcommand_help() {
       printf '    apply --dry-run       Simula manifesto\n'
       printf '    apply --confirm       Aplica manifesto revisado\n'
       printf '    rollback              Reverte último apply\n'
+      printf '    autopilot             Organizador autônomo seguro (Autopilot)\n'
       printf '    export-memory         Exporta eventos JSONL\n'
       printf '\n'
       printf '  Home Manager:\n'
@@ -99,12 +100,49 @@ print_subcommand_help() {
       printf '  ⚠ apply --confirm nunca deve ser usado sem revisar o manifesto.\n'
       ;;
     brain)
-      printf '  🧠 \033[1mBRAIN\033[0m\n'
-      printf '  Uso: kryonix brain <subcomando> [args]\n\n'
-      printf '    health     Status da API\n'
-      printf '    stats      Estatísticas do índice\n'
-      printf '    search     Busca semântica no RAG\n'
-      printf '    api-key    Gestão de chaves de acesso\n'
+      print_banner
+      cat <<'EOF'
+──────────────────────────────────────────────────────────
+  🧠 BRAIN
+  Uso:
+    kryonix brain <subcomando> [args]
+
+  Status e diagnóstico:
+    health           Status da API Brain
+    doctor           Diagnóstico completo do Brain
+    stats            Estatísticas do índice/RAG
+    diagnostics      Diagnósticos avançados
+    storage-check    Verifica storage do Brain
+    ollama-check     Verifica integração com Ollama
+
+  Busca e conversa:
+    search <query>   Busca semântica no RAG
+    ask <pergunta>   Pergunta ao Brain usando contexto
+    cag              Operações CAG/cache/contexto
+
+  Vault e indexação:
+    vault-scan       Escaneia o Vault/Obsidian
+    index            Indexa conteúdo no Brain
+    sync             Sincroniza fontes configuradas
+    watch            Observa mudanças
+    export           Exporta dados/índices
+
+  API e remoto:
+    api              Gerencia API do Brain
+    api-key          Gestão da chave de acesso
+    remote           Operações remotas do Brain
+
+  Exemplos:
+    kryonix brain health
+    kryonix brain doctor
+    kryonix brain stats
+    kryonix brain search "Kryonix Home Brain"
+    kryonix brain ask "Como funciona o Kryonix?"
+    kryonix brain api-key status
+    kryonix brain api-key validate
+    kryonix brain remote status
+──────────────────────────────────────────────────────────
+EOF
       ;;
     graph)
       printf '  🕸️  \033[1mGRAPH\033[0m\n'
@@ -276,7 +314,7 @@ while [[ $# -gt 0 ]]; do
       if [[ "$subcommand" == "test" ]] && [[ $is_test_target -eq 1 ]]; then
         extra_args+=("$1")
       elif [[ $is_positional_host -eq 1 ]] && [[ -z "$host_arg" && "$1" != -* ]]; then
-        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" || "$1" == "manifest" || "$1" == "apply" || "$1" == "rollback" || "$1" == "categories" || "$1" == "explain" || "$1" == "export-memory" || "$1" == "projects" || "$1" == "diagnose" || "$1" == "dashboard" || "$1" == "inbox" || "$1" == "review" || "$1" == "state" ]]; then
+        if [[ "$subcommand" == "home" ]] && [[ "$1" == "scan" || "$1" == "report" || "$1" == "duplicates" || "$1" == "plan" || "$1" == "manifest" || "$1" == "apply" || "$1" == "rollback" || "$1" == "autopilot" || "$1" == "categories" || "$1" == "explain" || "$1" == "export-memory" || "$1" == "projects" || "$1" == "diagnose" || "$1" == "dashboard" || "$1" == "inbox" || "$1" == "review" || "$1" == "state" ]]; then
           extra_args+=("$1")
         else
           host_arg="$1"
@@ -294,10 +332,30 @@ if [[ "$subcommand" == "test" ]] && [[ "$EUID" -eq 0 ]]; then
    exit 1
 fi
 
-# Detecção de ajuda focada
-# Para 'home' com subcomando Brain, não interceptar --help aqui;
-# delegar ao binário Rust kryonix-home para que ele mostre seu próprio help.
-if ! { [[ "$subcommand" == "home" ]] && [[ "${#extra_args[@]}" -gt 0 ]] && case "${extra_args[0]}" in scan|report|duplicates|plan|manifest|apply|rollback|categories|explain|export-memory|projects|diagnose|dashboard|inbox|review|state) true ;; *) false ;; esac; }; then
+# Para subcomandos delegados, não interceptar --help aqui;
+# delegar ao backend real para que ele mostre seu próprio help.
+delegate_nested_help=false
+
+if [[ "${#extra_args[@]}" -gt 0 ]]; then
+  case "$subcommand" in
+    home)
+      case "${extra_args[0]}" in
+        scan|report|duplicates|plan|manifest|apply|rollback|autopilot|categories|explain|export-memory|projects|diagnose|dashboard|inbox|review|state)
+          delegate_nested_help=true
+          ;;
+      esac
+      ;;
+    brain)
+      case "${extra_args[0]}" in
+        health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|remote)
+          delegate_nested_help=true
+          ;;
+      esac
+      ;;
+  esac
+fi
+
+if [[ "$delegate_nested_help" != "true" ]]; then
   for arg in "${extra_args[@]}"; do
     if [[ "$arg" == "--help" || "$arg" == "-h" ]]; then
       print_subcommand_help "$subcommand"
@@ -334,7 +392,7 @@ case "$subcommand" in
     ;;
 
   home)
-    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" || "${extra_args[0]}" == "manifest" || "${extra_args[0]}" == "apply" || "${extra_args[0]}" == "rollback" || "${extra_args[0]}" == "categories" || "${extra_args[0]}" == "explain" || "${extra_args[0]}" == "export-memory" || "${extra_args[0]}" == "projects" || "${extra_args[0]}" == "dashboard" || "${extra_args[0]}" == "inbox" || "${extra_args[0]}" == "review" || "${extra_args[0]}" == "diagnose" || "${extra_args[0]}" == "state" ]]; then
+    if [[ "${#extra_args[@]}" -gt 0 ]] && [[ "${extra_args[0]}" == "scan" || "${extra_args[0]}" == "report" || "${extra_args[0]}" == "duplicates" || "${extra_args[0]}" == "plan" || "${extra_args[0]}" == "manifest" || "${extra_args[0]}" == "apply" || "${extra_args[0]}" == "rollback" || "${extra_args[0]}" == "autopilot" || "${extra_args[0]}" == "categories" || "${extra_args[0]}" == "explain" || "${extra_args[0]}" == "export-memory" || "${extra_args[0]}" == "projects" || "${extra_args[0]}" == "dashboard" || "${extra_args[0]}" == "inbox" || "${extra_args[0]}" == "review" || "${extra_args[0]}" == "diagnose" || "${extra_args[0]}" == "state" ]]; then
       needs_flake=0
     else
       needs_flake=1
@@ -429,7 +487,7 @@ case "$subcommand" in
     # Delegação para o binário Rust kryonix-home (Home Brain)
     if [[ "${#extra_args[@]}" -gt 0 ]]; then
       case "${extra_args[0]}" in
-        scan|report|duplicates|plan|manifest|apply|rollback|categories|explain|export-memory|projects|diagnose|dashboard|inbox|review|state|help|--help|-h)
+        scan|report|duplicates|plan|manifest|apply|rollback|autopilot|categories|explain|export-memory|projects|diagnose|dashboard|inbox|review|state|help|--help|-h)
           kryonix_home "${extra_args[@]}"
           exit $?
           ;;
