@@ -184,11 +184,11 @@
     "kryonix-brain-lightrag": {
       "flake": false,
       "locked": {
-        "lastModified": 1778180916,
-        "narHash": "sha256-KzwcP1J+2DvF+JEpCFMvvIbv7GpjE2TgeltNr8Gm9qE=",
+        "lastModified": 1778591254,
+        "narHash": "sha256-nSi7Ht+V+Zo2fiDM/JL/yF0/acRzMnSB7qESas/nyYc=",
         "owner": "RAGEnterprise",
         "repo": "kryonix-brain-lightrag",
-        "rev": "02be0d86889b77c1efcaf14c82dd941695f05de7",
+        "rev": "7682a98eab85854c1e2377f3cf60e2e060581cca",
         "type": "github"
       },
       "original": {
@@ -200,11 +200,11 @@
     "kryonix-home": {
       "flake": false,
       "locked": {
-        "lastModified": 1778528223,
-        "narHash": "sha256-86B2W1IxX7SsaeC+Sl+hBoGISuromYOGQiaZOWtQmA0=",
+        "lastModified": 1778555087,
+        "narHash": "sha256-BkCLcMkAz3h581PzG0CR/LqsXq9YoRinaRQmpQ5MzIg=",
         "owner": "RAGton",
         "repo": "KRYONIX-HOME",
-        "rev": "14ce124ffb9c41cf37e1f78f5f782ded910e54d5",
+        "rev": "14266647e00162d0f48694af47774babdd592d62",
         "type": "github"
       },
       "original": {
