@@ -21,8 +21,16 @@ let
 
   python = pkgs.python3;
 
-  # Alguns channels mantém um alias que lança `throw` ao avaliar ijavascript.
-  ijavascriptEval = builtins.tryEval pkgs.nodePackages.ijavascript;
+  # Em channels novos, nodePackages pode existir mas lançar erro ao acessar attrs.
+  # Preferimos o pacote top-level quando disponível.
+  ijavascriptEval =
+    if pkgs ? ijavascript then
+      builtins.tryEval pkgs.ijavascript
+    else
+      {
+        success = false;
+        value = null;
+      };
   hasIjavascript = ijavascriptEval.success;
   ijavascriptPkg = if hasIjavascript then ijavascriptEval.value else null;
 
@@ -33,7 +41,8 @@ let
   # Resolve HOME do usuário. Nem sempre `users.users.<name>.home` é definido explicitamente.
   getHome = u: (config.users.users.${u}.home or "/home/${u}");
 
-  mkBootstrap = username:
+  mkBootstrap =
+    username:
     let
       userHome = getHome username;
       venvDir = "${userHome}/.local/share/jupyter/venvs/default";
@@ -128,26 +137,32 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages =
-      [
-        python
-        pkgs.jupyter
-      ]
-      ++ lib.optionals cfg.kernels.rust [ pkgs.evcxr ]
-      ++ lib.optionals cfg.kernels.cpp [ pkgs.xeus-cling pkgs.gcc ]
-      ++ lib.optionals (cfg.kernels.node && hasIjavascript) [ pkgs.nodejs ijavascriptPkg ];
+    environment.systemPackages = [
+      python
+      pkgs.jupyter
+    ]
+    ++ lib.optionals cfg.kernels.rust [ pkgs.evcxr ]
+    ++ lib.optionals cfg.kernels.cpp [
+      pkgs.xeus-cling
+      pkgs.gcc
+    ]
+    ++ lib.optionals (cfg.kernels.node && hasIjavascript) [
+      pkgs.nodejs
+      ijavascriptPkg
+    ];
 
     # Bootstrapa o venv e registra kernels na ativação do sistema.
     system.activationScripts.jupyterBootstrap = {
       text = ''
-        ${lib.concatStringsSep "\n" (map (u: ''
-          if [ -d ${lib.escapeShellArg (getHome u)} ]; then
-            echo "[jupyter] bootstrapping user venv/kernels for ${u}" > /dev/null
-            ${pkgs.su}/bin/su - ${u} -c ${lib.escapeShellArg (mkBootstrap u)}
-          fi
-        '') users)}
+        ${lib.concatStringsSep "\n" (
+          map (u: ''
+            if [ -d ${lib.escapeShellArg (getHome u)} ]; then
+              echo "[jupyter] bootstrapping user venv/kernels for ${u}" > /dev/null
+              ${pkgs.su}/bin/su - ${u} -c ${lib.escapeShellArg (mkBootstrap u)}
+            fi
+          '') users
+        )}
       '';
     };
   };
 }
-

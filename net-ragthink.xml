@@ -1,10 +1,5 @@
 <network>
   <name>net-ragthink</name>
-  <forward mode='nat'/>
-  <bridge name='virbr-ragthink'/>
-  <ip address='192.168.100.1' netmask='255.255.255.0'>
-    <dhcp>
-      <range start='192.168.100.100' end='192.168.100.200'/>
-    </dhcp>
-  </ip>
+  <bridge name='virbr-ragthink' stp='on' delay='0'/>
+  <ip address='192.168.100.1' netmask='255.255.255.0'/>
 </network>

@@ -9,7 +9,7 @@
 #
 # Como:
 # - Habilita `services.kanshi` e define `settings` com perfis e outputs.
-# - Usa `systemdTarget = "graphical-session.target"` para iniciar na sessão.
+# - Usa `systemdTarget = "hyprland-session.target"` para iniciar junto da sessão Hyprland.
 #
 # Riscos:
 # - `criteria = "*"` pode aplicar regras em monitores inesperados.
@@ -19,22 +19,23 @@
 {
   # Gerencia o serviço do kanshi via Home Manager.
   services.kanshi = {
-    enable = true;
-    systemdTarget = "graphical-session.target";
+    enable = false;
+    systemdTarget = "hyprland-session.target";
     settings = [
       {
-        profile.name = "docked";
+        profile.name = "casa";
         profile.outputs = [
           {
-            criteria = "*";
+            criteria = "HDMI-A-1";
             position = "0,0";
             scale = 1.0;
             status = "enable";
           }
           {
             criteria = "eDP-1";
-            scale = 2.0;
-            status = "disable";
+            position = "1920,0";
+            scale = 1.0;
+            status = "enable";
           }
         ];
       }
@@ -45,6 +46,7 @@
             criteria = "eDP-1";
             status = "enable";
             position = "0,0";
+            scale = 1.0;
           }
         ];
       }

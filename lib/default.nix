@@ -1,5 +1,5 @@
 # =============================================================================
-# Lib: Helper functions para o RagOS
+# Lib: Helper functions para o Kryonix
 # Autor: rag (via AI Maintainer)
 #
 # O que é:
@@ -19,15 +19,30 @@
 
 {
   # Helper para criar módulos NixOS
-  mkNixosModule = path: { config, lib, pkgs, ... }: {
-    imports = [ path ];
-  };
+  mkNixosModule =
+    path:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    {
+      imports = [ path ];
+    };
 
   # Helper para criar módulos Home Manager
-  mkHomeModule = path: { config, lib, pkgs, ... }: {
-    imports = [ path ];
-  };
+  mkHomeModule =
+    path:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    {
+      imports = [ path ];
+    };
 
   # Pode adicionar mais helpers no futuro
 }
-

@@ -28,9 +28,9 @@
         CPU_SCALING_GOVERNOR_ON_BAT = "performance";
         CPU_BOOST_ON_AC = 1;
         CPU_BOOST_ON_BAT = 1;
-  CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+        CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
         CPU_ENERGY_PERF_POLICY_ON_BAT = "performance";
-  PLATFORM_PROFILE_ON_AC = "performance";
+        PLATFORM_PROFILE_ON_AC = "performance";
         PLATFORM_PROFILE_ON_BAT = "performance";
 
         USB_EXCLUDE_BTUSB = 1;

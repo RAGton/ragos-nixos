@@ -11,20 +11,20 @@
 # - Mantém hosts finos e coerentes.
 #
 # Como usar (no host):
-#   rag.profiles.laptop.enable = true;
+#   kryonix.profiles.laptop.enable = true;
 #
 # Importante:
 # - Este profile NÃO escolhe desktop environment.
-# - O desktop continua sendo escolhido via `rag.desktop.environment`.
+# - O desktop continua sendo escolhido via `kryonix.desktop.environment`.
 # =============================================================================
 { config, lib, ... }:
 
 let
-  cfg = config.rag.profiles.laptop;
+  cfg = config.kryonix.profiles.laptop;
 
 in
 {
-  options.rag.profiles.laptop = {
+  options.kryonix.profiles.laptop = {
     enable = lib.mkEnableOption "Perfil laptop (dev + virtualização padrão; sem gaming por padrão)";
 
     virtualization = {
@@ -37,8 +37,16 @@ in
       docker = {
         enable = lib.mkOption {
           type = lib.types.bool;
-          default = true;
+          default = false;
           description = "Habilita Docker quando a virtualização está ativada";
+        };
+      };
+
+      podman = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Habilita Podman quando a virtualização está ativada";
         };
       };
 
@@ -69,12 +77,13 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    rag.features = {
+    kryonix.features = {
       development.enable = lib.mkDefault cfg.development.enable;
 
       virtualization = {
         enable = lib.mkDefault cfg.virtualization.enable;
         docker.enable = lib.mkDefault cfg.virtualization.docker.enable;
+        podman.enable = lib.mkDefault cfg.virtualization.podman.enable;
 
         # Defaults laptop-friendly
         kvm.enable = lib.mkDefault cfg.virtualization.libvirt.enable;
@@ -85,4 +94,3 @@ in
     };
   };
 }
-

@@ -1,23 +1,27 @@
-# Host: inspiron (NixOS)
+# ==============================================================================
+# Módulo: Host Inspiron
 # Autor: rag
 #
-# O que é
-# - Configuração do sistema para a máquina inspiron (imports + ajustes específicos do host).
+# O que é:
+# - Configuração NixOS específica do host `inspiron`.
+# - Declara hardware Intel e ajustes de laptop.
 #
-# Por quê
-# - Mantém o host “fino”: hardware + integrações específicas, reaproveitando módulos do repo.
+# Por quê:
+# - Mantém separação estrita de hardware por host (sem drivers globais).
+# - Facilita manutenção sem impactar outros hosts.
 #
-# Como
-# - Importa nixos-hardware + hardware-configuration.
-# - Importa módulos comuns (common/desktop/kernel/virtualização).
+# Como:
+# - Importa `hardware-configuration.nix` e módulos comuns.
+# - Declara stack gráfico Intel localmente neste host.
 #
-# Riscos
-# - Ajustes de kernel/energia/filesystem podem afetar boot e estabilidade; revisar após upgrades.
+# Riscos:
+# - Alterações em boot/kernel/power podem afetar estabilidade e bateria.
+# ==============================================================================
 {
   inputs,
   hostname,
-  nixosModules,
   lib,
+  pkgs,
   ...
 }:
 {
@@ -33,9 +37,6 @@
     inputs.disko.nixosModules.disko
     ./disks.nix
 
-    # Base do sistema
-    "${nixosModules}/common"
-
     # Desktop: gerenciado via opção (v2 migration)
     # Features: gerenciadas via opções (v2 migration)
 
@@ -43,55 +44,70 @@
     ../../modules/kernel/zen.nix
     ../../modules/virtualization/net-ragthink.nix
 
-    # Branding (RagOS)
-    "${nixosModules}/branding/ragos"
   ];
 
   # =========================
-  # RagOS Options (v2)
+  # Kryonix Options (v2)
   # =========================
 
   # Hardware toggles
-  rag.hardware.openrgb.enable = false;
+  kryonix.features.openrgb.enable = false;
 
   # Desktop
-  # Troca KDE/SDDM por Hyprland (Wayland) + DMS (user-level upstream via Home Manager).
-  rag.desktop.environment = "hyprland";
 
-  # Garante que SDDM não fique habilitado via desktop/kde/system.nix.
-  services.displayManager.sddm.enable = lib.mkForce false;
-
-  # display manager Wayland-friendly + greeter DMS
-  rag.services.greetdDms.enable = true;
-
-  # (o módulo greetdDms habilita greetd; mantemos esta linha apenas se algum outro módulo tentar desligar)
-  services.greetd.enable = lib.mkForce true;
+  # Hyprland segue como desktop; Caelestia entra como shell principal de sistema.
+  kryonix.desktop.environment = "hyprland";
+  kryonix.shell.caelestia.enable = true;
+  kryonix.desktop.directLogin.enable = false;
 
   # Profile (v2)
-  rag.profiles.laptop = {
+  kryonix.profiles.laptop = {
     enable = true;
 
     # Mantém o comportamento atual do inspiron
     virtualization = {
       enable = true;
-      docker.enable = true;
+      docker.enable = false;
+      podman.enable = true;
       libvirt.enable = true;
     };
 
     development.enable = true;
 
-    # Gaming permanece desligado no laptop
+    # Notebook principal: prioriza autonomia e responsividade em vez de stack gamer completo.
     gaming.enable = false;
   };
 
   # Ajustes específicos além do profile
-  rag.features.development = {
+  kryonix.profiles.dev.enable = true;
+  kryonix.profiles.university.enable = true;
+  kryonix.profiles.ti.enable = true;
+
+  kryonix.features.development = {
     languages = {
       nix.enable = true;
       python.enable = true;
       javascript.enable = true;
+      rust.enable = true;
+      c.enable = true;
+      java.enable = true;
+      go.enable = true;
     };
-    tools.kubernetes.enable = true;
+    tools = {
+      kubernetes.enable = true;
+      terraform.enable = true;
+      ansible.enable = true;
+      arduino.enable = true;
+    };
+  };
+
+  kryonix.features.remoteDesktop.client.enable = true;
+
+  # Kryonix Brain (Distributed Architecture via Tailscale)
+  kryonix.features.ai.brain = {
+    enable = true;
+    role = "client";
+    serverHost = "rve-glacier"; # GLACIER (Tailscale Hostname)
   };
 
   networking.hostName = hostname;
@@ -137,13 +153,15 @@
       };
     };
 
-    # Kernel params globais.
-    kernelParams = [
+    # Flags específicas do hardware/FS deste host.
+    kernelParams = lib.mkAfter [
       "rootflags=subvol=@,compress=zstd,noatime"
     ];
 
-    # Evita builds inúteis
+    # Usa systemd dentro do initrd para um boot inicial mais consistente.
     initrd.systemd.enable = true;
+
+    plymouth.enable = lib.mkForce true;
   };
 
   # =========================
@@ -165,17 +183,69 @@
     extraKernelParams = [ ];
   };
 
+  # =========================
+  # Intel iGPU (Inspiron)
+  # =========================
+  services.xserver.videoDrivers = [ "modesetting" ];
+
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+    extraPackages = with pkgs; [
+      intel-media-driver # VA-API iHD (Broadwell+)
+      libvdpau-va-gl # VDPAU via VA-API
+      intel-vaapi-driver # fallback VA-API i965 (pre-Broadwell)
+    ];
+  };
+
+  environment.sessionVariables = {
+    # Mesa / OpenGL (Intel)
+    MESA_LOADER_DRIVER_OVERRIDE = "iris";
+    LIBVA_DRIVER_NAME = "iHD";
+    # Evita fallback silencioso para software renderer (llvmpipe).
+    WLR_RENDERER_ALLOW_SOFTWARE = "0";
+  };
+
   ## -------------------------
   ## Performance básica
   ## -------------------------
-  # Em laptop, `schedutil` costuma equilibrar performance e bateria melhor que `performance`.
-  powerManagement.cpuFreqGovernor = lib.mkForce "schedutil";
-
   services.power-profiles-daemon.enable = lib.mkForce true;
   services.tlp.enable = lib.mkForce false;
 
+  # Hibernate/hybrid ficam proibidos sempre. Suspend e permitido apenas para
+  # politicas user-level controladas, como hypridle somente em bateria.
+  systemd.sleep.settings.Sleep = {
+    AllowSuspend = "yes";
+    AllowHibernation = "no";
+    AllowHybridSleep = "no";
+    AllowSuspendThenHibernate = "no";
+  };
+
+  services.logind.settings.Login = {
+    HandlePowerKey = "ignore";
+    HandleSuspendKey = "ignore";
+    HandleHibernateKey = "ignore";
+    HandleLidSwitch = "ignore";
+    HandleLidSwitchExternalPower = "ignore";
+    HandleLidSwitchDocked = "ignore";
+    IdleAction = "ignore";
+  };
+
+  # O zram já estava ativo via common; aqui aumentamos a margem para absorver
+  # pressão de memória com mais folga no notebook.
+  zramSwap.memoryPercent = lib.mkForce 75;
+
+  # Com 16 GiB + zram, um swappiness mais baixo tende a deixar o desktop mais ágil.
+  boot.kernel.sysctl."vm.swappiness" = lib.mkForce 30;
+
   # Flatpak: mantém a lista comum vinda do módulo shared.
   # (Removemos as extensões NVIDIA do common.)
+
+  environment.systemPackages = with pkgs; [
+    kdePackages.kcmutils
+    kdePackages.systemsettings
+    kdePackages.kde-cli-tools
+  ];
 
   # Gaming/estabilidade: evita serviços que brigam por perfil de energia.
   # (PPD já está habilitado acima; mantemos apenas TLP desligado.)
@@ -183,6 +253,13 @@
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="block", KERNEL=="nvme*", ATTR{queue/scheduler}="none"
   '';
+
+  systemd.services = {
+    # Essas unidades estão quebradas no estado atual e só poluem o journal/sleep/shutdown.
+    pre-sleep.enable = lib.mkForce false;
+    pre-shutdown.enable = lib.mkForce false;
+
+  };
 
   ## -------------------------
   ## Virtualização (ajuste fino)
@@ -193,22 +270,27 @@
   '';
 
   # =========================
-  # RagOS (branding do sistema)
+  # Kryonix (branding do sistema)
   # =========================
   # Mantém o mesmo número de versão do seu `system.stateVersion` para exibição.
   # Obs.: `system.stateVersion` continua sendo a chave de compat do NixOS.
-  ragos = {
+  kryonix.branding = {
     enable = true;
-    prettyName = "RagOS";
+    prettyName = "Kryonix";
     versionId = "26.05";
   };
 
   # =========================
   # Tailscale VPN
   # =========================
-  services.rag.tailscale = {
+  services.kryonix.tailscale = {
     enable = true;
-    autoconnect = true;
+    # O daemon já reconecta sozinho após autenticação; manter o autoconnect
+    # bloqueava o boot por ~18s sem ganho prático.
+    autoconnect = false;
     authKeyFile = /root/tailscale-authkey.secret;
   };
+
+  # Codex (AI): opt-in via feature pra evitar builds lentos por padrão.
+  # Para ativar: kryonix.features.ai.codex.enable = true;
 }

@@ -1,20 +1,22 @@
-# Módulo NixOS: base comum (todos os hosts)
-# Autor: rag
+# ==============================================================================
+# Módulo: Base Comum NixOS
+# Autor: ragton
 #
-# O que é
-# - Configuração “base” do sistema: nixpkgs/overlays, boot defaults, locale, rede, variáveis de sessão e pacotes comuns.
-# - Importa módulos de serviços e programas compartilhados (Steam, gaming, TLP, Snapper).
+# O que é:
+# - Camada compartilhada entre hosts com defaults de sistema, serviços e pacotes.
+# - Ponto único para opções globais não ligadas a hardware específico.
 #
-# Por quê
+# Por quê:
 # - Evita duplicação entre hosts.
-# - Mantém os hosts finos (imports + hardware/ajustes específicos).
+# - Mantém as configurações por host focadas em hardware e diferenças locais.
 #
-# Como
-# - Usa `nixpkgs.overlays` do repo.
-# - Configura `nix.registry`/`NIX_PATH` para facilitar comandos e compat.
+# Como:
+# - Importa módulos compartilhados e define defaults com `mkDefault`.
+# - Expõe registry/NIX_PATH e stack base (PipeWire, rede, locale, etc).
 #
-# Riscos
-# - Alterações aqui impactam todas as máquinas; mudanças devem ser testadas em pelo menos um host antes de propagar.
+# Riscos:
+# - Qualquer regressão aqui afeta todos os hosts; sempre validar com `nixos-rebuild test`.
+# ==============================================================================
 {
   inputs,
   outputs,
@@ -34,12 +36,9 @@
     # Mantemos aqui para que todos os hosts herdem o mesmo "nome do sistema".
     ../branding/ragos
 
-    ../programs/steam
-    ../programs/wallpaper-engine-kde
     ../services/tlp
     ../services/snapper
     ../services/tailscale
-    ../services/greetd-dms
   ];
 
   # Registra inputs da flake no registry (melhora UX com comandos `nix ...`).
@@ -53,6 +52,24 @@
     name = "nix/path/${name}";
     value.source = value.flake;
   }) config.nix.registry;
+  # `/etc/ragos` é o checkout Git operacional do sistema. Mantemos `/etc/nixos`
+  # apontando para ele por compatibilidade com ferramentas NixOS tradicionais.
+  users.groups.ragos = { };
+  systemd.tmpfiles.rules = [
+    "L+ /etc/nixos - - - - /etc/ragos"
+  ];
+
+  system.activationScripts.ragosGitRepoPermissions = {
+    text = ''
+      if [ -L /etc/ragos ]; then
+        ${pkgs.coreutils}/bin/chgrp -h ragos /etc/ragos || true
+      elif [ -d /etc/ragos ]; then
+        ${pkgs.coreutils}/bin/chown -R ${userConfig.name}:ragos /etc/ragos || true
+        ${pkgs.findutils}/bin/find /etc/ragos -type d -exec ${pkgs.coreutils}/bin/chmod 2775 {} +
+        ${pkgs.findutils}/bin/find /etc/ragos -type f -exec ${pkgs.coreutils}/bin/chmod g+rw {} +
+      fi
+    '';
+  };
 
   # Nix: ajustes globais.
   nix.package = pkgs.nixVersions.latest;
@@ -68,37 +85,49 @@
     cores = lib.mkDefault 0;
   };
 
-  # Boot: defaults pensados para reduzir ruído e melhorar UX.
+  programs.git = {
+    enable = lib.mkDefault true;
+    config.safe.directory = "/etc/ragos";
+  };
+
+  # Boot: defaults genéricos de silêncio/recovery.
+  # Flags de hardware ficam nos hosts; flags do Zen ficam no módulo do kernel.
   boot = {
-    consoleLogLevel = 0;
-    initrd.verbose = false;
-    kernelParams = [
+    consoleLogLevel = lib.mkDefault 3;
+    initrd.verbose = lib.mkDefault false;
+    kernelParams = lib.mkBefore [
       "quiet"
       "rd.udev.log_level=3"
+      "systemd.show_status=auto"
+      "rd.systemd.show_status=auto"
+      "vt.global_cursor_default=0"
     ];
-    loader.efi.canTouchEfiVariables = true;
-   # loader.systemd-boot.enable = false;
-#    loader.systemd-boot.extraFiles =
- #     let
-  #      splashSrc = ../../../files/wallpaper/wallpaper.png;
-   #     splashBmp = pkgs.runCommand "systemd-boot-splash.bmp" { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
+    loader = {
+      timeout = lib.mkDefault 3;
+      efi.canTouchEfiVariables = lib.mkDefault true;
+    };
+    # loader.systemd-boot.enable = false;
+    #    loader.systemd-boot.extraFiles =
+    #     let
+    #      splashSrc = ../../../files/wallpaper/wallpaper.png;
+    #     splashBmp = pkgs.runCommand "systemd-boot-splash.bmp" { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
     #      convert "${splashSrc}" \
-     #       -alpha off \
-      #      -resize 1920x1080^ \
-       #     -gravity center \
-        #    -extent 1920x1080 \
-         #   BMP3:"$out"
-       # '';
-      #in
-     # {
-     #   "loader/splash.bmp" = splashBmp;
-     # };
+    #       -alpha off \
+    #      -resize 1920x1080^ \
+    #     -gravity center \
+    #    -extent 1920x1080 \
+    #   BMP3:"$out"
+    # '';
+    #in
+    # {
+    #   "loader/splash.bmp" = splashBmp;
+    # };
     #loader.timeout = 0;
-   # plymouth = {
-   #   enable = true;
-   #   theme = "nixos-bgrt";
-   #   themePackages = [ pkgs.nixos-bgrt-plymouth ];
-   # };
+    plymouth = {
+      enable = lib.mkDefault true;
+      theme = lib.mkDefault "nixos-bgrt";
+      themePackages = lib.mkDefault [ pkgs.nixos-bgrt-plymouth ];
+    };
 
     # Ajustes do módulo v4l (câmera virtual)
     kernelModules = [ "v4l2loopback" ];
@@ -112,9 +141,6 @@
       # swappiness 60 = padrão Linux, balanceado entre RAM e swap
       # Valor muito baixo pode causar OOM kills e travamentos
       "vm.swappiness" = lib.mkDefault 60;
-
-      # Latência do scheduler (6ms é seguro para desktop)
-      "kernel.sched_latency_ns" = lib.mkDefault 6000000;
 
       # Proteção contra OOM: permite usar mais swap antes de matar processos
       "vm.vfs_cache_pressure" = lib.mkDefault 50;
@@ -145,25 +171,44 @@
     freeSwapThreshold = lib.mkDefault 5;
     # Evita matar processos críticos do sistema
     extraArgs = [
-      "--avoid '^(Xorg|kwin_wayland|plasmashell|sddm)$'"
-      "--prefer '^(firefox|chromium|chrome|electron)$'"
+      "--avoid"
+      "^(Xorg|Hyprland|gdm)$"
+      "--prefer"
+      "^(firefox|chromium|chrome|electron)$"
     ];
   };
 
   # Rede
   networking.networkmanager.enable = true;
   networking.hostName = lib.mkDefault hostname;
-
-  # Desabilita serviços systemd que impactam o boot
-  systemd.services = {
-    NetworkManager-wait-online.enable = false;
-    plymouth-quit-wait.enable = false;
-    plymouth-quit.enable = false;
-    plymouth-start.enable = false;
+  networking.firewall = {
+    enable = lib.mkDefault true;
+    allowedTCPPorts = [
+      21115
+      21116
+      21117
+      21118
+      21119 # RustDesk
+      6568
+      7070 # AnyDesk
+    ];
+    allowedUDPPorts = [
+      21116 # RustDesk
+      7070 # AnyDesk
+    ];
   };
 
-  # Desabilita plymouth completamente (não será usado, evita dependências)
-  boot.plymouth.enable = false;
+  # Desabilita serviços systemd que impactam o boot
+  systemd.services = lib.mkMerge [
+    {
+      NetworkManager-wait-online.enable = false;
+    }
+    (lib.mkIf (!config.boot.plymouth.enable) {
+      plymouth-quit-wait.enable = false;
+      plymouth-quit.enable = false;
+      plymouth-start.enable = false;
+    })
+  ];
 
   # Fuso horário
   time.timeZone = "America/Cuiaba";
@@ -181,6 +226,9 @@
     LC_TELEPHONE = "pt_BR.UTF-8";
     LC_TIME = "pt_BR.UTF-8";
   };
+
+  # Teclado no console virtual (TTY) — layout ABNT2 brasileiro
+  console.keyMap = "br-abnt2";
 
   # Habilita suporte a Bluetooth
   hardware.bluetooth = {
@@ -201,9 +249,21 @@
 
   # Base para gerenciamento de cor/ICC (útil para HDR/WCG quando suportado)
   services.colord.enable = lib.mkDefault true;
+  # Necessário para integração de bateria/energia em apps Wayland da sessão.
+  services.upower.enable = lib.mkDefault true;
 
   # Ajustes de entrada
   services.libinput.enable = true;
+  services.logind.settings.Login = {
+    KillUserProcesses = lib.mkDefault false;
+    HandleLidSwitch = lib.mkDefault "suspend";
+    HandleLidSwitchExternalPower = lib.mkDefault "ignore";
+    HandleLidSwitchDocked = lib.mkDefault "ignore";
+  };
+
+  # Evita troca inesperada de implementação do D-Bus durante `nixos-rebuild test/switch`.
+  # (Isso costuma disparar o pre-switch check `switchInhibitors`.)
+  services.dbus.implementation = lib.mkDefault "broker";
 
   # Ajustes do Xserver
   services.xserver = {
@@ -223,57 +283,20 @@
   # Configuração de PATH
   environment.localBinInPath = true;
 
-  # Desabilita impressão via CUPS
+  # Carteira de senhas padrão do projeto: GNOME Keyring via PAM + Secret Service.
+  # O foco público do repo é Hyprland + GDM, então não mantemos mais branch de KDE/KWallet aqui.
+  services.gnome.gnome-keyring.enable = lib.mkDefault true;
+  services.gnome.gcr-ssh-agent.enable = lib.mkDefault false;
+  programs.seahorse.enable = lib.mkDefault true;
+
+  # Habilita impressão via CUPS
   services.printing.enable = true;
 
   # devmon depende de udevil, que frequentemente quebra build em toolchains novos.
-  # Em desktops (ex.: KDE), o fluxo recomendado para dispositivos removíveis é via udisks2.
-  services.devmon.enable = false;
-
-  # Habilita PipeWire para áudio
-  services.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    jack.enable = true;
-
-    # Melhorias de qualidade/volume (seguras)
-    # - Resampler de melhor qualidade para reduzir "som abafado" em alguns hardwares.
-    # - Headroom no layer Pulse (permite aumentar acima de 100% quando necessário).
-    extraConfig = {
-      pipewire."92-low-latency" = {
-        context.properties = {
-          default.clock.rate = lib.mkDefault 48000;
-          default.clock.quantum = lib.mkDefault 128;
-          default.clock.min-quantum = lib.mkDefault 64;
-          default.clock.max-quantum = lib.mkDefault 2048;
-        };
-      };
-
-      pipewire."95-audio-quality" = {
-        context.properties = {
-          # Resampler: qualidade melhor (custa um pouco mais de CPU, mas costuma valer a pena no desktop)
-          default.clock.allowed-rates = lib.mkDefault [ 44100 48000 96000 ];
-          resample.quality = lib.mkDefault 10;
-        };
-      };
-
-      pipewire-pulse."95-pulse-headroom" = {
-        stream.properties = {
-          # Permite volume acima de 1.0 (100%). Útil quando o hardware é baixo.
-          # Isso NÃO melhora a qualidade por si só, mas aumenta o ganho disponível.
-          pulse.min.quantum = lib.mkDefault 64;
-        };
-        context.properties = {
-          pulse.min.req = lib.mkDefault 64;
-          pulse.default.req = lib.mkDefault 128;
-        };
-      };
-    };
-  };
+  # No stack Hyprland/GDM, o fluxo recomendado para dispositivos removíveis é via udisks2 + gvfs.
+  services.devmon.enable = lib.mkDefault false;
+  services.udisks2.enable = lib.mkDefault true;
+  services.gvfs.enable = lib.mkDefault true;
 
   # Flatpak (sistema) + gerenciamento declarativo via nix-flatpak
   services.flatpak = {
@@ -281,17 +304,13 @@
 
     packages = lib.mkDefault [
       "app.zen_browser.zen"
-      "com.heroicgameslauncher.hgl"
-      "io.github.shiftey.Desktop"
       "io.github.shonebinu.Brief"
       "com.anydesk.Anydesk"
       "com.rustdesk.RustDesk"
       "com.ranfdev.DistroShelf"
       "com.github.tchx84.Flatseal"
       "io.github.flattool.Warehouse"
-      "org.kde.filelight"
       "com.rtosta.zapzap"
-      "org.libreoffice.LibreOffice"
       "org.gimp.GIMP"
     ];
 
@@ -299,24 +318,36 @@
     update.auto.enable = true;
   };
 
+  # Portal XDG para integração de apps (Flatpak, etc.)
+  xdg.portal = {
+    enable = true;
+  };
+
   # Configuração do usuário
   users.mutableUsers = true;
 
-  # Emergency initial password for root: empty = passwordless access on first boot.
-  # Override per-host with a proper hashedPassword. Change immediately with passwd after boot.
-  users.users.root.initialHashedPassword = lib.mkDefault "";
+  # Este repositório público não publica senha bootstrap para root.
+  # Defina manualmente durante a instalação ou injete um hash fora do repo.
 
   users.users.${userConfig.name} = {
     description = userConfig.fullName;
     extraGroups = [
       "networkmanager"
+      "ragos"
       "wheel"
-    ];
+    ]
+    ++ lib.optionals config.programs.wireshark.enable [ "wireshark" ];
     isNormalUser = true;
     shell = pkgs.zsh;
-    # Emergency initial password: empty = passwordless on first boot (new accounts only).
-    # Override per-host or change immediately with passwd after first login.
-    initialHashedPassword = lib.mkDefault "";
+  }
+  // lib.optionalAttrs (userConfig ? initialHashedPassword) {
+    initialHashedPassword = lib.mkDefault userConfig.initialHashedPassword;
+  }
+  // lib.optionalAttrs (userConfig ? hashedPassword) {
+    hashedPassword = lib.mkDefault userConfig.hashedPassword;
+  }
+  // lib.optionalAttrs (userConfig ? hashedPasswordFile) {
+    hashedPasswordFile = lib.mkDefault userConfig.hashedPasswordFile;
   };
 
   # Define o avatar do usuário
@@ -338,51 +369,93 @@
   security.sudo.wheelNeedsPassword = false;
 
   # Pacotes do sistema
-  environment.systemPackages = with pkgs; [
-    gcc
-    glib
-    gnumake
-    nodejs_20
-    killall
-    mesa
-    (lib.mkIf config.rag.hardware.openrgb.enable openrgb-git)
-    podman
-    distrobox
+  environment.systemPackages =
+    with pkgs;
+    [
+      gcc
+      glib
+      gnumake
+      nodejs_20
+      killall
+      mesa
+      podman
+      distrobox
+      nh
+      home-manager
 
-    # =========================
-    # Python (global)
-    # =========================
-    # PyCharm/IntelliJ (GUI) frequentemente não herda PATH do Home Manager.
-    # Expor o interpretador via systemPackages garante:
-    # - /run/current-system/sw/bin/python3
-    # - criação de venv por projeto via `python3 -m venv .venv`
-    python3
-    python3Packages.pip
-    python3Packages.virtualenv
+      # =========================
+      # Python (global)
+      # =========================
+      # PyCharm/IntelliJ (GUI) frequentemente não herda PATH do Home Manager.
+      # Expor o interpretador via systemPackages garante:
+      # - /run/current-system/sw/bin/python3
+      # - criação de venv por projeto via `python3 -m venv .venv`
+      python3
+      python3Packages.pip
+      python3Packages.virtualenv
+      # uv: package manager rápido para Python (também fornece uvx para executar CLIs)
+      uv
 
-    # Rust (global): `rustup` gerencia toolchains; `cargo`/`rustc` úteis para uso imediato.
-    rustup
-    cargo
-    rustc
+      # Rust (global): `rustup` gerencia toolchains; `cargo`/`rustc` úteis para uso imediato.
+      rustup
+      cargo
+      rustc
 
-    # =========================
-    # Java (global)
-    # =========================
-    # JDK para apps Java (TLauncher, Minecraft, etc.)
-    # jdk21 é LTS e compatível com a maioria dos apps modernos
-    jdk21
+      # =========================
+      # Java (global)
+      # =========================
+      # JDK para apps Java (TLauncher, Minecraft, etc.)
+      # jdk21 é LTS e compatível com a maioria dos apps modernos
+      jdk21
 
-    jetbrains.idea-oss
-    jetbrains.pycharm-oss
-    jetbrains.rust-rover
-  ];
+      jetbrains.idea-oss
+      jetbrains.pycharm-oss
+      jetbrains.rust-rover
 
-   # Rustup: evita o estado "rustup instalado, mas sem toolchain default".
+      # RustDesk via Flatpak: evita builds locais pesados do pacote RustDesk
+      # nativo e mantém um comando previsível para terminal/scripts.
+      (writeShellApplication {
+        name = "rustdesk";
+        runtimeInputs = [ flatpak ];
+        text = ''
+          exec flatpak run com.rustdesk.RustDesk "$@"
+        '';
+      })
+
+      # Ferramentas KDE úteis sem precisar do Plasma completo.
+      kdePackages.dolphin
+      kdePackages.dolphin-plugins
+      kdePackages.kio-extras
+      kdePackages.ark
+      kdePackages.filelight
+
+      (writeShellApplication {
+        name = "keditfiletype";
+        text = ''
+          set -euo pipefail
+
+          real_kedit="${pkgs.kdePackages."kde-cli-tools"}/bin/keditfiletype"
+          if [ -x "$real_kedit" ]; then
+            exec "$real_kedit" "$@"
+          fi
+
+          exec ${pkgs.kdePackages.systemsettings}/bin/systemsettings "$@"
+        '';
+      })
+    ]
+    ++ lib.optionals (builtins.hasAttr "kio-admin" pkgs.kdePackages) [ pkgs.kdePackages."kio-admin" ]
+    ++ lib.optionals (builtins.hasAttr "kio-gdrive" pkgs.kdePackages) [ pkgs.kdePackages."kio-gdrive" ]
+    ++ [
+    ];
+
+  # Rustup: evita o estado "rustup instalado, mas sem toolchain default".
   # Faz bootstrap no primeiro rebuild (e mantém idempotente).
   system.activationScripts.rustupBootstrap = {
     text = ''
       USER=${lib.escapeShellArg userConfig.name}
-      HOME_DIR=${lib.escapeShellArg (config.users.users.${userConfig.name}.home or "/home/${userConfig.name}")}
+      HOME_DIR=${
+        lib.escapeShellArg (config.users.users.${userConfig.name}.home or "/home/${userConfig.name}")
+      }
 
       if [ -d "$HOME_DIR" ]; then
         # Só roda se rustup existir no sistema
@@ -402,9 +475,6 @@
       fi
     '';
   };
-
-  # Regras udev para permitir acesso do OpenRGB aos dispositivos.
-  services.udev.packages = lib.optionals config.rag.hardware.openrgb.enable (with pkgs; [ openrgb-git ]);
 
   # Configuração comum de containers
   # Nota: não habilitamos `podman.dockerCompat` por padrão porque conflita com
@@ -434,12 +504,24 @@
   programs.nix-ld.enable = true;
 
   # Configuração de fontes
-  fonts.packages = with pkgs; [
-    nerd-fonts.jetbrains-mono
-    nerd-fonts.meslo-lg
-    nerd-fonts.caskaydia-cove
-    roboto
-  ];
+  fonts = {
+    packages = with pkgs; [
+      monocraft
+      nerd-fonts.jetbrains-mono
+      nerd-fonts.meslo-lg
+      nerd-fonts.caskaydia-cove
+      iosevka
+      roboto
+      noto-fonts-color-emoji
+    ];
+
+    fontconfig.defaultFonts = {
+      serif = [ "Monocraft" ];
+      sansSerif = [ "Monocraft" ];
+      monospace = [ "Monocraft" ];
+      emoji = [ "Noto Color Emoji" ];
+    };
+  };
 
   # Serviços adicionais
   services.locate.enable = true;
@@ -447,4 +529,3 @@
   # Daemon OpenSSH
   services.openssh.enable = true;
 }
-

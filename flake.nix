@@ -1,24 +1,27 @@
 # Flake principal do repo
-# Autor: rag
+# Autor: Gabriel Aguiar Rocha (RAGton)
 #
 # O que é
-# - Fonte única de verdade (flakes) para NixOS e nix-darwin das máquinas.
-# - Centraliza inputs, overlays e outputs (nixosConfigurations/homeConfigurations).
+# - Fonte única de verdade para hosts NixOS e perfis Home Manager.
+# - Centraliza inputs, overlays e outputs públicos do projeto.
 #
 # Por quê
 # - Reprodutibilidade: mesmos inputs -> mesmo resultado.
-# - Portabilidade: mesma base para Linux e macOS.
+# - Portabilidade: módulos compartilhados e outputs públicos consistentes.
 # - Manutenção: entradas e saídas claras num único lugar.
 #
 # Como
-# - Inputs: nixpkgs (unstable + stable), home-manager, plasma-manager, nix-darwin etc.
-# - Outputs: funções `mkNixosConfiguration`/`mkDarwinConfiguration` para montar hosts.
+# - Inputs: nixpkgs (unstable + stable), Home Manager, hardware e integrações auxiliares.
+# - Outputs: hosts NixOS, perfis Home Manager, overlays, formatter e checks.
 #
 # Riscos
 # - Atualizar pins (nixpkgs/home-manager) pode introduzir regressões; prefira atualizar de forma incremental.
 {
-  description = "Configurações NixOS e nix-darwin das minhas máquinas";
+  description = "Kryonix: plataforma NixOS pessoal para workstation, gaming, virtualizacao, desenvolvimento e futuras ISOs.";
 
+  # =============================
+  # Inputs (flakes externos)
+  # =============================
   inputs = {
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -36,13 +39,6 @@
     # Gerenciador declarativo de Flatpak
     nix-flatpak.url = "github:gmodena/nix-flatpak?ref=v0.6.0";
 
-    # Gerenciador declarativo do KDE Plasma
-    plasma-manager = {
-      url = "github:nix-community/plasma-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
-    };
-
     # Nix Darwin (para máquinas macOS)
     darwin = {
       url = "github:LnL7/nix-darwin";
@@ -55,135 +51,62 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Tema (Plasma/GTK/Icons): Edna
-    # Repo: https://gitlab.com/jomada/edna
-    # Obs.: usamos flake=false porque é um repositório de assets, não um flake Nix.
-    edna-theme = {
-      url = "git+https://gitlab.com/jomada/edna";
+    # Google Antigravity (pacote Nix mantido em repositório externo)
+    antigravity-nix = {
+      url = "github:jacopone/antigravity-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Caelestia Shell
+    # Fonte padrão: GitHub pinado no lock do flake.
+    # Desenvolvimento local: use `--override-input caelestia-shell path:../caelestia-shell`
+    # a partir do diretório do checkout que contém este flake.
+    caelestia-shell = {
+      url = "github:caelestia-dots/shell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # OpenAI Codex CLI (coding agent que roda localmente)
+    codex = {
+      url = "github:openai/codex";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # Kryonix Home Brain (scanner determinístico)
+    kryonix-home = {
+      url = "github:RAGton/KRYONIX-HOME";
       flake = false;
     };
 
-    # Tema Bart: instalado via KDE Store (não disponível como flake)
-    # Para usar: System Settings > Get New Global Themes > Busque "Bart"
-
-    # DankMaterialShell (DMS) - Rice para Hyprland (assets/configs)
-    # Repo: https://github.com/AvengeMedia/DankMaterialShell
-    # Obs.: flake=false porque é um repositório de dotfiles/configs, não um flake Nix.
-    dms = {
-      url = "github:AvengeMedia/DankMaterialShell";
+    # Kryonix Brain LightRAG (RAG engine)
+    # Fonte pinada no lock do flake.
+    kryonix-brain-lightrag = {
+      url = "github:RAGEnterprise/kryonix-brain-lightrag";
       flake = false;
-    };
-
-    # DankMaterialShell (DMS) como flake (para acessar packages/modules upstream)
-    dms-flake = {
-      url = "github:AvengeMedia/DankMaterialShell";
-      flake = true;
     };
   };
 
+  # =============================
+  # Outputs (sistemas, usuários, overlays)
+  # =============================
   outputs =
     {
       self,
-      darwin,
       home-manager,
       nixpkgs,
       ...
     }@inputs:
     let
       inherit (self) outputs;
-
-      # Definição de usuários
-      users = {
-        # Usuário principal
-        rocha = {
-          avatar = ./files/avatar/ragton.jpeg;
-          email = "gabriel.rag@proton.me";
-          gitKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFLt1vJ3bluf8Df37jUUktr1MwMzQctci8wi3z4O9AGP gabriel.rag@proton.me";
-          fullName = "Gabriel Rocha";
-          name = "rocha";
-        };
-      };
-
-      # Função para configuração de sistema (NixOS)
-      mkNixosConfiguration =
-        hostname: username:
-        nixpkgs.lib.nixosSystem {
-          specialArgs = {
-            inherit inputs outputs hostname;
-            isDarwin = false;
-            userConfig = users.${username};
-            nixosModules = "${self}/modules/nixos";
-          };
-          modules = [
-            ./hosts/${hostname}
-            ./lib/options.nix     # Sistema de opções rag.* (v2 migration)
-            ./desktop/manager.nix # Desktop auto-import (v2 migration)
-            ./features            # Features modulares (v2 migration)
-            ./profiles            # Profiles composáveis (v2 migration)
-          ];
-        };
-
-      # Função para configuração de sistema (nix-darwin)
-      mkDarwinConfiguration =
-        hostname: username:
-        darwin.lib.darwinSystem {
-          system = "aarch64-darwin";
-          specialArgs = {
-            inherit inputs outputs hostname;
-            isDarwin = true;
-            userConfig = users.${username};
-            darwinModules = "${self}/modules/darwin";
-          };
-          modules = [ ./hosts/${hostname} ];
-        };
-
-      # Função para configuração do Home Manager
-      mkHomeConfiguration =
-        system: username: hostname:
-        home-manager.lib.homeManagerConfiguration {
-          pkgs = import nixpkgs {
-            inherit system;
-            overlays = [
-              outputs.overlays.stable-packages
-              outputs.overlays.warp-terminal-latest
-              # Workaround: nixpkgs unstable sometimes fails building xeus-cling due to
-              # notebook-based install checks (papermill). Disable checks so HM can switch.
-              outputs.overlays.xeus-cling-no-checks
-            ];
-            config.allowUnfree = true;
-          };
-          extraSpecialArgs = {
-            inherit inputs outputs;
-            userConfig = users.${username};
-            nhModules = "${self}/modules/home-manager";
-          };
-          modules = [
-            ./home/${username}/${hostname}
-          ];
-        };
+      users = import ./flake/users.nix;
+      lib = import ./flake/lib.nix { inherit inputs users; };
     in
     {
-      nixosConfigurations = {
-        inspiron = mkNixosConfiguration "inspiron" "rocha";
-
-        # Live ISO instaladora (multi-host)
-        iso = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = {
-            inherit inputs outputs;
-            hostname = "iso";
-            isDarwin = false;
-            nixosModules = "${self}/modules/nixos";
-            # A ISO não precisa de userConfig; se algum módulo exigir, ajustamos no host iso.
-          };
-          modules = [ ./hosts/iso ];
-        };
-      };
-
-      homeConfigurations = {
-        "rocha@inspiron" = mkHomeConfiguration "x86_64-linux" "rocha" "inspiron";
-      };
-
+      nixosConfigurations = import ./flake/hosts.nix { inherit inputs lib; };
+      homeConfigurations = import ./flake/home.nix { inherit inputs lib; };
+      packages = import ./flake/packages.nix { inherit inputs lib; };
+      devShells = import ./flake/shells.nix { inherit inputs lib; };
+      formatter = import ./flake/formatter.nix { inherit inputs lib; };
+      checks = import ./flake/checks.nix { inherit inputs lib; };
       overlays = import ./overlays { inherit inputs; };
     };
 }

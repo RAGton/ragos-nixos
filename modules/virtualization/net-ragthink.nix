@@ -1,7 +1,7 @@
 /*
- Autor: rag
- Descrição: Declara a rede libvirt "net-ragthink" (NAT + bridge virbr-ragthink)
-            de forma totalmente declarativa via systemd.
+  Autor: rag
+  Descrição: Declara a rede libvirt "net-ragthink" (NAT + bridge virbr-ragthink)
+             de forma totalmente declarativa via systemd.
 */
 
 { pkgs, lib, ... }:

@@ -1,482 +1,306 @@
-# Configurações NixOS e nix-darwin das minhas máquinas
+# Kryonix
 
-Este repositório contém as configurações de NixOS e nix-darwin das minhas máquinas, gerenciadas via [Nix Flakes](https://nixos.wiki/wiki/Flakes).
+<p align="center">
+  <img src=".github/assets/kryonix-hero.svg" alt="Kryonix Hero" width="100%">
+</p>
 
-Idioma: PT-BR (este arquivo) | [English](README-en.md)
+<p align="center">
+  <strong>Plataforma NixOS declarativa para workstation, gaming, virtualização, estudo e desenvolvimento.</strong>
+</p>
 
-## Showcase
+<p align="center">
+  <a href="https://github.com/RAGton/kryonix"><img alt="Repo" src="https://img.shields.io/badge/repo-Kryonix-0A84FF?style=for-the-badge"></a>
+  <a href="https://github.com/RAGton/kryonix-vault.git"><img alt="Vault" src="https://img.shields.io/badge/vault-Kryonix--Vault-7C3AED?style=for-the-badge"></a>
+  <img alt="NixOS" src="https://img.shields.io/badge/NixOS-declarativo-5277C3?style=for-the-badge">
+  <img alt="Status" src="https://img.shields.io/badge/status-em%20evolu%C3%A7%C3%A3o-10B981?style=for-the-badge">
+</p>
 
-### Hyprland
+---
 
-![hyprland](./files/screenshots/kde.png)
+## Visão geral
 
-### KDE
+O **Kryonix** é uma plataforma NixOS declarativa para uso real. O projeto deixou de ser apenas uma coleção de dotfiles e passou a ser uma base organizada para:
 
-![kde](./files/screenshots/kde.png)
+- workstation principal
+- gaming
+- virtualização pessoal com KVM/libvirt
+- estudo e desenvolvimento
+- branding consistente
+- base futura para ISOs instaláveis do Kryonix
 
-### macOS
+<p align="center">
+  <img src=".github/assets/kryonix-overview.svg" alt="Kryonix Overview" width="100%">
+</p>
 
-![macos](./files/screenshots/RAGOS-WALPAPER.png)
+---
 
-## Estrutura
+## Repositórios
 
-- `flake.nix`: a flake (fonte única de verdade), declarando `inputs` e `outputs` de NixOS, nix-darwin e Home Manager.
-- `hosts/`: configuração por máquina (ex.: `inspiron`) — deve conter o mínimo possível (imports + hardware).
-- `home/`: configuração por usuário e host (Home Manager).
-- `files/`: arquivos auxiliares (scripts, wallpapers, screenshots, avatar etc.).
-- `modules/`: módulos reutilizáveis por responsabilidade:
-  - `modules/nixos/`: módulos de sistema (Linux).
-  - `modules/darwin/`: módulos de sistema (macOS).
-  - `modules/home-manager/`: módulos de usuário.
-- `overlays/`: overlays Nix.
-- `flake.lock`: lockfile para builds reprodutíveis.
+- Repositório principal: `https://github.com/RAGton/kryonix`
+- Vault de conhecimento: `https://github.com/RAGton/kryonix-vault.git`
+- Posicionamento público: **Kryonix**
+- Idioma: **PT-BR** | [English](README-en.md)
 
-### Principais inputs
+---
 
-- **nixpkgs**: aponta para `nixos-unstable` (pacotes mais novos).
-- 
-- **nixpkgs-stable**: aponta para `nixos-24.11` (base estável).
-- **home-manager**: gerencia a configuração do usuário.
-- **darwin**: habilita nix-darwin no macOS.
-- **hardware**: módulos de hardware do nixos-hardware.
-- **nix-flatpak**: gerenciamento declarativo de Flatpaks.
-- **plasma-manager**: gerenciamento declarativo do KDE Plasma.
+## O que o projeto publica hoje
 
-## Uso
+O flake expõe atualmente:
 
-### Aplicando as configurações (NixOS)
+- `nixosConfigurations` para `inspiron`, `inspiron-nina`, `glacier` e `iso`
+- `homeConfigurations` para `rocha@inspiron`, `rocha@glacier` e `nina@inspiron-nina`
+- overlays reutilizáveis
+- formatter, checks e pacotes `kryonix` e `ragos` compat
 
-- Sistema:
+### Host principal atual
 
-```sh
-sudo nixos-rebuild switch --flake .#inspiron
-```
+O host de produto principal neste momento é o **`glacier`**, tratado como:
 
-- Usuário (Home Manager):
+- workstation AMD + NVIDIA
+- host gamer
+- host de VMs
+- laboratório do próprio Kryonix
 
-```sh
-home-manager switch --flake .#rocha@inspiron
-```
+---
 
-Para ler as novidades do Home Manager (news) usando flakes, rode:
+## Fluxo operacional
 
-```sh
-home-manager news --flake .#rocha@inspiron
-```
-
-> Se você rodar `home-manager news` sem `--flake`, ele tenta usar a config padrão em `~/.config/home-manager/home.nix`.
-
-### Atalhos (Home Manager)
-
-Os atalhos abaixo são configurados de forma declarativa (Home Manager). Se você mudar o flake e aplicar `home-manager switch`, eles voltam exatamente como estão aqui.
-
-#### KDE Plasma (plasma-manager)
-
-| Atalho | Ação |
-|---|---|
-| `Meta+E` | Abrir o Dolphin |
-| `Meta+Space` | Toggle do Albert |
-| `Meta+Return` | Abrir terminal (Warp) |
-| `Meta+Shift+B` | Abrir Zen Browser |
-| `Meta+Shift+T` | Abrir Telegram |
-| `Meta+Shift+Backspace` | Limpar notificações do Plasma |
-| `Print` | Screenshot de região (Spectacle) |
-| `Meta+Ctrl+S` | Screenshot da tela inteira (Spectacle) |
-
-> Nota: outros atalhos podem existir via KWin/Plasma padrão; esta tabela cobre os atalhos gerenciados aqui.
-
-#### Hyprland
-
-No Hyprland, o `$mainMod` normalmente equivale a `Meta` (SUPER).
-
-| Atalho | Ação |
-|---|---|
-| `$mainMod+Shift+Return` | Abrir terminal (Warp) |
-| `$mainMod+Shift+F` | Abrir arquivos (Nautilus) |
-| `$mainMod+Shift+T` | Abrir Telegram |
-| `$mainMod+Shift+B` | Abrir navegador |
-| `$mainMod+A` | Albert: mostrar apps |
-| `Ctrl+Space` | Albert: toggle |
-| `$mainMod+Q` | Fechar janela ativa |
-| `$mainMod+1..9` | Trocar workspace |
-| `$mainMod+Shift+1..9` | Mover janela pro workspace |
-
-### Atalhos via Makefile
-
-O [Makefile](Makefile) oferece alvos prontos.
-
-- Por padrão, ele assume que o hostname local bate com o output da flake (ex.: `inspiron` → `.#inspiron`).
-- Você pode sobrescrever as variáveis na linha de comando para apontar para outro host/usuário.
-
-Listar alvos disponíveis:
+A CLI padrão agora é a **`kryonix`**, instalada no PATH do sistema.
+A CLI antiga **`ragos`** continua disponível apenas como compatibilidade temporária.
 
 ```sh
-make help
+kryonix switch
+kryonix switch --update
+kryonix boot --update
+kryonix home
+kryonix diff
+kryonix doctor
+kryonix check
+kryonix fmt
+kryonix iso
 ```
 
-Exemplos mais comuns:
+Ela usa `nh`, `nix`, `nvd` e o hostname atual para reduzir atrito operacional.
+
+<p align="center">
+  <img src=".github/assets/kryonix-terminal.svg" alt="Kryonix Terminal Demo" width="100%">
+</p>
+
+---
+
+## Quick start
+
+Se quiser clonar já com o naming novo:
 
 ```sh
-make nixos-rebuild
-make home-manager-switch
-make flake-check
-make flake-update
+git clone https://github.com/RAGton/kryonix kryonix
+cd kryonix
 ```
 
-#### Como funciona (variáveis)
-
-- `HOSTNAME`: usado para montar o target padrão. Default: `$(hostname)`.
-- `FLAKE`: target do sistema. Default: `.#$(HOSTNAME)`.
-- `HOME_TARGET`: target do Home Manager. Default: igual a `$(FLAKE)` (você quase sempre vai querer setar algo como `.#rocha@inspiron`).
-- `EXPERIMENTAL`: flags do `nix` para habilitar flakes quando necessário.
-
-Exemplos de override:
+Inspecionar a flake:
 
 ```sh
-# Aplicar NixOS em um host específico (sem depender do hostname local)
-make nixos-rebuild FLAKE=.#inspiron
-
-# Aplicar Home Manager no formato user@host
-make home-manager-switch HOME_TARGET=.#rocha@inspiron
-
-# Atualizar inputs
-make flake-update
+nix flake show --all-systems
+nix flake check --keep-going
 ```
 
-> Observação: em NixOS, o `nixos-rebuild` roda com `sudo`. Já o `home-manager switch` roda como usuário.
-
-## Git: SSH (auth) vs `gitKey` (assinatura)
-
-Este repo usa duas coisas diferentes que costumam ser confundidas:
-
-1) **Chave SSH (autenticação no GitHub/GitLab)**
-
-- Serve para `git clone/pull/push` sem ficar digitando senha/token.
-- Fica em `~/.ssh/` (ex.: `id_ed25519` e `id_ed25519.pub`).
-- Você cadastra **a chave pública** (`.pub`) no GitHub/GitLab.
-
-1) **`gitKey` (assinatura de commits, via Home Manager)**
-
-- No seu flake, o campo `gitKey` em `users.<nome>` é usado pelo módulo do Git em [modules/home-manager/programs/git/default.nix](modules/home-manager/programs/git/default.nix).
-- Ele alimenta `programs.git.signing.key` (assinatura de commit). Isso normalmente é um **Key ID do GPG** (OpenPGP).
-- Se você deixar `gitKey = "";`, a assinatura **não** é habilitada (mais simples para bootstrap).
-
-### Criar e cadastrar uma chave SSH (auth)
+Aplicar o host atual:
 
 ```sh
-ls ~/.ssh
-ssh-keygen -t ed25519 -C "seu-email@dominio.com"
-cat ~/.ssh/id_ed25519.pub
+kryonix switch
 ```
 
-Depois, cadastre a chave pública no GitHub: **Settings → SSH and GPG keys → New SSH key**.
-
-### Configurar assinatura de commits (GPG)
-
-Se você quer commits assinados, crie/importe uma chave GPG, descubra o Key ID e preencha `gitKey` com esse valor.
+Aplicar explicitamente um host:
 
 ```sh
-gpg --list-secret-keys --keyid-format=long
+kryonix switch --host glacier
 ```
 
-> Importante: nunca versionar chave privada no repo/Nix store. O `gitKey` aqui é só um identificador para o Git.
+---
 
-## Instalação (somente LiveCD / ISO) — NixOS
+## Arquitetura visual do fluxo
 
-Guia para instalar a máquina do zero usando apenas o ISO do NixOS + este repositório (flake).
+<p align="center">
+  <img src=".github/assets/kryonix-workflow.svg" alt="Kryonix Workflow" width="100%">
+</p>
 
-> Dica: no ISO, facilita virar root com `sudo -i` antes de particionar/montar.
+---
 
-### 1) Boot + rede
+## Glacier
 
-- Inicie pelo ISO do NixOS.
-- Conecte à internet (Ethernet ou `nmtui`).
+O `glacier` usa o `hardware-configuration.nix` restaurado como fonte real de boot, root e home.
+O `disks.nix` fica reservado para provisionamento e **não** deve ser usado de forma destrutiva no host já instalado.
 
-### 2) Particionamento e montagem (Btrfs + subvolumes)
+Além do storage base, o host mantém um storage operacional para virtualização em:
 
-Exemplo de layout sem criptografia: uma partição EFI (`/boot`) e uma partição Btrfs.
+- `/srv/ragenterprise`
+- `/srv/ragenterprise/images`
+- `/srv/ragenterprise/iso`
+- `/srv/ragenterprise/templates`
+- `/srv/ragenterprise/snippets`
+- `/srv/ragenterprise/backups`
 
-> Dica: o arquivo [hosts/inspiron/disks.nix](hosts/inspiron/disks.nix) documenta o layout esperado do host `inspiron`.
+---
 
-Monte em `/mnt` usando subvolumes (ajuste `DISK`, `ESP` e `ROOT`):
+## Branding
+
+O branding do Kryonix já está padronizado em:
+
+- `Plymouth`
+- `GRUB`
+- `GDM`
+- wallpaper do desktop
+- `/etc/os-release`
+- `/etc/issue`
+
+O produto é apresentado publicamente como **Kryonix**.
+O nome antigo permanece apenas como camada temporária de compatibilidade.
+
+---
+
+## IA local e serviços do Brain
+
+O `glacier` conta com serviços de Inteligência Artificial nativos como **Ollama**, **LightRAG** e **Kryonix Brain API**.
+
+### Setup da API Key (executar no Glacier)
+
+O arquivo de secrets `/etc/kryonix/brain.env` fica **fora do Git** e precisa ser criado no servidor antes do primeiro `kryonix switch`.
+
+**Método recomendado (CLI):**
 
 ```sh
-# exemplo (NÃO copie sem ajustar):
-# DISK=/dev/nvme0n1
-# ESP=${DISK}p1
-# ROOT=${DISK}p3
-
-mkfs.vfat -n BOOT-NIXOS "$ESP"
-mkfs.btrfs -f "$ROOT"
-
-mount "$ROOT" /mnt
-btrfs subvolume create /mnt/@
-btrfs subvolume create /mnt/@home
-
-# opcional, recomendado com snapper
-btrfs subvolume create /mnt/@snapshots
-
-umount /mnt
-
-mount -o subvol=@,compress=zstd,noatime "$ROOT" /mnt
-mkdir -p /mnt/{home,.snapshots,boot}
-mount -o subvol=@home,compress=zstd,noatime "$ROOT" /mnt/home
-mount -o subvol=@snapshots,compress=zstd,noatime "$ROOT" /mnt/.snapshots
-mount "$ESP" /mnt/boot
+kryonix brain api-key generate
+kryonix brain api-key validate
 ```
 
-### 3) Clonar o repo e instalar com flake
-
-No LiveCD, clone este repo para dentro do sistema alvo e rode o install apontando para o host:
+**Método manual (fallback):**
 
 ```sh
-mkdir -p /mnt/etc
-git clone https://github.com/RAGton/dotfiles-NixOs /mnt/etc/nixos
-
-# substitua pelo seu host (ex.: inspiron / inspiron)
-nixos-install --flake /mnt/etc/nixos#inspiron
+KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+tmp="$(mktemp)"
+printf 'KRYONIX_BRAIN_API_KEY=%s\n' "$KEY" > "$tmp"
+sudo install -m 600 -o root -g root "$tmp" /etc/kryonix/brain.env
+rm -f "$tmp"
+unset KEY
 ```
 
-Se você estiver instalando em um hardware diferente do que já está versionado em `hosts/<host>/hardware-configuration.nix`, gere e ajuste esse arquivo antes do `nixos-install`.
-
-### 4) Pós-instalação
-
-Reinicie e aplique o Home Manager do seu usuário:
+Confirme as permissões:
 
 ```sh
-home-manager switch --flake /etc/nixos#rocha@inspiron
+sudo stat -c "%U:%G %a %n" /etc/kryonix/brain.env
+# Esperado: root:root 600 /etc/kryonix/brain.env
 ```
 
-Se o `home-manager` ainda não estiver disponível no PATH no primeiro login, rode:
+Para rotação: `kryonix brain api-key rotate` (faz backup automático).
+
+Se esse arquivo não existir, o systemd se recusará a subir as units `kryonix-brain-api` e `kryonix-lightrag` no `kryonix switch`.
+
+### Endpoints da Brain API
+
+- `GET /health` — público, sem autenticação
+- `GET /stats`, `POST /search`, `GET /graph/*` — requerem header `X-API-Key`
 
 ```sh
-nix-shell -p home-manager
-home-manager switch --flake /etc/nixos#rocha@inspiron
+# Health check (público)
+curl -fsS http://10.0.0.2:8000/health
+
+# Stats autenticado
+curl -fsS -H "X-API-Key: <chave>" http://10.0.0.2:8000/stats
+
+# Busca semântica autenticada
+curl -fsS -H "X-API-Key: <chave>" http://10.0.0.2:8000/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "pipeline RAG Kryonix"}'
 ```
 
-### Adicionando uma nova máquina com um novo usuário
+> ⚠️ **Nunca commite** `brain.env`, `neo4j.env` ou qualquer arquivo com API keys ou tokens.
+> Esses arquivos já estão listados no `.gitignore`.
 
-Para adicionar uma nova máquina com um novo usuário (NixOS ou nix-darwin), siga os passos abaixo:
+---
 
-1. **Atualize o `flake.nix`**:
+## Kryonix Home Brain
 
-  a. Adicione o novo usuário ao attribute set `users`:
+O **Kryonix Home Brain** organiza e estrutura arquivos pessoais da sua Home de forma segura, declarativa e auditável.
 
-   ```text
-   users = {
-    # Usuários existentes...
-     newuser = {
-       avatar = ./files/avatar/face;
-       email = "newuser@example.com";
-      fullName = "Novo Usuário";
-       gitKey = "YOUR_GIT_KEY";
-       name = "newuser";
-     };
-   };
-   ```
+Fases concluídas:
+- **Fase 1**: scan / report / duplicates / plan
+- **Fase 2**: manifest / apply / rollback
+- **Fase 3A**: renomeação determinística ABNT-like
+- **Fase 3B**: taxonomia determinística e declarativa baseada em regras
+- **Fase 4A**: Memory Bridge (exportação JSONL auditável para o Brain)
 
-  b. Adicione a nova máquina no conjunto de configurações apropriado:
+### Fluxo Seguro de Operação
 
-  Para NixOS:
-
-   ```text
-   nixosConfigurations = {
-    # Configurações existentes...
-     newmachine = mkNixosConfiguration "newmachine" "newuser";
-   };
-   ```
-
-  Para nix-darwin:
-
-   ```text
-   darwinConfigurations = {
-    # Configurações existentes...
-     newmachine = mkDarwinConfiguration "newmachine" "newuser";
-   };
-   ```
-
-  c. Adicione a configuração do Home Manager:
-
-   ```text
-   homeConfigurations = {
-    # Configurações existentes...
-     "newuser@newmachine" = mkHomeConfiguration "x86_64-linux" "newuser" "newmachine";
-   };
-   ```
-
-1. **Crie a configuração do sistema**:
-
-  a. Crie um novo diretório em `hosts/` para a máquina:
-
-   ```sh
-   mkdir -p hosts/newmachine
-   ```
-
-  b. Crie o `default.nix` nesse diretório:
-
-   ```sh
-   touch hosts/newmachine/default.nix
-   ```
-
-  c. Adicione a configuração base no `default.nix`:
-
-  Para NixOS:
-
-   ```text
-   { inputs, hostname, nixosModules, ... }:
-   {
-     imports = [
-       inputs.hardware.nixosModules.common-cpu-amd
-       ./hardware-configuration.nix
-       "${nixosModules}/common"
-       "${nixosModules}/desktop/hyprland"
-     ];
-
-     networking.hostName = hostname;
-   }
-   ```
-
-  Para nix-darwin:
-
-   ```text
-   { darwinModules, ... }:
-   {
-     imports = [
-       "${darwinModules}/common"
-     ];
-    # Adicione configurações específicas da máquina aqui
-   }
-   ```
-
-  d. Para NixOS, gere o `hardware-configuration.nix`:
-
-   ```sh
-   sudo nixos-generate-config --show-hardware-config > hosts/newmachine/hardware-configuration.nix
-   ```
-
-1. **Crie a configuração do Home Manager**:
-
-  a. Crie um diretório para a configuração do usuário nesse host:
-
-   ```sh
-   mkdir -p home/newuser/newmachine
-   touch home/newuser/newmachine/default.nix
-   ```
-
-  b. Adicione uma configuração base:
-
-   ```nix
-   { nhModules, ... }:
-   {
-     imports = [
-       "${nhModules}/common"
-      # Adicione outros módulos do home-manager
-     ];
-   }
-   ```
-
-1. **Build e aplicação das configurações**:
-
-  a. Versione os novos arquivos:
-
-   ```sh
-   git add .
-   ```
-
-  b. Build e switch para a configuração de sistema:
-
-  Para NixOS:
-
-   ```sh
-   sudo nixos-rebuild switch --flake .#newmachine
-   ```
-
-  Para nix-darwin (requer Nix e nix-darwin instalados):
-
-   ```sh
-   darwin-rebuild switch --flake .#newmachine
-   ```
-
-  c. Build e switch para a configuração do Home Manager:
-
-> [!IMPORTANT]
-> Em sistemas novos, faça o bootstrap do Home Manager primeiro:
+Por segurança de dados, **não existe auto-delete**. Todas as decisões são descritas em um manifesto estruturado e aplicadas somente com confirmação explícita:
 
 ```sh
-nix-shell -p home-manager
-home-manager switch --flake .#newuser@newmachine
+# 1. Planejar as movimentações com explicabilidade das heurísticas
+kryonix home plan --taxonomy-suggestions --rename-suggestions --why
+
+# 2. Criar o manifesto de ações físicas
+kryonix home manifest create --taxonomy-suggestions --rename-suggestions
+
+# 3. Simular (dry-run) ou aplicar (confirm)
+kryonix home apply --dry-run
+kryonix home apply --confirm
+
+# 4. Se arrepender ou errar, reverta 100% da transação instantaneamente
+kryonix home rollback
+
+# 5. Exportar memória para o Kryonix Brain (RAG/Graph)
+kryonix home export-memory --from latest-manifest --jsonl
 ```
 
-Depois desse setup inicial, você pode reconstruir separadamente; o `home-manager` ficará disponível sem passos extras.
+Para detalhes de arquitetura, configurações de TOML e guias operacionais, consulte a [Documentação do Home Brain](docs/home-brain/README.md).
 
-## Atualizando a flake
+---
 
-Para atualizar todos os inputs para as versões mais recentes:
+## Acesso remoto seguro ao Glacier
 
+Status: Implementado e validado.
+
+O Kryonix utiliza um pipeline seguro para acesso ao desktop do servidor, garantindo que o tráfego VNC nunca seja exposto à rede pública.
+
+Fluxo:
+- **Glacier (Servidor):** Roda WayVNC escutando exclusivamente em `127.0.0.1:5900`.
+- **Inspiron (Cliente):** Cria um túnel SSH local apontando `127.0.0.1:5901` para o servidor.
+- **Visualização:** Remmina (VNC) conectando em `127.0.0.1:5901`.
+
+Comandos:
 ```sh
-nix flake update
+kryonix remote vnc start   # Inicia servidor (no Glacier) ou túnel (no Inspiron)
+kryonix remote vnc status  # Mostra o estado de ambos os lados
+kryonix remote vnc stop    # Para os serviços correspondentes
 ```
 
-## Módulos e configurações
+---
 
-### Módulos de sistema (em `modules/nixos/`)
+## Documentação
 
-- **`common`**: configurações comuns (bootloader, rede, PipeWire, fontes e usuário). Inclui Plymouth (tema `nixos-bgrt`) e splash do systemd-boot gerado a partir de `files/wallpaper/wallpaper.png`.
-- **`desktop/hyprland`**: Hyprland com GDM/Bluetooth e pacotes de suporte.
-- **`desktop/kde`**: KDE Plasma com SDDM.
-- **`programs/steam`**: Steam no nível do sistema.
-- **`services/tlp`**: TLP (gerenciamento de energia em notebooks).
+- [Operação diária e CLI](docs/OPERATIONS.md)
+- [Papel do host glacier](docs/GLACIER.md)
+- [Índice da documentação](docs/INDEX.md)
+- [Comandos canônicos validados](docs/operations/KRYONIX_COMMANDS_CANONICAL.md)
+- [Matriz de runtime (Inspiron/Glacier)](docs/operations/KRYONIX_RUNTIME_MATRIX.md)
+- [Checklist de validação operacional](docs/operations/KRYONIX_VALIDATION.md)
+- [Walkthrough de revisão canônica](docs/operations/KRYONIX_REVIEW_WALKTHROUGH.md)
 
-### Módulos Darwin (em `modules/darwin/`)
+---
 
-- **`common`**: configurações comuns do macOS (defaults, remapeamento de teclado e usuário).
+## Observações de segurança operacional
 
-### Módulos do Home Manager (em `modules/home-manager/`)
+- não use `disko`, `format-*` ou `install-system` no `glacier` já instalado
+- não trate `hosts/glacier/disks.nix` como verdade do hardware atual
+- prefira `kryonix test` e `kryonix boot` antes de mudanças de maior risco
 
-- **`common`**: base do ambiente do usuário, importando a maior parte dos módulos.
-- **`desktop/hyprland`**: ajustes do Hyprland (binds e serviços como Waybar e Swaync).
-- **`desktop/kde`**: ajustes do KDE Plasma, gerenciados declarativamente com `plasma-manager`.
-- Manual rápido de painéis (plasma-manager): `docs/plasma-manager-panels-pt_BR.md`
-- **`misc/gtk`**: configuração GTK3/4 (ícones, cursor, fonte) e preferência por modo escuro.
-- **`misc/qt`**: configuração Qt via QtCt + Kvantum (Linux).
-- **`misc/wallpaper`**: define o wallpaper padrão.
-- **`misc/xdg`**: diretórios XDG e associações MIME.
-- **`programs/aerospace` (Darwin):** gerenciador tiling no macOS com regras/binds.
-- **`programs/alacritty`:** terminal acelerado por GPU, com integrações.
-- **`programs/albert` (Linux):** launcher e ferramenta de produtividade.
-- **`programs/atuin`:** histórico de shell com sync/backup.
-- **`programs/bat`:** alternativa ao `cat` com syntax highlighting e integração com Git.
-- **`programs/brave`:** navegador com associações MIME via XDG (Linux).
-- **`programs/btop`:** monitor de recursos com teclas estilo Vim.
-- **`programs/fastfetch`:** ferramenta de informações do sistema (customizada).
-- **`programs/fzf`:** fuzzy finder com preview.
-- **`programs/git`:** Git com detalhes do usuário, assinatura GPG e `delta`.
-- **`programs/go`:** ambiente de desenvolvimento Go.
-- **`programs/gpg`:** configuração do GnuPG e agent.
-- **`programs/k9s`:** TUI para Kubernetes com hotkeys.
-- **`programs/krew`:** gerenciador de plugins do `kubectl`.
-- **`programs/lazygit`:** TUI para Git.
-- **`programs/neovim`:** Neovim baseado no LazyVim.
-- **`programs/obs-studio` (Linux):** gravação/streaming.
-- **`programs/saml2aws`:** autenticação AWS via SAML.
-- **`programs/starship`:** prompt multi-shell.
-- **`programs/swappy` (Linux/Hyprland):** editor de screenshots.
-- **`programs/telegram`:** cliente desktop do Telegram.
-- **`programs/tmux`:** multiplexador de terminal (neste repo, migrado para zellij).
-- **`programs/wofi` (Linux/Hyprland):** launcher para Wayland.
-- **`programs/zsh`:** Zsh com aliases, completions e keybindings.
-- **`scripts`**: instala scripts utilitários em `~/.local/bin`.
-- **`services/cliphist` (Linux/Hyprland):** gerenciador de área de transferência.
-- **`services/easyeffects` (Linux):** efeitos de áudio (preset de microfone).
-- **`services/flatpak` (Linux):** gerenciamento declarativo de Flatpaks.
-- **`services/kanshi` (Linux/Hyprland):** configuração dinâmica de monitores.
-- **`services/swaync` (Linux/Hyprland):** daemon de notificações.
-- **`services/waybar` (Linux/Hyprland):** barra de status do Wayland.
-
-## Contribuindo
-
-Contribuições são bem-vindas! Se tiver melhorias/sugestões, abra uma issue ou envie um pull request.
+---
 
 ## Licença
 
-Este repositório está sob licença MIT. Sinta-se à vontade para usar, modificar e distribuir conforme os termos.
+A partir da versão atual, o Kryonix é distribuído como **Source Available / Proprietário — Todos os Direitos Reservados**.
+
+O código está disponível para leitura, auditoria pessoal, estudo e avaliação, mas **não** é permitido copiar, redistribuir, sublicenciar, vender, publicar derivados, criar ISOs/distribuições derivadas, serviços hospedados, appliances ou produtos comerciais baseados no Kryonix sem autorização explícita por escrito de Gabriel Aguiar Rocha.
+
+Componentes de terceiros, dependências e projetos externos usados pelo Kryonix continuam sob suas respectivas licenças. Esta licença não altera licenças de NixOS, nixpkgs, Home Manager, Ollama, Neo4j, LightRAG ou qualquer dependência externa.
+
+Versões antigas que foram publicadas com outra licença permanecem regidas pela licença que acompanhava aquelas versões.

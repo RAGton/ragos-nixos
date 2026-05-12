@@ -11,7 +11,7 @@
 # Como
 # - Expõe `options.wallpaper` e `options.wallpapers`.
 # - Publica o wallpaper padrão em `~/.config/wallpaper.png`.
-# - Publica a galeria em `~/.local/share/wallpapers/*`.
+# - Publica a galeria em `~/.local/share/wallpaper/*`.
 #
 # Riscos
 # - `wallpapers` com nomes (basename) repetidos vão colidir no destino.
@@ -20,14 +20,27 @@
 {
   options.wallpaper = lib.mkOption {
     type = lib.types.path;
-    default = ../../../../files/wallpaper/wallpaper.png;
+    default = ../../../../files/wallpaper/12.png;
     description = "Caminho do wallpaper padrão.";
   };
 
   options.wallpapers = lib.mkOption {
     type = lib.types.listOf lib.types.path;
-    default = [ ../../../../files/wallpaper/wallpaper.png ];
-    description = "Lista de wallpapers para instalar em ~/.local/share/wallpapers (galeria).";
+    default = [
+      ../../../../files/wallpaper/01.png
+      ../../../../files/wallpaper/02.png
+      ../../../../files/wallpaper/03.png
+      ../../../../files/wallpaper/04.png
+      ../../../../files/wallpaper/05.png
+      ../../../../files/wallpaper/06.png
+      ../../../../files/wallpaper/07.png
+      ../../../../files/wallpaper/08.png
+      ../../../../files/wallpaper/09.png
+      ../../../../files/wallpaper/10.png
+      ../../../../files/wallpaper/11.png
+      ../../../../files/wallpaper/12.png
+    ];
+    description = "Lista de wallpapers para instalar em ~/.local/share/wallpaper (galeria).";
   };
 
   config = {
@@ -36,13 +49,10 @@
     # Galeria de wallpapers: adiciona todos os arquivos declarados em `wallpapers`.
     # Obs.: nomes repetidos (mesmo basename) vão colidir.
     xdg.dataFile = lib.listToAttrs (
-      map (
-        p:
-        {
-          name = "wallpapers/${builtins.baseNameOf p}";
-          value.source = p;
-        }
-      ) config.wallpapers
+      map (p: {
+        name = "wallpaper/${builtins.baseNameOf p}";
+        value.source = p;
+      }) config.wallpapers
     );
   };
 }

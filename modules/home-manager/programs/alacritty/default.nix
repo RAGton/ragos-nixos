@@ -70,19 +70,19 @@
       font = {
         size = if pkgs.stdenv.isDarwin then 15 else 12;
         normal = {
-          family = "CaskaydiaCove Nerd Font Mono";
+          family = "Monocraft";
           style = "Regular";
         };
         bold = {
-          family = "CaskaydiaCove Nerd Font Mono";
+          family = "Monocraft";
           style = "Bold";
         };
         italic = {
-          family = "CaskaydiaCove Nerd Font Mono";
+          family = "Monocraft";
           style = "Italic";
         };
         bold_italic = {
-          family = "CaskaydiaCove Nerd Font Mono";
+          family = "Monocraft";
           style = "Italic";
         };
       };

@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Kryonix Install Plan",
+  "type": "object",
+  "properties": {
+    "version": { "type": "integer" },
+    "profile": { "enum": ["desktop", "server", "minimal"] },
+    "hostname": { "type": "string" },
+    "timezone": { "type": "string" },
+    "locale": { "type": "string" },
+    "keyboard": { "type": "string" },
+    "boot": {
+      "type": "object",
+      "properties": {
+        "mode": { "enum": ["uefi", "bios"] }
+      },
+      "required": ["mode"]
+    },
+    "disk": {
+      "type": "object",
+      "properties": {
+        "mode": { "enum": ["dry-run", "real"] },
+        "target": { "type": "string" },
+        "layout": { "enum": ["btrfs-simple", "ext4-basic", "zfs-experimental"] }
+      },
+      "required": ["mode", "target", "layout"]
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "admin": { "type": "boolean" }
+      },
+      "required": ["name", "admin"]
+    },
+    "features": {
+      "type": "object",
+      "properties": {
+        "desktop": { "type": "string" },
+        "nvidia": { "enum": ["auto", "enabled", "disabled"] },
+        "zram": { "type": "boolean" },
+        "brain_client": { "type": "boolean" }
+      }
+    }
+  },
+  "required": ["version", "profile", "hostname", "boot", "disk", "user"]
+}
