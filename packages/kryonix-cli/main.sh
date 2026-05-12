@@ -23,11 +23,13 @@ print_usage() {
 
   printf '  🖥️  \033[1mComandos de Sistema\033[0m\n'
   printf '    switch     Aplica configuração NixOS\n'
+  printf '    test       Testa a configuração sem persistir\n'
   printf '    boot       Gera próxima ativação no boot\n'
   printf '    all        \033[32m[Premium]\033[0m Aplica OS + Home Manager juntos\n'
   printf '    rebuild    Compila o sistema sem ativar\n'
   printf '    clean      Limpa gerações antigas\n'
   printf '    diff       Compara mudanças de sistema\n'
+  printf '    iso        Gera imagem ISO instalável\n'
   printf '    install    Instalador Kryonix (Fase 1: API & Dry-run)\n'
   printf '    hardware   Diagnóstico e scan de hardware\n'
   printf '    disk       Gestão e planejamento de discos\n'
