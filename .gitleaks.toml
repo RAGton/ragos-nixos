@@ -1,0 +1,6 @@
+[allowlist]
+    paths = [
+        "packages/kryonix-brain-lightrag/kryonix_brain_lightrag/cag.py",
+        "docs/operations/STRUCTURAL_AUDIT.md",
+        "docs/operations/BRAIN_REMOTE_API_KEY_PRODUCTION.md"
+    ]
