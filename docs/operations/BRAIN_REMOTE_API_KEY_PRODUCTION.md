@@ -34,7 +34,7 @@ A chave canônica de produção reside em:
 
 **Formato:**
 ```ini
-KRYONIX_BRAIN_API_KEY=08...64_caracteres_hex...
+KRYONIX_BRAIN_API_KEY=<sua_chave_de_64_caracteres_hex>
 ```
 
 > [!IMPORTANT]
@@ -56,7 +56,7 @@ KRYONIX_ROLE=client
 KRYONIX_BRAIN_MODE=remote
 KRYONIX_BRAIN_URL=http://rve-glacier:8000
 KRYONIX_REMOTE_BRAIN_URL=http://rve-glacier:8000
-KRYONIX_BRAIN_API_KEY=08...64_caracteres_hex...
+KRYONIX_BRAIN_API_KEY=<sua_chave_de_64_caracteres_hex>
 ```
 
 ---
