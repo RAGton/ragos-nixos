@@ -37,6 +37,7 @@
     ../branding/ragos
 
     ../services/tlp
+    ../services/greetd-dms
     ../services/snapper
     ../services/tailscale
   ];

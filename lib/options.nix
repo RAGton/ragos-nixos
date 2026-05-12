@@ -27,7 +27,9 @@
 
 let
   desktopConfigured =
-    (config.services.displayManager.gdm.enable or false) || (config.programs.hyprland.enable or false);
+    (config.services.displayManager.gdm.enable or false) ||
+    (config.services.greetd.enable or false) ||
+    (config.programs.hyprland.enable or false);
 in
 {
   imports = [
@@ -91,7 +93,11 @@ in
     # =========================
     # Services (host-toggles)
     # =========================
-    services = { };
+    services = {
+      greetdDms = {
+        enable = lib.mkEnableOption "Habilita o greetd configurado com o greeter DankMaterialShell";
+      };
+    };
 
     # =========================
     # Features (Opt-in)
