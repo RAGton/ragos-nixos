@@ -19,7 +19,13 @@
 # Riscos
 # - Se `/.snapshots` (ou `/home/.snapshots`) existir como diretório não-vazio, a ativação aborta
 #   por segurança (para não destruir dados). Nesse caso, mover/limpar manualmente antes do rebuild.
-{ config, lib, pkgs, userConfig, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  userConfig,
+  ...
+}:
 {
   # Condição de ativação: só aplica quando o root filesystem é Btrfs.
   config = lib.mkIf ((config.fileSystems."/".fsType or "") == "btrfs") {
@@ -124,7 +130,10 @@
     systemd.services.snapper-home-boot = {
       description = "Snapper snapshot for /home on boot";
       wantedBy = [ "multi-user.target" ];
-      after = [ "local-fs.target" "snapperd.service" ];
+      after = [
+        "local-fs.target"
+        "snapperd.service"
+      ];
       wants = [ "snapperd.service" ];
       serviceConfig = {
         Type = "oneshot";

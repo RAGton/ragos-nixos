@@ -1,10 +1,16 @@
 /*
- Autor: RAGton
- Descrição: Módulo NixOS para habilitar virtualização KVM/QEMU/libvirt
-            com IOMMU, virt-manager e boas práticas.
+  Autor: RAGton
+  Descrição: Módulo NixOS para habilitar virtualização KVM/QEMU/libvirt
+             com IOMMU, virt-manager e boas práticas.
 */
 
-{ config, pkgs, lib, userConfig, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  userConfig,
+  ...
+}:
 
 {
   ############################
@@ -30,9 +36,9 @@
   # Kernel e IOMMU
   ############################
   boot.kernelParams = [
-    "iommu=pt"          # Melhor performance
-    "intel_iommu=on"    # Ignorado se não for Intel
-    "amd_iommu=on"      # Ignorado se não for AMD
+    "iommu=pt" # Melhor performance
+    "intel_iommu=on" # Ignorado se não for Intel
+    "amd_iommu=on" # Ignorado se não for AMD
   ];
 
   ############################

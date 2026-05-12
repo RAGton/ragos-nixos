@@ -33,4 +33,9 @@
     "application/x-extension-xhtml" = "app.zen_browser.zen.desktop";
     "application/x-extension-xht" = "app.zen_browser.zen.desktop";
   };
+
+  home.sessionVariables = {
+    BROWSER = "zen";
+    DEFAULT_BROWSER = "zen";
+  };
 }

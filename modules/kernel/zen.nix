@@ -1,10 +1,15 @@
 /*
- Autor: RAGton
- Descrição: Módulo NixOS para kernel desktop (Zen/XanMod),
-            com foco em desempenho, baixa latência e extensibilidade.
+  Autor: RAGton
+  Descrição: Módulo NixOS para kernel desktop (Zen/XanMod),
+             com foco em desempenho, baixa latência e extensibilidade.
 */
 
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
   cfg = config.kernelZen;
@@ -17,8 +22,7 @@ let
     else
       null;
 
-  baseKernel =
-    if cfg.kernel == "xanmod" then xanmodKernelPackages.kernel else pkgs.linux_zen;
+  baseKernel = if cfg.kernel == "xanmod" then xanmodKernelPackages.kernel else pkgs.linux_zen;
 
   tunedKernel =
     if (!cfg.useLLVMStdenv && cfg.extraMakeFlags == [ ]) then
@@ -52,7 +56,10 @@ in
     enable = lib.mkEnableOption "Kernel Linux Zen otimizado para desktop";
 
     kernel = lib.mkOption {
-      type = lib.types.enum [ "zen" "xanmod" ];
+      type = lib.types.enum [
+        "zen"
+        "xanmod"
+      ];
       default = "zen";
       description = ''
         Define qual kernel usar.
@@ -109,7 +116,7 @@ in
 
     extraKernelParams = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [];
+      default = [ ];
       description = "Parâmetros extras adicionados ao kernel.";
     };
   };
@@ -119,27 +126,25 @@ in
   ############################
   config = lib.mkIf cfg.enable {
 
-    assertions =
-      [
-        {
-          assertion = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-          message = "O módulo kernelZen é suportado apenas em x86_64-linux.";
-        }
-      ]
-      ++ lib.optionals (cfg.kernel == "xanmod") [
-        {
-          assertion = xanmodKernelPackages != null;
-          message = "kernelZen.kernel=\"xanmod\" foi selecionado, mas nixpkgs não expõe linuxPackages_xanmod(_latest).";
-        }
-      ];
+    assertions = [
+      {
+        assertion = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+        message = "O módulo kernelZen é suportado apenas em x86_64-linux.";
+      }
+    ]
+    ++ lib.optionals (cfg.kernel == "xanmod") [
+      {
+        assertion = xanmodKernelPackages != null;
+        message = "kernelZen.kernel=\"xanmod\" foi selecionado, mas nixpkgs não expõe linuxPackages_xanmod(_latest).";
+      }
+    ];
 
     # Kernel como padrão (permitindo override)
     boot.kernelPackages = lib.mkDefault kernelPackages;
 
-    # Parâmetros de kernel
-    boot.kernelParams =
+    # Parâmetros globais do Zen; flags genéricas de boot moram em common.
+    boot.kernelParams = lib.mkAfter (
       [
-        "quiet"
         "nowatchdog"
       ]
       ++ lib.optionals cfg.disableMitigations [
@@ -147,7 +152,8 @@ in
         "noibrs"
         "noibpb"
       ]
-      ++ cfg.extraKernelParams;
+      ++ cfg.extraKernelParams
+    );
 
   };
 }

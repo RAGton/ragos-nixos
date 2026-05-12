@@ -12,9 +12,9 @@
 # - Fácil adicionar novas features
 #
 # Como:
-# 1. Features definem suas próprias opções (rag.features.*)
+# 1. Features definem suas próprias opções (kryonix.features.*)
 # 2. Este manager importa automaticamente quando enable = true
-# 3. Hosts apenas habilitam: rag.features.gaming.enable = true
+# 3. Hosts apenas habilitam: kryonix.features.gaming.enable = true
 # =============================================================================
 { config, lib, ... }:
 
@@ -22,9 +22,13 @@
   # Importa todos os módulos de features
   # Cada um define suas próprias opções e só ativa quando enable = true
   imports = [
+    ./workstation.nix
     ./gaming.nix
+    ./openrgb.nix
     ./virtualization.nix
     ./development.nix
+    ./ai.nix
+    ./remote-desktop.nix
   ];
 
   # Configuração base comum a todas as features
@@ -35,4 +39,3 @@
     ];
   };
 }
-

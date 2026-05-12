@@ -1,0 +1,34 @@
+{
+  config,
+  lib,
+  pkgs,
+  outputs,
+  ...
+}:
+let
+  cfg = config.programs.kryonix;
+in
+{
+  options.programs.kryonix = {
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Instala a CLI `kryonix`, usada como fluxo operacional principal do Kryonix.
+      '';
+    };
+
+    package = lib.mkOption {
+      type = lib.types.package;
+      default = outputs.packages.${pkgs.stdenv.hostPlatform.system}.kryonix;
+      defaultText = lib.literalExpression "outputs.packages.\${pkgs.stdenv.hostPlatform.system}.kryonix";
+      description = "Pacote da CLI `kryonix` exposto no PATH do sistema.";
+    };
+  };
+
+  config = lib.mkIf cfg.enable {
+    environment.systemPackages = [
+      cfg.package
+    ];
+  };
+}

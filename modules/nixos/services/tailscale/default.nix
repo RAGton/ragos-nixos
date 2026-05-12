@@ -24,19 +24,25 @@
   ...
 }:
 let
-  cfg = config.services.rag.tailscale;
+  cfg = config.services.kryonix.tailscale;
   boolToFlag = b: if b then "true" else "false";
   tailscaleUpArgs = lib.concatStringsSep " " (
     [ "--accept-dns=${boolToFlag cfg.acceptDNS}" ]
     ++ lib.optionals cfg.ssh [ "--ssh" ]
     ++ lib.optionals cfg.advertiseExitNode [ "--advertise-exit-node" ]
-    ++ lib.optionals (cfg.advertiseRoutes != [ ]) [ "--advertise-routes=${lib.concatStringsSep "," cfg.advertiseRoutes}" ]
+    ++ lib.optionals (cfg.advertiseRoutes != [ ]) [
+      "--advertise-routes=${lib.concatStringsSep "," cfg.advertiseRoutes}"
+    ]
     ++ cfg.extraUpFlags
   );
   needsForwarding = cfg.advertiseExitNode || cfg.advertiseRoutes != [ ];
 in
 {
-  options.services.rag.tailscale = {
+  imports = [
+    (lib.mkAliasOptionModule [ "services" "rag" "tailscale" ] [ "services" "kryonix" "tailscale" ])
+  ];
+
+  options.services.kryonix.tailscale = {
     enable = lib.mkEnableOption "Tailscale VPN (system-wide)";
 
     openFirewall = lib.mkOption {
@@ -87,14 +93,20 @@ in
     advertiseRoutes = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      example = [ "192.168.0.0/24" "10.0.0.0/24" ];
+      example = [
+        "192.168.0.0/24"
+        "10.0.0.0/24"
+      ];
       description = "Lista de rotas (subnet routing) a anunciar.";
     };
 
     extraUpFlags = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      example = [ "--hostname=glacier" "--operator=rag" ];
+      example = [
+        "--hostname=glacier"
+        "--operator=rag"
+      ];
       description = "Flags extras passadas para `tailscale up`.";
     };
   };
@@ -119,8 +131,14 @@ in
     # Autoconnect (opcional). Não tenta adivinhar login; exige auth key via arquivo.
     systemd.services.tailscale-autoconnect = lib.mkIf cfg.autoconnect {
       description = "Tailscale automatic bring-up";
-      after = [ "network-online.target" "tailscaled.service" ];
-      wants = [ "network-online.target" "tailscaled.service" ];
+      after = [
+        "network-online.target"
+        "tailscaled.service"
+      ];
+      wants = [
+        "network-online.target"
+        "tailscaled.service"
+      ];
       wantedBy = [ "multi-user.target" ];
 
       serviceConfig = {
@@ -133,11 +151,16 @@ in
 
         # Só roda se ainda não está conectado.
         if ${pkgs.tailscale}/bin/tailscale status --json 2>/dev/null | ${pkgs.jq}/bin/jq -e '.Self.Online == true' >/dev/null; then
-          exit 0
+          exec ${pkgs.tailscale}/bin/tailscale set ${tailscaleUpArgs}
         fi
 
         if [ -z "${lib.optionalString (cfg.authKeyFile != null) (toString cfg.authKeyFile)}" ]; then
           echo "tailscale-autoconnect: authKeyFile não configurado; faça login manual com 'sudo tailscale up'." >&2
+          exit 0
+        fi
+
+        if [ ! -f ${lib.escapeShellArg (toString cfg.authKeyFile)} ]; then
+          echo "tailscale-autoconnect: authKeyFile não encontrado; pulando autoconnect." >&2
           exit 0
         fi
 
@@ -152,4 +175,3 @@ in
     };
   };
 }
-

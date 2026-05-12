@@ -1,22 +1,30 @@
 # =============================================================================
-# Módulo NixOS: ISO instaladora (rag-install)
+# Módulo NixOS: ISO instaladora (kryonix-install)
 #
 # O que é:
 # - Um conjunto pequeno de ajustes para uma ISO (live CD) que instala hosts
 #   deste flake de forma repetível.
 #
 # Como usar (na ISO):
-# - `rag-install --host inspiron --disk /dev/nvme0n1`
+# - `kryonix-install --host inspiron --disk /dev/nvme0n1`
 # =============================================================================
-{ lib, pkgs, inputs, ... }:
+{
+  lib,
+  pkgs,
+  inputs,
+  ...
+}:
 {
   # ISO: habilita flakes e ferramenta de instalação.
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
 
   environment.systemPackages =
     let
-      rag-install = pkgs.writeShellApplication {
-        name = "rag-install";
+      kryonix-install = pkgs.writeShellApplication {
+        name = "kryonix-install";
         runtimeInputs = with pkgs; [
           git
           nix
@@ -25,19 +33,23 @@
           util-linux
           e2fsprogs
           btrfs-progs
+          gptfdisk
+          parted
+          dosfstools
+          cryptsetup
         ];
         text = ''
           set -euo pipefail
 
           usage() {
             cat <<'EOF'
-          rag-install: instalador automatizado para este flake
+          kryonix-install: instalador automatizado para este flake
 
           Uso:
-            rag-install --host <inspiron> --disk <DISPOSITIVO>
+            kryonix-install --host <inspiron> --disk <DISPOSITIVO>
 
           Exemplos:
-            rag-install --host inspiron --disk /dev/disk/by-id/nvme-...
+            kryonix-install --host inspiron --disk /dev/disk/by-id/nvme-...
 
           Segurança:
             - Isso APAGA o disco escolhido.
@@ -114,7 +126,7 @@
           FLAKE_SRC="${inputs.self.outPath}"
 
           # Copiamos para um lugar gravável, porque o store é read-only.
-          WORKDIR="/tmp/dotfiles-NixOs"
+          WORKDIR="/tmp/kryonix-nixos"
           rm -rf "$WORKDIR"
           mkdir -p "$WORKDIR"
           cp -a "$FLAKE_SRC/." "$WORKDIR/"
@@ -155,14 +167,28 @@
         '';
       };
 
-      rag-install-tui = pkgs.writeShellApplication {
-        name = "rag-install-tui";
-        runtimeInputs = with pkgs; [
-          bash
-          coreutils
-          util-linux
-          nix
-        ];
+      rag-install = pkgs.writeShellApplication {
+        name = "rag-install";
+        runtimeInputs = [ kryonix-install ];
+        text = ''
+          set -euo pipefail
+
+          printf '%s\n' "rag-install is deprecated, use kryonix-install" >&2
+          exec kryonix-install "$@"
+        '';
+      };
+
+      kryonix-install-tui = pkgs.writeShellApplication {
+        name = "kryonix-install-tui";
+        runtimeInputs =
+          with pkgs;
+          [
+            bash
+            coreutils
+            util-linux
+            nix
+          ]
+          ++ [ kryonix-install ];
         text = ''
           set -euo pipefail
 
@@ -175,20 +201,35 @@
           sed \
             -e "s|@FLAKE_SRC@|${inputs.self.outPath}|g" \
             -e "s|@DISKO_INPUT@|${inputs.disko}|g" \
-            ${./rag-install-tui.sh} > "$TMP_DIR/rag-install-tui.sh"
+            ${./kryonix-install-tui.sh} > "$TMP_DIR/kryonix-install-tui.sh"
 
-          chmod +x "$TMP_DIR/rag-install-tui.sh"
+          chmod +x "$TMP_DIR/kryonix-install-tui.sh"
 
-          exec "$TMP_DIR/rag-install-tui.sh"
+          exec "$TMP_DIR/kryonix-install-tui.sh"
+        '';
+      };
+
+      rag-install-tui = pkgs.writeShellApplication {
+        name = "rag-install-tui";
+        runtimeInputs = [ kryonix-install-tui ];
+        text = ''
+          set -euo pipefail
+
+          printf '%s\n' "rag-install-tui is deprecated, use kryonix-install-tui" >&2
+          exec kryonix-install-tui "$@"
         '';
       };
     in
     [
+      kryonix-install
       rag-install
+      kryonix-install-tui
       rag-install-tui
+      pkgs.kryonix-hardware-probe
+      pkgs.kryonix-disk-planner
+      pkgs.kryonix-installer
     ];
 
   networking.networkmanager.enable = lib.mkDefault true;
   services.fstrim.enable = lib.mkDefault false;
 }
-

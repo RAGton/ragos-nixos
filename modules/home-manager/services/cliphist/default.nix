@@ -1,5 +1,5 @@
 # =============================================================================
-# Autor: rag
+# Autor: ragton
 #
 # O que é:
 # - Módulo Home Manager para habilitar `cliphist` (histórico da área de transferência).
@@ -15,6 +15,7 @@
 # =============================================================================
 { ... }:
 {
-  # Instala/ativa o cliphist via Home Manager.
+  # O widget/IPC de clipboard do DMS usa um backend de histórico.
+  # Mantemos o cliphist sempre ativo para o shell do DMS e para o fallback via rofi.
   services.cliphist.enable = true;
 }

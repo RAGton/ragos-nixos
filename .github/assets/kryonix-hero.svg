@@ -1,0 +1,114 @@
+<svg width="1600" height="560" viewBox="0 0 1600 560" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#030712"/>
+      <stop offset="0.55" stop-color="#081229"/>
+      <stop offset="1" stop-color="#120A2B"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="268" y1="104" x2="1332" y2="104" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8CF4FF"/>
+      <stop offset="0.55" stop-color="#E6F8FF"/>
+      <stop offset="1" stop-color="#B089FF"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#00D1FF"/>
+      <stop offset="1" stop-color="#8A5CFF"/>
+    </linearGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#00d1ff" flood-opacity="0.18"/>
+    </filter>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" stroke="#18304f" stroke-width="1" opacity="0.25"/>
+    </pattern>
+    <clipPath id="mountainsClip"><rect x="0" y="350" width="1600" height="210" rx="0"/></clipPath>
+  </defs>
+
+  <rect width="1600" height="560" fill="url(#bg)"/>
+  <rect width="1600" height="560" fill="url(#grid)"/>
+
+  <g opacity="0.6">
+    <circle cx="180" cy="96" r="2.5" fill="#00D1FF">
+      <animate attributeName="opacity" values="0.2;1;0.2" dur="3.2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1420" cy="120" r="2.5" fill="#8A5CFF">
+      <animate attributeName="opacity" values="1;0.25;1" dur="2.8s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1260" cy="404" r="2" fill="#00D1FF">
+      <animate attributeName="opacity" values="0.15;0.85;0.15" dur="4s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <g stroke="#1d4f7d" stroke-width="2" opacity="0.85">
+    <path d="M80 84H220L250 114"/>
+    <path d="M1520 84H1380L1350 114"/>
+    <path d="M124 450H304L360 410"/>
+    <path d="M1476 450H1296L1240 410"/>
+    <path d="M520 74H680"/>
+    <path d="M920 74H1080"/>
+  </g>
+
+  <g filter="url(#soft)">
+    <text x="800" y="185" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="132" font-weight="900" letter-spacing="8" fill="url(#glow)">KRYONIX</text>
+  </g>
+  <rect x="540" y="206" width="520" height="2" rx="1" fill="url(#accent)" opacity="0.75"/>
+  <text x="800" y="260" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="34" font-weight="600" fill="#E5F4FF">Plataforma NixOS declarativa para</text>
+  <text x="800" y="310" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="39" font-weight="700" fill="#8EDBFF">workstation</text>
+  <text x="1010" y="310" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="39" font-weight="700" fill="#C6A4FF">gaming</text>
+  <text x="800" y="352" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="31" font-weight="600" fill="#DCEBFF">virtualização, estudo e desenvolvimento</text>
+
+  <g transform="translate(190 392)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="250" height="96" rx="18" fill="#08162A" stroke="#1E5E95"/>
+    <text x="125" y="37" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="2" fill="#8EDBFF">WORKSTATION</text>
+    <text x="125" y="66" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="15" fill="#CFE6FF">produtividade • foco • shell</text>
+  </g>
+
+  <g transform="translate(470 392)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="200" height="96" rx="18" fill="#0B132B" stroke="#4D4EC7"/>
+    <text x="100" y="37" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="2" fill="#C8A9FF">GAMING</text>
+    <text x="100" y="66" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="15" fill="#D9C8FF">alta fluidez</text>
+  </g>
+
+  <g transform="translate(700 392)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="245" height="96" rx="18" fill="#08162A" stroke="#1E5E95"/>
+    <text x="122.5" y="37" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="2" fill="#8EDBFF">VIRTUALIZAÇÃO</text>
+    <text x="122.5" y="66" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="15" fill="#CFE6FF">VMs • libvirt • containers</text>
+  </g>
+
+  <g transform="translate(975 392)" filter="url(#cardShadow)">
+    <rect x="0" y="0" width="220" height="96" rx="18" fill="#0B132B" stroke="#7D3FFF"/>
+    <text x="110" y="37" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="2" fill="#D3B7FF">IA LOCAL</text>
+    <text x="110" y="66" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="15" fill="#E7D9FF">Brain • Ollama • LightRAG</text>
+  </g>
+
+  <g clip-path="url(#mountainsClip)" opacity="0.9">
+    <path d="M0 560V455L75 420L125 448L190 380L245 460L302 428L360 470L420 430L520 560Z" fill="#17314F"/>
+    <path d="M0 560V470L58 442L111 466L178 396L230 474L302 440L360 478L398 448L448 490L506 560Z" fill="#79C7FF" opacity="0.24"/>
+    <path d="M1080 560L1165 445L1218 474L1290 392L1350 470L1405 426L1480 462L1548 394L1600 560Z" fill="#1B345A"/>
+    <path d="M1110 560L1184 456L1228 480L1294 406L1344 484L1404 444L1486 474L1558 406L1600 560Z" fill="#8A5CFF" opacity="0.20"/>
+    <rect x="0" y="510" width="1600" height="60" fill="url(#bg)" opacity="0.5"/>
+  </g>
+
+  <g opacity="0.7">
+    <rect x="72" y="68" width="160" height="84" rx="16" fill="#091221" stroke="#20466D"/>
+    <text x="92" y="96" font-family="monospace" font-size="13" fill="#85E4FF">$ kryonix switch</text>
+    <text x="92" y="118" font-family="monospace" font-size="13" fill="#A9FFD0">✓ generation built</text>
+  </g>
+
+  <g opacity="0.7">
+    <rect x="1320" y="72" width="200" height="120" rx="16" fill="#091221" stroke="#3D3F8E"/>
+    <text x="1342" y="102" font-family="'Segoe UI', Arial, sans-serif" font-size="14" letter-spacing="2" fill="#CFE6FF">SYSTEM OVERVIEW</text>
+    <rect x="1342" y="122" width="120" height="8" rx="4" fill="#12304E"/><rect x="1342" y="122" width="32" height="8" rx="4" fill="#00D1FF"><animate attributeName="width" values="28;42;33;28" dur="4s" repeatCount="indefinite"/></rect>
+    <text x="1472" y="129" font-family="monospace" font-size="12" fill="#CFE6FF">CPU</text>
+    <rect x="1342" y="144" width="120" height="8" rx="4" fill="#12304E"/><rect x="1342" y="144" width="46" height="8" rx="4" fill="#8A5CFF"><animate attributeName="width" values="40;58;49;40" dur="3s" repeatCount="indefinite"/></rect>
+    <text x="1472" y="151" font-family="monospace" font-size="12" fill="#CFE6FF">RAM</text>
+    <rect x="1342" y="166" width="120" height="8" rx="4" fill="#12304E"/><rect x="1342" y="166" width="56" height="8" rx="4" fill="#00D1FF"><animate attributeName="width" values="44;70;56;44" dur="3.5s" repeatCount="indefinite"/></rect>
+    <text x="1472" y="173" font-family="monospace" font-size="12" fill="#CFE6FF">GPU</text>
+  </g>
+</svg>

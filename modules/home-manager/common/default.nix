@@ -1,5 +1,6 @@
 # Home Manager: módulo comum (base do usuário)
-# Autor: rag
+# Autor: Gabriel Aguiar Rocha (RAGton) + Codex
+# Data: 2026-03-12
 #
 # O que é
 # - Ponto de entrada de configuração do Home Manager para o usuário.
@@ -19,13 +20,34 @@
   userConfig,
   pkgs,
   lib,
+  inputs,
   ...
 }:
+let
+  antigravityPackage =
+    inputs.antigravity-nix.packages.${pkgs.stdenv.hostPlatform.system}.default.override
+      {
+        extraBwrapArgs = [
+          "--bind-try /etc/kryonix/ /etc/kryonix/"
+          "--symlink kryonix /etc/ragos"
+        ];
+      };
+in
 {
   imports = [
+    (
+      { lib, ... }:
+      {
+        imports = [
+          (lib.mkAliasOptionModule [ "rag" ] [ "kryonix" ])
+        ];
+      }
+    )
     ../programs/aerospace
+    ../programs/tilix
     ../programs/warp-terminal
     ../programs/albert
+    ../programs/ai-workstation
     ../programs/atuin
     ../programs/bat
     ../programs/mangohud
@@ -42,6 +64,7 @@
     ../programs/lazygit
     ../programs/neovim
     ../programs/obs-studio
+    ../programs/rofi
     ../programs/saml2aws
     ../programs/starship
     ../programs/telegram
@@ -51,9 +74,12 @@
     ../programs/zellij
     ../programs/zsh
     ../scripts
-
-    # Rices / desktops (opt-in por opção)
-    ../../../desktop/hyprland/rice/dms-upstream.nix
+    ../services/cliphist
+    ../services/flatpak
+    ../services/kryonix-brain-tunnel
+    ../services/kryonix-wayvnc
+    ../services/kryonix-glacier-vnc-tunnel
+    ../services/kryonix-ollama-tunnel
   ];
 
   # Habilita Jupyter via módulo declarativo.
@@ -63,6 +89,9 @@
 
   # Recarrega unidades do systemd de forma suave ao mudar configs.
   systemd.user.startServices = "sd-switch";
+
+  # Mantém a CLI do Home Manager disponível depois que o próprio perfil é ativado.
+  programs.home-manager.enable = true;
 
   # Identidade do usuário (paths variam entre Linux e macOS).
   home = {
@@ -76,51 +105,49 @@
     NIXOS_OZONE_WL = "1";
     GTK_USE_PORTAL = "1";
 
-    # Qt Quick Controls: evitar estilos QML incompatíveis.
-    # Kvantum é para Qt Widgets; se Qt Quick tentar carregar "kvantum" como QML,
-    # o Plasma pode quebrar (wallpaper/overview) e ficar com tela preta.
-    QT_QUICK_CONTROLS_STYLE = "org.kde.desktop";
+    # Fusion combina melhor com apps Qt Quick quando o stack usa Kvantum em Qt Widgets.
+    QT_QUICK_CONTROLS_STYLE = "Fusion";
 
     # Evita cair no libvirt rootless (qemu:///session), que não consegue criar bridges.
     LIBVIRT_DEFAULT_URI = "qemu:///system";
   };
 
   # Garante que os pacotes comuns estejam instalados
-  home.packages =
-    with pkgs;
-    [
-      awscli2
-      dig
-      dust
-      eza
-      fd
-      jq
-      kubectl
-      nh
-      openconnect
-      pipenv
-      podman-compose
-      podman-tui
+  home.packages = with pkgs; [
+    awscli2
+    dig
+    dust
+    eza
+    fd
+    jq
+    kubectl
+    nh
+    openconnect
+    pipenv
+    podman-compose
+    podman-tui
+    emacs
 
-      # =========================
-      # Python (interpretador)
-      # =========================
-      # O que é
-      # - Runtime Python para uso no terminal/IDE.
-      # - Tooling básico: pip e virtualenv para ambientes isolados.
-      #
-      # Como usar
-      # - Criar venv: `python -m venv .venv`
-      # - Ativar: `source .venv/bin/activate`
-      #
-      # Nota
-      # - Alguns tools/IDEs ainda chamam o comando `python`.
-      # - No nixpkgs atual, o pacote `python3` pode expor `python` e `python3`.
-      #   Se o seu editor ainda reclamar, use um venv no projeto e aponte para `.venv/bin/python`.
-      python3
-      python3Packages.pip
-      python3Packages.virtualenv
+    # =========================
+    # Python (interpretador)
+    # =========================
+    # O que é
+    # - Runtime Python para uso no terminal/IDE.
+    # - Tooling básico: pip e virtualenv para ambientes isolados.
+    #
+    # Como usar
+    # - Criar venv: `python -m venv .venv`
+    # - Ativar: `source .venv/bin/activate`
+    #
+    # Nota
+    # - Alguns tools/IDEs ainda chamam o comando `python`.
+    # - No nixpkgs atual, o pacote `python3` pode expor `python` e `python3`.
+    #   Se o seu editor ainda reclamar, use um venv no projeto e aponte para `.venv/bin/python`.
+    python3
+    python3Packages.pip
+    python3Packages.virtualenv
 
-      ripgrep
-    ];
+    ripgrep
+    antigravityPackage
+  ];
 }

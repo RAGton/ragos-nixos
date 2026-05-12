@@ -2,7 +2,7 @@
 #
 # Objetivo
 # - Gerar uma ISO bootável que facilite a instalação dos hosts deste flake.
-# - A ISO traz um script `rag-install` que particiona (Disko) e roda `nixos-install`.
+# - A ISO traz um script `kryonix-install` que particiona (Disko) e roda `nixos-install`.
 {
   inputs,
   hostname,
@@ -18,6 +18,7 @@
 
     # Nosso módulo de instalador automatizado
     ../../modules/nixos/installer
+    ../../modules/shared/nixpkgs
   ];
 
   networking.hostName = hostname;
@@ -27,6 +28,8 @@
 
   # Ajuda no debug e instalação
   environment.systemPackages = with pkgs; [
+    kryonix
+    kryonix-hardware-probe
     git
     curl
     jq
@@ -39,4 +42,3 @@
   # Evita pedir senha no live. Chave pode ser adicionada depois.
   users.users.nixos.openssh.authorizedKeys.keys = lib.mkDefault [ ];
 }
-
