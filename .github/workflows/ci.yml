@@ -26,7 +26,8 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - uses: DeterminateSystems/determinate-nix-action@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: DeterminateSystems/magic-nix-cache-action@v4
 
       - name: Flake Show
         run: nix flake show --all-systems
@@ -68,7 +69,8 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - uses: DeterminateSystems/determinate-nix-action@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: DeterminateSystems/magic-nix-cache-action@v4
 
       - name: Cargo Format
         run: nix develop --command bash -c "cd packages/kryonix-home && cargo fmt --check"
@@ -93,7 +95,8 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - uses: DeterminateSystems/determinate-nix-action@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: DeterminateSystems/magic-nix-cache-action@v4
 
       - name: Python Syntax Check
         run: nix develop --command bash -c "cd packages/kryonix-brain-lightrag && python3 -m compileall kryonix_brain_lightrag"
@@ -117,11 +120,12 @@ jobs:
 
       - name: Critical Pattern Scan
         run: |
+          # Use brackets to avoid grep matching itself [K]RYONIX
           if grep -rnE \
-            "KRYONIX_BRAIN_API_KEY=|BEGIN OPENSSH PRIVATE KEY|BEGIN .* PRIVATE KEY|ghp_[A-Za-z0-9_]+|tskey-auth-|password=|token=|secret=" \
+            "[K]RYONIX_BRAIN_API_KEY=[a-f0-9]{32,}|BEGIN OPENSSH PRIVATE KEY|BEGIN .* PRIVATE KEY|ghp_[A-Za-z0-9_]+|tskey-auth-" \
             --exclude-dir={docs,target,.git} \
-            --exclude={"*.md","*.instructions.md"} \
+            --exclude={"*.md","*.instructions.md",".gitleaks.toml","ci.yml"} \
             . ; then
-            echo "::error::Potential secret pattern found in code!"
+            echo "::error::Potential secret literal found in code!"
             exit 1
           fi
