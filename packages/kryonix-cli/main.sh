@@ -31,6 +31,7 @@ print_usage() {
   printf '    install    Instalador Kryonix (Fase 1: API & Dry-run)\n'
   printf '    hardware   Diagnóstico e scan de hardware\n'
   printf '    disk       Gestão e planejamento de discos\n'
+  printf '    doctor     Diagnóstico e saúde do sistema\n'
   printf '\n'
   printf '  🏠 \033[1mHome & Auditoria\033[0m\n'
   printf '    home       Gestão de Home Manager e Brain Scan\n'
