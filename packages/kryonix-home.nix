@@ -12,7 +12,7 @@ rustPlatform.buildRustPackage {
 
   meta = {
     description = "Kryonix Home Brain — scanner determinístico e organizador seguro da Home";
-    license = lib.licenses.mit;
+    license = lib.licenses.unfree;
     mainProgram = "kryonix-home";
   };
 }

@@ -297,4 +297,10 @@ kryonix remote vnc stop    # Para os serviços correspondentes
 
 ## Licença
 
-MIT. Veja [LICENSE](LICENSE).
+A partir da versão atual, o Kryonix é distribuído como **Source Available / Proprietário — Todos os Direitos Reservados**.
+
+O código está disponível para leitura, auditoria pessoal, estudo e avaliação, mas **não** é permitido copiar, redistribuir, sublicenciar, vender, publicar derivados, criar ISOs/distribuições derivadas, serviços hospedados, appliances ou produtos comerciais baseados no Kryonix sem autorização explícita por escrito de Gabriel Aguiar Rocha.
+
+Componentes de terceiros, dependências e projetos externos usados pelo Kryonix continuam sob suas respectivas licenças. Esta licença não altera licenças de NixOS, nixpkgs, Home Manager, Ollama, Neo4j, LightRAG ou qualquer dependência externa.
+
+Versões antigas que foram publicadas com outra licença permanecem regidas pela licença que acompanhava aquelas versões.

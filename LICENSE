@@ -1,21 +1,46 @@
-MIT License
+Kryonix Proprietary Source-Available License
 
-Copyright (c) 2026 Gabriel Aguiar Rocha (RAGton)
+Copyright (c) 2026 Gabriel Aguiar Rocha.
+All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This repository and its source code are made available for reading, auditing,
+personal review, educational reference, and evaluation purposes only.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Unless a separate written agreement is granted by the copyright holder, you are
+not permitted to:
+
+- copy this software for redistribution;
+- publish, sublicense, sell, rent, lease, or commercially exploit this software;
+- distribute modified or unmodified copies;
+- use the Kryonix name, branding, assets, wallpapers, documentation, or project
+  identity in derivative distributions;
+- remove copyright, authorship, or license notices;
+- represent forks, copies, or derivative works as official Kryonix releases.
+
+You may clone or view the repository only to the extent allowed by the hosting
+platform terms and for private evaluation. Any production, commercial,
+redistribution, managed service, appliance, installer, ISO, hosted offering, or
+derivative distribution requires explicit written permission from Gabriel
+Aguiar Rocha.
+
+Third-party components, dependencies, packages, and external projects referenced
+or used by Kryonix remain governed by their own respective licenses. This
+license does not change, restrict, or relicense third-party software such as
+NixOS, nixpkgs, Home Manager, Ollama, Neo4j, LightRAG, or any other external
+dependency.
+
+Code, documentation, assets, scripts, modules, packages, and subprojects
+authored specifically for Kryonix by Gabriel Aguiar Rocha, including work
+created with AI assistance under his direction, are covered by this license
+unless another license file is present in that subproject.
+
+Historical versions of this repository that were explicitly published under a
+different license remain governed by the license terms that accompanied those
+specific versions.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR
+A PARTICULAR PURPOSE, SECURITY, AVAILABILITY, OR NON-INFRINGEMENT. IN NO EVENT
+SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGE, DATA LOSS, SERVICE
+INTERRUPTION, SECURITY INCIDENT, OR OTHER LIABILITY ARISING FROM USE, REVIEW,
+MODIFICATION, DEPLOYMENT, OR DISTRIBUTION OF THIS SOFTWARE.

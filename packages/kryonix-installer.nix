@@ -13,7 +13,7 @@ rustPlatform.buildRustPackage {
   meta = with lib; {
     description = "Kryonix installer backend (Axum)";
     homepage = "https://github.com/RAGton/kryonix";
-    license = licenses.mit;
+    license = lib.licenses.unfree;
     maintainers = [ ];
   };
 }
