@@ -1,6 +1,21 @@
+#+#+#+#+####################################################################
+# Home Manager: Alacritty
+# Autor: rag
+#
+# O que é
+# - Configuração do terminal Alacritty do usuário.
+#
+# Por quê
+# - Mantém terminal consistente (fonte, shell, comportamento) entre máquinas.
+#
+# Como
+# - Usa `programs.alacritty.settings` para gerar o arquivo de config.
+#
+# Riscos
+# - Alterar fonte/shell pode impactar UX e integração com multiplexer (zellij).
 { pkgs, ... }:
 {
-  # Instala o alacritty via módulo do Home Manager
+  # Instala e configura o Alacritty via Home Manager.
   programs.alacritty = {
     enable = true;
     settings = {
@@ -55,19 +70,19 @@
       font = {
         size = if pkgs.stdenv.isDarwin then 15 else 12;
         normal = {
-          family = "MesloLGS Nerd Font";
+          family = "Monocraft";
           style = "Regular";
         };
         bold = {
-          family = "MesloLGS Nerd Font";
+          family = "Monocraft";
           style = "Bold";
         };
         italic = {
-          family = "MesloLGS Nerd Font";
+          family = "Monocraft";
           style = "Italic";
         };
         bold_italic = {
-          family = "MesloLGS Nerd Font";
+          family = "Monocraft";
           style = "Italic";
         };
       };
@@ -78,7 +93,4 @@
       };
     };
   };
-
-  # Habilita o tema Catppuccin para o alacritty.
-  catppuccin.alacritty.enable = true;
 }

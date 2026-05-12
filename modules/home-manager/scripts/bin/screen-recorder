@@ -1,5 +1,24 @@
 #!/usr/bin/env bash
 
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Script “toggle” para iniciar/parar gravação de tela no Wayland usando `wf-recorder`.
+#
+# Por quê:
+# - Simplifica começar/parar gravações sem abrir UI.
+# - Salva com timestamp em `~/Videos`.
+#
+# Como:
+# - Se `wf-recorder` não estiver rodando: cria `~/Videos` (se necessário), escolhe área com `slurp` e grava.
+# - Se já estiver rodando: envia SIGINT para parar a gravação.
+#
+# Riscos:
+# - Depende de `wf-recorder` e `slurp`.
+# - O arquivo é salvo em UTC; ajuste se quiser timezone local.
+# =============================================================================
+
 VIDEODIR="$HOME/Videos"
 DATE_FORMAT="+%Y-%m-%d_%H-%M-%S"
 

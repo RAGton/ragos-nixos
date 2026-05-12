@@ -1,0 +1,22 @@
+diff --git a/src/data/gdb_preamble/preamble.py b/src/data/gdb_preamble/preamble.py
+
+--- a/src/data/gdb_preamble/preamble.py
++++ b/src/data/gdb_preamble/preamble.py
+@@ -570,8 +570,14 @@ def resolve_modules():
+	# Ultimately we'll want to use gdb here.
+	# https://sourceware.org/bugzilla/show_bug.cgi?id=32844
+	output = get_stdout(['/nix/store/czsx5yc7isy5li0ad3m3322mwc8fjiy8-elfutils-0.194-bin/bin/eu-unstrip', "--list-only", f"--core={corefile}"], env=env)
+	for line in output.splitlines():
+-        image = CoreImage(line)
+-        if image.valid:
+-            core_images.append(image)
++        try:
++            image = CoreImage(line)
++        except NoBuildIdException:
++            # Alguns mapeamentos ELF no core podem não ter Build-ID (por exemplo,
++            # certas libs do X11/Wayland). Isso não deveria impedir o DrKonqi de
++            # gerar um backtrace do crash principal.
++            continue
++        if image.valid:
++            core_images.append(image)
+

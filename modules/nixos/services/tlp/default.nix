@@ -1,18 +1,36 @@
+# Módulo NixOS: TLP (perfil de energia)
+# Autor: rag
+#
+# O que é
+# - Configura TLP para controle fino de energia/performance.
+# - Desabilita `power-profiles-daemon` para evitar conflito.
+#
+# Por quê
+# - TLP dá previsibilidade de performance (AC/BAT) e estabilidade de periféricos.
+# - Evita stutter/queda por autosuspend agressivo.
+#
+# Como
+# - Define `services.tlp.settings` (CPU, USB, Wi‑Fi, power management).
+# - Desliga serviços redundantes (`power-profiles-daemon`, `fprintd`).
+#
+# Riscos
+# - Configs agressivas podem aumentar consumo/temperatura e reduzir bateria.
+# - Valores de limite de carga (BAT0) precisam fazer sentido para o hardware.
 { ... }:
 {
-  # Ajusta o perfil de energia via TLP
+  # Ajusta o perfil de energia via TLP.
   services = {
     tlp = {
       enable = true;
       settings = {
-        # Mais performance em tomada para games
+        # Mais performance em tomada para games.
         CPU_SCALING_GOVERNOR_ON_AC = "performance";
         CPU_SCALING_GOVERNOR_ON_BAT = "performance";
         CPU_BOOST_ON_AC = 1;
         CPU_BOOST_ON_BAT = 1;
-  CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+        CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
         CPU_ENERGY_PERF_POLICY_ON_BAT = "performance";
-  PLATFORM_PROFILE_ON_AC = "performance";
+        PLATFORM_PROFILE_ON_AC = "performance";
         PLATFORM_PROFILE_ON_BAT = "performance";
 
         USB_EXCLUDE_BTUSB = 1;
@@ -40,7 +58,7 @@
         SOUND_POWER_SAVE_ON_BAT = 0;
         SOUND_POWER_SAVE_CONTROLLER = "Y";
 
-        # Limites de carga da bateria (uso no dia a dia)
+        # Limites de carga da bateria (uso no dia a dia).
         START_CHARGE_THRESH_BAT0 = 85;
         STOP_CHARGE_THRESH_BAT0 = 90;
       };
@@ -49,6 +67,6 @@
     power-profiles-daemon.enable = false;
   };
 
-  # Desabilita leitor de digital
+  # Desabilita leitor de digital.
   services.fprintd.enable = false;
 }

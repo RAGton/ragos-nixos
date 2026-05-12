@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Wrapper para executar Steam com variáveis “seguras” para Proton/DXVK.
+#
+# Por quê:
+# - Evita regressões/crashes relacionados a HDR/Wayland em alguns jogos.
+# - Reusa `proton-safe` quando disponível.
+#
+# Como:
+# - Se `proton-safe` existir: executa `proton-safe steam ...`.
+# - Caso contrário: exporta envs e executa `steam` diretamente.
+#
+# Riscos:
+# - Pode desabilitar HDR/Wayland mesmo quando seriam desejáveis.
+# =============================================================================
+
+# Wrapper para rodar Steam com variáveis "seguras" pro Proton.
+# Útil para evitar regressões com HDR/Wayland em alguns jogos.
+
+if command -v proton-safe >/dev/null 2>&1; then
+  exec proton-safe steam "$@"
+fi
+
+export PROTON_ENABLE_WAYLAND=0
+export PROTON_ENABLE_HDR=0
+export DXVK_HDR=0
+
+exec steam "$@"

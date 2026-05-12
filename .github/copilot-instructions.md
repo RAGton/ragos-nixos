@@ -1,241 +1,82 @@
-# Copilot Instructions for AI Coding Agents
+# Kryonix — Instruções de Repositório para Copilot
 
-## Project Overview
+## 1. Fontes de verdade
 
-This repository manages **NixOS** and **nix-darwin** configurations for multiple machines using a **flake-first, fully declarative, and highly modular architecture**.
+Antes de propor mudanças amplas, leia obrigatoriamente:
 
-The primary goals of this project are:
+- `AGENTS.md`
+- `context/INDEX.md`
+- `docs/CURRENT_STATE.md`
+- `docs/OPERATIONS.md`
+- `docs/ROADMAP.md`
 
-* **Reproducibility** across machines and platforms
-* **Portability** between Linux and macOS
-* **Scalability** as new hosts, users, and features are added
-* **Low cognitive overhead** through strict modular boundaries
+O código real do repositório é a fonte principal de verdade.
 
-The system is built around **Nix flakes**, **Home Manager**, and **platform-specific modules**, with a clear separation between system-level and user-level concerns.
+Prioridade de contexto:
 
----
+1. Código atual do repo
+2. `AGENTS.md`
+3. `context/`
+4. `docs/CURRENT_STATE.md`
+5. `docs/OPERATIONS.md`
+6. `docs/ROADMAP.md`
+7. Vault/Kryonix Brain, quando disponível
+8. Documentação oficial
+9. Memória geral do modelo
 
-## Core Architectural Principles
-
-### 1. Flake-Centric Design
-
-* `flake.nix` is the **single source of truth**
-* All inputs, overlays, systems, and users are declared there
-* No imperative configuration outside Nix
-
-### 2. Strict Modularization
-
-Configurations are split by **responsibility**, not by host:
-
-```
-modules/
-├── nixos/          # System-level Linux modules
-├── darwin/         # System-level macOS modules
-├── home-manager/   # User-level configuration
-```
-
-Each module should:
-
-* Do **one thing well**
-* Be reusable across hosts
-* Avoid host-specific assumptions
+Se houver conflito, priorize o código real e registre a inconsistência.
 
 ---
 
-## Directory Responsibilities
+## 2. Princípio central
 
-### `hosts/`
+Faça sempre a menor mudança correta, segura e reversível.
 
-* System-level configuration per machine
-* Minimal logic: mostly imports + hardware-specific settings
-* Naming convention matches flake outputs
+Priorize:
 
-### `home/`
+1. correção real
+2. integridade de dados
+3. bootabilidade
+4. rollback
+5. simplicidade
+6. testes
+7. documentação mínima
 
-* Per-user Home Manager entry points
-* Imports reusable modules from `modules/home-manager/`
-* Host-aware, but **user-centric**
-
-### `modules/home-manager/`
-
-Reusable user modules, including:
-
-* Shells (zsh)
-* Desktop environments
-* Services
-* Scripts
-* Tooling (kubectl, AWS, etc.)
-
-### `modules/home-manager/scripts/bin/`
-
-* Custom executable scripts
-* Automatically deployed to `~/.local/bin`
-* Scripts must:
-
-  * Declare dependencies clearly
-  * Be shell-agnostic when possible
-  * Avoid hardcoded paths
+Nunca declare pronto sem validação.
 
 ---
 
-## Developer Workflows (Canonical)
+## 3. Regras gerais de mudança
 
-### Apply System Configuration
+- Não faça refactor amplo sem necessidade.
+- Não misture correção funcional com limpeza estética.
+- Não quebre compatibilidade sem motivo explícito.
+- Não remova código legado se ele ainda for usado.
+- Não introduza abstrações genéricas sem consumidor real.
+- Não esconda erros com `try/catch` ou `|| true` sem justificativa.
+- Não silencie falhas críticas.
+
+Mudanças devem ser pequenas, revisáveis e fáceis de reverter.
+
+---
+
+## 4. NixOS / Flakes
+
+Ao tocar em Nix:
+
+- não mexa em `flake.lock` sem necessidade real;
+- não atualize inputs casualmente;
+- preserve estrutura declarativa;
+- prefira módulos pequenos;
+- evite lógica imperativa;
+- use opções explícitas;
+- use `mkEnableOption`, `mkIf`, `mkMerge`, `mkDefault` quando adequado;
+- use `mkForce` apenas com justificativa clara;
+- não invente opções NixOS;
+- valide opções com documentação oficial ou MCP `mcp-nixos`, quando disponível.
+
+Em árvore suja, prefira validação com:
 
 ```bash
-nixos-rebuild switch --flake .#hostname
-```
-
-### Apply User Configuration
-
-```bash
-home-manager switch --flake .#user@hostname
-```
-
-There are **no automated tests**. Validation is done by:
-
-* Successful evaluation
-* Activation without warnings
-* Verifying system/user state post-deploy
-
----
-
-## Project Conventions (Important)
-
-### Theming
-
-* **Catppuccin** is the global theme baseline
-* Applied consistently across:
-
-  * Terminal
-  * Desktop
-  * CLI tools
-* Defined via a dedicated flake input and reused in modules
-
-### Desktop Management
-
-* KDE, window rules, shortcuts, and behaviors are **fully declarative**
-* See:
-
-  * `desktop/kde/default.nix`
-  * `programs/aerospace/default.nix`
-
-No manual GUI configuration should be required after rebuild.
-
----
-
-## Shell & Productivity
-
-### Zsh
-
-* Zsh is the default shell
-* Aliases and functions are extensive and intentional
-* Focus areas:
-
-  * Git
-  * Kubernetes
-  * AWS
-  * Navigation
-* Source of truth:
-
-  ```
-  programs/zsh/default.nix
-  ```
-
-### Scripts
-
-* Scripts are first-class citizens
-* Invoked directly from shell
-* Must work identically on fresh machines
-
----
-
-## Kubernetes & Cloud Tooling
-
-* `krew` plugins are managed declaratively
-* Installed and updated automatically on activation
-* Custom scripts support:
-
-  * Cluster inspection
-  * AWS workflows
-  * Day-2 operations
-
-Source:
-
-```
-programs/krew/default.nix
-```
-
----
-
-## Cross-Component Integration
-
-* System and user modules may share values (e.g. wallpaper, username)
-* Sharing is done via:
-
-  * Module arguments
-  * Explicit imports
-* Avoid implicit coupling
-
-### Platform Detection
-
-* macOS vs Linux logic must use:
-
-```nix
-stdenv.isDarwin
-```
-
-No OS assumptions elsewhere.
-
----
-
-## Common Extension Patterns
-
-### Add a Package for All Users
-
-Edit:
-
-```
-modules/home-manager/common/default.nix
-```
-
-### Customize KDE
-
-Edit:
-
-```
-modules/home-manager/desktop/kde/default.nix
-```
-
-### Add a New Script
-
-1. Place it in:
-
-   ```
-   modules/home-manager/scripts/bin/
-   ```
-2. Ensure it is executable
-3. Declare required dependencies
-
----
-
-## Documentation & Discovery
-
-* `README.md` contains the high-level overview
-* When in doubt:
-
-  * Read the module
-  * Follow existing patterns
-  * Prefer clarity over cleverness
-
----
-
-## Final Guidance for AI Agents
-
-* Respect the modular boundaries
-* Do not introduce imperative state
-* Prefer reuse over duplication
-* Keep hosts thin, modules rich
-* If uncertain, ask via pull request rather than guessing
-
-This repository values **discipline over shortcuts**.
+nix flake show path:$PWD
+nix flake check path:$PWD --keep-going --show-trace

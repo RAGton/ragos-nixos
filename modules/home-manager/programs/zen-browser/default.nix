@@ -3,13 +3,23 @@
   ...
 }:
 {
-  /*
-   Autor: RAGton
-   Descrição: Configuração do Zen Browser como navegador principal via Flatpak.
-  */
-
-  # O Zen Browser é instalado via Flatpak (veja services/flatpak)
-  # Aqui apenas garantimos que ele será o navegador padrão
+  # =============================================================================
+  # Autor: rag
+  #
+  # O que é:
+  # - Módulo Home Manager que define o Zen Browser como navegador padrão (XDG MIME/protocol handlers).
+  #
+  # Por quê:
+  # - Centraliza o “default browser” do usuário de forma declarativa.
+  # - Mantém consistência entre hosts sem precisar configurar via GUI.
+  #
+  # Como:
+  # - Define `xdg.mimeApps.defaultApplications` para tipos/protocolos web.
+  # - O app em si é instalado via Flatpak (veja `services/flatpak`).
+  #
+  # Riscos:
+  # - Se o Flatpak/app id mudar, os handlers deixam de apontar para o navegador correto.
+  # =============================================================================
 
   xdg.mimeApps.defaultApplications = {
     "text/html" = "app.zen_browser.zen.desktop";
@@ -24,7 +34,8 @@
     "application/x-extension-xht" = "app.zen_browser.zen.desktop";
   };
 
-  # Documentação:
-  # - O Zen Browser será instalado via Flatpak pelo módulo services/flatpak
-  # - Este módulo apenas define o Zen como navegador padrão para os principais tipos de arquivos e protocolos web
+  home.sessionVariables = {
+    BROWSER = "zen";
+    DEFAULT_BROWSER = "zen";
+  };
 }

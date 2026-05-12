@@ -1,5 +1,25 @@
 #!/usr/bin/env bash
 
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Script de OCR (captura de região → reconhece texto → copia para clipboard).
+#
+# Por quê:
+# - Facilita copiar texto de imagens/telas rapidamente.
+# - Suporta fluxos diferentes em KDE (Spectacle) vs. outros ambientes (grim/slurp).
+#
+# Como:
+# - Em KDE: usa `spectacle` para capturar região em um arquivo temporário.
+# - Fora do KDE: usa `grim` + `slurp` e passa para `tesseract` via stdin.
+# - Copia o resultado para o clipboard com `wl-copy`.
+#
+# Riscos:
+# - Depende de `tesseract`, `wl-copy` e (no caminho não-KDE) `grim`/`slurp`.
+# - Idiomas configurados (eng+rus+pol) exigem pacotes/treinos instalados.
+# =============================================================================
+
 set -eo pipefail
 
 if [ "$XDG_CURRENT_DESKTOP" = "KDE" ]; then

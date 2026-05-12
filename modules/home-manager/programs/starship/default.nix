@@ -1,6 +1,24 @@
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Módulo Home Manager para habilitar e configurar o prompt `starship`.
+#
+# Por quê:
+# - Mantém prompt consistente entre máquinas e shells (com integração no zsh).
+# - Exibe contexto de ferramentas (kubernetes, linguagens, etc.) com ícones.
+#
+# Como:
+# - Habilita `programs.starship` e define `settings`.
+# - Configura o módulo `kubernetes` para mostrar cluster/namespace com regex de EKS.
+#
+# Riscos:
+# - Ícones dependem de Nerd Fonts.
+# - Mostrar contexto do Kubernetes pode ser barulhento se você alternar muito de cluster.
+# =============================================================================
 { ... }:
 {
-  # Starship configuration
+  # Starship: prompt configurado via Home Manager.
   programs.starship = {
     enable = true;
     enableZshIntegration = true;
@@ -63,7 +81,4 @@
       right_format = "$kubernetes";
     };
   };
-
-  # Habilita o tema Catppuccin para o starship.
-  catppuccin.starship.enable = true;
 }

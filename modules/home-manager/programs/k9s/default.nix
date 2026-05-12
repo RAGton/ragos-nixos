@@ -1,6 +1,25 @@
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Módulo Home Manager para habilitar e configurar o `k9s`.
+# - Define UI “enxuta” e atalhos (hotkeys) para recursos comuns do Kubernetes.
+#
+# Por quê:
+# - Padroniza atalhos e reduz ruído visual.
+# - Acelera navegação diária (pods/deployments/nodes/services/ingress).
+#
+# Como:
+# - Ajusta `programs.k9s.settings.k9s.ui`.
+# - Declara `hotKeys` com comandos correspondentes.
+#
+# Riscos:
+# - Atalhos podem conflitar com teclas do terminal/WM.
+# - Comandos podem variar por versão/config do k9s.
+# =============================================================================
 { ... }:
 {
-  # Instala o k9s via módulo do Home Manager
+  # Instala e configura o k9s via Home Manager.
   programs.k9s = {
     enable = true;
     settings.k9s = {
@@ -47,7 +66,4 @@
       };
     };
   };
-
-  # Habilita o tema Catppuccin para o k9s
-  catppuccin.k9s.enable = true;
 }

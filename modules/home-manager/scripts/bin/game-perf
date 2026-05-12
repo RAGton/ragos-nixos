@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Wrapper para executar um comando (jogo/launcher) com ajustes de performance.
+# - Integra GameMode (se disponível) e MangoHud (quando apropriado).
+#
+# Por quê:
+# - Padroniza um “modo jogo” rápido sem lembrar flags/variáveis toda vez.
+# - Evita quebrar launchers onde MangoHud pode causar problemas (EGL/overlay).
+#
+# Como:
+# - Usa `GAME_FPS_LIMIT` e `GAME_MANGOHUD_CONFIG` para compor `MANGOHUD_CONFIG`.
+# - Desliga MangoHud para alguns launchers (heroic/steam) e permite override com `GAME_FORCE_MANGOHUD`.
+# - Se existir `gamemoderun`, usa ele como wrapper.
+#
+# Riscos:
+# - Dependências opcionais: `gamemoderun` e `mangohud`.
+# - Overlays podem causar incompatibilidades com alguns jogos/anti-cheat.
+# =============================================================================
+
+if [[ $# -lt 1 ]]; then
+  echo "uso: game-perf <comando...>" >&2
+  exit 2
+fi
+
+# Opcional: cap de FPS via MangoHud (ex.: GAME_FPS_LIMIT=75)
+# e ajustes extras (ex.: GAME_MANGOHUD_CONFIG="vsync=0")
+if [[ -n "${GAME_FPS_LIMIT:-}" ]]; then
+  # Não sobrescreve configurações existentes; apenas acrescenta.
+  export MANGOHUD_CONFIG="${MANGOHUD_CONFIG:-}${MANGOHUD_CONFIG:+,}fps_limit=${GAME_FPS_LIMIT}"
+fi
+
+if [[ -n "${GAME_MANGOHUD_CONFIG:-}" ]]; then
+  export MANGOHUD_CONFIG="${MANGOHUD_CONFIG:-}${MANGOHUD_CONFIG:+,}${GAME_MANGOHUD_CONFIG}"
+fi
+
+cmd_basename="$(basename -- "$1")"
+use_mangohud=1
+
+# MangoHud em launchers Electron/Qt pode derrubar o processo GPU (EGL) e
+# atrapalhar o próprio launcher. Para esses casos, deixe MangoHud só no jogo.
+case "$cmd_basename" in
+  heroic|heroic-safe|steam|steam-safe)
+    use_mangohud=0
+    ;;
+esac
+
+if [[ -n "${GAME_FORCE_MANGOHUD:-}" ]]; then
+  use_mangohud=1
+fi
+
+if command -v gamemoderun >/dev/null 2>&1; then
+  if [[ "$use_mangohud" -eq 1 ]] && command -v mangohud >/dev/null 2>&1; then
+    exec gamemoderun mangohud "$@"
+  fi
+  exec gamemoderun "$@"
+fi
+
+if [[ "$use_mangohud" -eq 1 ]] && command -v mangohud >/dev/null 2>&1; then
+  exec mangohud "$@"
+fi
+
+exec "$@"

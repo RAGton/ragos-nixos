@@ -1,6 +1,27 @@
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Módulo Home Manager para instalar e configurar o Neovim como editor padrão.
+# - Empacota dependências de LSP/formatters/linters usadas no dia a dia.
+# - Importa a configuração Lua (LazyVim) versionada neste repositório.
+#
+# Por quê:
+# - Garante uma experiência consistente entre máquinas sem setup manual.
+# - Evita “funciona numa máquina e na outra não” por falta de ferramentas.
+#
+# Como:
+# - Usa `pkgs.neovim-unwrapped` e habilita providers (Node/Python/Ruby).
+# - Declara `extraPackages` com ferramentas por linguagem.
+# - Publica `./lazyvim` em `~/.config/nvim` via `xdg.configFile`.
+#
+# Riscos:
+# - A lista de `extraPackages` pode aumentar tempo/tamanho do build.
+# - Mudanças em `./lazyvim` afetam todas as máquinas que importarem este módulo.
+# =============================================================================
 { pkgs, ... }:
 {
-  # Neovim text editor configuration
+  # Neovim: editor padrão e providers habilitados.
   programs.neovim = {
     enable = true;
     package = pkgs.neovim-unwrapped;
@@ -20,8 +41,8 @@
       markdownlint-cli
       nixd
       nixfmt
-      nodePackages.bash-language-server
-      nodePackages.prettier
+      bash-language-server
+      prettier
       pyright
       ruff
       shellcheck
@@ -35,11 +56,10 @@
     ];
   };
 
-  # Importa a configuração Lua a partir deste repositório
-  xdg.configFile = {
-    "nvim" = {
-      source = ./lazyvim;
-      recursive = true;
-    };
+  # Importa a configuração Lua a partir deste repositório.
+  xdg.configFile."nvim" = {
+    source = ./lazyvim;
+    recursive = true;
+    force = true;
   };
 }

@@ -1,10 +1,31 @@
+# Flake principal do repo
+# Autor: Gabriel Aguiar Rocha (RAGton)
+#
+# O que é
+# - Fonte única de verdade para hosts NixOS e perfis Home Manager.
+# - Centraliza inputs, overlays e outputs públicos do projeto.
+#
+# Por quê
+# - Reprodutibilidade: mesmos inputs -> mesmo resultado.
+# - Portabilidade: módulos compartilhados e outputs públicos consistentes.
+# - Manutenção: entradas e saídas claras num único lugar.
+#
+# Como
+# - Inputs: nixpkgs (unstable + stable), Home Manager, hardware e integrações auxiliares.
+# - Outputs: hosts NixOS, perfis Home Manager, overlays, formatter e checks.
+#
+# Riscos
+# - Atualizar pins (nixpkgs/home-manager) pode introduzir regressões; prefira atualizar de forma incremental.
 {
-  description = "Configurações NixOS e nix-darwin das minhas máquinas";
+  description = "Kryonix: plataforma NixOS pessoal para workstation, gaming, virtualizacao, desenvolvimento e futuras ISOs.";
 
+  # =============================
+  # Inputs (flakes externos)
+  # =============================
   inputs = {
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.11";
 
     # Home Manager
     home-manager = {
@@ -15,101 +36,77 @@
     # Módulos de hardware do NixOS (nixos-hardware)
     hardware.url = "github:nixos/nixos-hardware";
 
-    # Tema global Catppuccin
-    catppuccin.url = "github:catppuccin/nix";
-
     # Gerenciador declarativo de Flatpak
     nix-flatpak.url = "github:gmodena/nix-flatpak?ref=v0.6.0";
-
-    # Gerenciador declarativo do KDE Plasma
-    plasma-manager = {
-      url = "github:nix-community/plasma-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
-    };
 
     # Nix Darwin (para máquinas macOS)
     darwin = {
       url = "github:LnL7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Particionamento declarativo (usado na ISO instaladora)
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Google Antigravity (pacote Nix mantido em repositório externo)
+    antigravity-nix = {
+      url = "github:jacopone/antigravity-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Caelestia Shell
+    # Fonte padrão: GitHub pinado no lock do flake.
+    # Desenvolvimento local: use `--override-input caelestia-shell path:../caelestia-shell`
+    # a partir do diretório do checkout que contém este flake.
+    caelestia-shell = {
+      url = "github:caelestia-dots/shell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # OpenAI Codex CLI (coding agent que roda localmente)
+    codex = {
+      url = "github:openai/codex";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # Kryonix Home Brain (scanner determinístico)
+    kryonix-home = {
+      url = "github:RAGton/KRYONIX-HOME";
+      flake = false;
+    };
+
+    # Kryonix Brain LightRAG (RAG engine)
+    # Fonte pinada no lock do flake.
+    kryonix-brain-lightrag = {
+      url = "github:RAGEnterprise/kryonix-brain-lightrag";
+      flake = false;
+    };
   };
 
+  # =============================
+  # Outputs (sistemas, usuários, overlays)
+  # =============================
   outputs =
     {
       self,
-      catppuccin,
-      darwin,
       home-manager,
       nixpkgs,
       ...
     }@inputs:
     let
       inherit (self) outputs;
-
-      # Definição de usuários
-      users = {
-        rag = {
-          avatar = ./files/avatar/face;
-          email = "g.rocha@estudante.ifmt.edu.br";
-          fullName = "Gabriel Aguiar Rocha";
-          gitKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFLt1vJ3bluf8Df37jUUktr1MwMzQctci8wi3z4O9AGP gabriel.rag@proton.me";
-          name = "rag";
-        };
-      };
-
-      # Função para configuração de sistema (NixOS)
-      mkNixosConfiguration =
-        hostname: username:
-        nixpkgs.lib.nixosSystem {
-          specialArgs = {
-            inherit inputs outputs hostname;
-            userConfig = users.${username};
-            nixosModules = "${self}/modules/nixos";
-          };
-          modules = [ ./hosts/${hostname} ];
-        };
-
-      # Função para configuração de sistema (nix-darwin)
-      mkDarwinConfiguration =
-        hostname: username:
-        darwin.lib.darwinSystem {
-          system = "aarch64-darwin";
-          specialArgs = {
-            inherit inputs outputs hostname;
-            userConfig = users.${username};
-            darwinModules = "${self}/modules/darwin";
-          };
-          modules = [ ./hosts/${hostname} ];
-        };
-
-      # Função para configuração do Home Manager
-      mkHomeConfiguration =
-        system: username: hostname:
-        home-manager.lib.homeManagerConfiguration {
-          pkgs = import nixpkgs { inherit system; };
-          extraSpecialArgs = {
-            inherit inputs outputs;
-            userConfig = users.${username};
-            nhModules = "${self}/modules/home-manager";
-          };
-          modules = [
-            ./home/${username}/${hostname}
-            catppuccin.homeModules.catppuccin
-          ];
-        };
+      users = import ./flake/users.nix;
+      lib = import ./flake/lib.nix { inherit inputs users; };
     in
     {
-      nixosConfigurations = {
-        inspiron = mkNixosConfiguration "inspiron" "rag";
-        Glacier = mkNixosConfiguration "Glacier" "rag";
-      };
-
-      homeConfigurations = {
-        "rag@inspiron" = mkHomeConfiguration "x86_64-linux" "rag" "inspiron";
-        "rag@Glacier" = mkHomeConfiguration "x86_64-linux" "rag" "Glacier";
-      };
-
+      nixosConfigurations = import ./flake/hosts.nix { inherit inputs lib; };
+      homeConfigurations = import ./flake/home.nix { inherit inputs lib; };
+      packages = import ./flake/packages.nix { inherit inputs lib; };
+      devShells = import ./flake/shells.nix { inherit inputs lib; };
+      formatter = import ./flake/formatter.nix { inherit inputs lib; };
+      checks = import ./flake/checks.nix { inherit inputs lib; };
       overlays = import ./overlays { inherit inputs; };
     };
 }

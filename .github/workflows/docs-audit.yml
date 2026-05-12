@@ -1,0 +1,19 @@
+name: Documentation Audit
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup environment
+        run: chmod +x scripts/doc-audit.sh
+        
+      - name: Run Documentation Audit
+        run: ./scripts/doc-audit.sh

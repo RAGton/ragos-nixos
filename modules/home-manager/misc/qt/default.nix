@@ -6,22 +6,25 @@
 }:
 with lib;
 let
-  variant = config.catppuccin.flavor;
-  accent = config.catppuccin.accent;
+  iconThemeName = lib.attrByPath [ "gtk" "iconTheme" "name" ] null config;
 
-  catppuccin-kvantum-pkg = pkgs.catppuccin-kvantum.override { inherit variant accent; };
-  catppuccin-theme-name = "catppuccin-${variant}-${accent}";
+  # Detecta se tema Bart está habilitado
+  bartEnabled = lib.attrByPath [ "rag" "theme" "bart" "enable" ] false config;
+  kvantumThemeName =
+    if bartEnabled then
+      lib.attrByPath [ "rag" "theme" "bart" "kvantumTheme" ] "Bart" config
+    else
+      "KvLibadwaitaDark";
 
   qtCtAppearanceConfig = generators.toINI { } {
     Appearance = {
-      icon_theme = config.gtk.iconTheme.name;
+      icon_theme = if iconThemeName != null then iconThemeName else "Papirus-Dark";
     };
   };
 
 in
 {
   home.packages = [
-    catppuccin-kvantum-pkg
     pkgs.libsForQt5.qtstyleplugin-kvantum
     pkgs.qt6Packages.qtstyleplugin-kvantum
     pkgs.libsForQt5.qt5ct
@@ -35,21 +38,27 @@ in
   };
 
   xdg.configFile = {
-    "Kvantum/${catppuccin-theme-name}".source =
-      "${catppuccin-kvantum-pkg}/share/Kvantum/${catppuccin-theme-name}";
-
-    "Kvantum/kvantum.kvconfig".source = (pkgs.formats.ini { }).generate "kvantum.kvconfig" {
-      General.theme = catppuccin-theme-name;
-    };
-
     qt5ct = {
       target = "qt5ct/qt5ct.conf";
+      force = true;
       text = qtCtAppearanceConfig;
     };
 
     qt6ct = {
       target = "qt6ct/qt6ct.conf";
+      force = true;
       text = qtCtAppearanceConfig;
+    };
+
+    # Kvantum: configuração é gerenciada pelo módulo de tema ativo (ex.: Bart)
+    # Este arquivo só é criado se nenhum tema estiver ativo
+    kvantum = lib.mkIf (!bartEnabled) {
+      target = "Kvantum/kvantum.kvconfig";
+      text = generators.toINI { } {
+        General = {
+          theme = kvantumThemeName;
+        };
+      };
     };
   };
 }

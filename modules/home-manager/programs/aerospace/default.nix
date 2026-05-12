@@ -1,3 +1,21 @@
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Módulo Home Manager para configurar o `aerospace` (tiling WM) no macOS.
+# - Publica um `.aerospace.toml` declarativo via Home Manager.
+#
+# Por quê:
+# - Mantém atalhos/regras consistentes em máquinas Darwin sem setup manual.
+#
+# Como:
+# - Ativa somente em Darwin via `lib.mkIf (pkgs.stdenv.isDarwin)`.
+# - Instala `pkgs.aerospace` e escreve `~/.aerospace.toml`.
+#
+# Riscos:
+# - Mudanças no arquivo TOML afetam diretamente o comportamento do window manager.
+# - Se o package/app-id mudar, regras `on-window-detected` podem não bater.
+# =============================================================================
 {
   lib,
   pkgs,

@@ -1,10 +1,28 @@
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Módulo Home Manager para habilitar o `gpg` e (no Linux) o `gpg-agent`.
+#
+# Por quê:
+# - Define um baseline de segurança/compatibilidade para operações com GPG.
+# - No Linux, habilita agent com suporte a SSH para integrar fluxos que dependem dele.
+#
+# Como:
+# - Configura `programs.gpg.settings` (preferências de cifra/hash e hardening).
+# - Habilita `services.gpg-agent` somente quando não for Darwin.
+#
+# Riscos:
+# - Preferências mais estritas podem quebrar interoperabilidade com chaves antigas.
+# - Pinentry escolhido (gnome3) pode não combinar com todos os ambientes; ajuste se necessário.
+# =============================================================================
 {
   pkgs,
   lib,
   ...
 }:
 {
-  # Instala o gpg via módulo do Home Manager
+  # Instala e configura o gpg via Home Manager.
   programs.gpg = {
     enable = true;
     settings = {

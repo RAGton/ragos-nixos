@@ -1,3 +1,45 @@
 files/configs/nvim/lazy-lock.json
 files/configs/nvim/lazyvim.json
 .DS_Store
+.direnv/
+.idea/
+*.iml
+
+# outputs/symlinks de builds Nix
+result
+result-*
+.ipynb_checkpoints/
+.cache
+iso-result
+7
+activation.log
+*.log
+
+# Secrets / environment
+.env
+.env.local
+.env.*
+neo4j.env
+.mcp.json           # User-specific MCP config with secrets (never commit)
+
+# Temporary / Local diagnostics
+diagnostics-lightrag/
+scratch/
+
+# Artifacts and ISOs
+kryonix-artifacts/
+*.isorag_storage/
+
+# Local/generated agent packs and MCP backups
+.agents/kryonix-rag-doc-pack/
+.mcp.json.bak-*
+
+# Kryonix local secrets - never commit
+/brain.env
+/neo4j.env
+/.env
+*.secret
+*.token
+id_ed25519
+id_ed25519.*
+packages/kryonix-home/target/

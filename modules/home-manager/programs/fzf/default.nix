@@ -1,9 +1,27 @@
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Módulo Home Manager para habilitar e configurar o `fzf`.
+#
+# Por quê:
+# - Padroniza a UX (preview, bindings e layout) entre máquinas.
+# - Integra ações comuns: abrir seleção no Neovim e copiar para clipboard.
+#
+# Como:
+# - Ajusta `defaultCommand` e `defaultOptions`.
+# - Usa `pbcopy` no macOS e `wl-copy` no Linux/Wayland.
+#
+# Riscos:
+# - `wl-copy` exige um ambiente Wayland com `wl-clipboard` disponível.
+# - O preview usa `bat/tree/less`; se não estiverem presentes, pode degradar a experiência.
+# =============================================================================
 { pkgs, ... }:
 let
   copyCmd = if pkgs.stdenv.isDarwin then "pbcopy" else "wl-copy";
 in
 {
-  # Instala o fzf via módulo do Home Manager
+  # Instala e configura o fzf via Home Manager.
   programs.fzf = {
     enable = true;
 

@@ -1,3 +1,39 @@
 {
-    "makefile.configureOnOpen": false
+    "makefile.configureOnOpen": false,
+    "editor.fontFamily": "Monocraft, monospace",
+    "terminal.integrated.fontFamily": "Monocraft",
+    "chat.tools.terminal.autoApprove": {
+        "nix": true
+    },
+    "latex-workshop.latex.tools": [
+        {
+            "name": "latexmk (nix profile)",
+            "command": "/home/rocha/.nix-profile/bin/latexmk",
+            "args": [
+                "-pdf",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-synctex=1",
+                "-outdir=out",
+                "%DOC%"
+            ]
+        }
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "latexmk (nix profile)",
+            "tools": [
+                "latexmk (nix profile)"
+            ]
+        }
+    ],
+    "latex-workshop.latex.recipe.default": "first",
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+    "python.defaultInterpreterPath": "${workspaceFolder}/packages/kryonix-brain-lightrag/.venv/bin/python",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/packages/kryonix-brain-lightrag"
+    ],
+    "editor.selectionHighlightMultiline": true,
+    "terminal.integrated.fontLigatures.enabled": true
 }

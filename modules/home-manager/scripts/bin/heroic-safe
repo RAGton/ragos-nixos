@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Wrapper para executar o Heroic Games Launcher com variáveis “seguras” para Proton.
+# - Suporta instalação nativa e via Flatpak.
+#
+# Por quê:
+# - Alguns recursos (Wayland/HDR) podem causar instabilidade em certos setups.
+# - Centraliza os exports e a fallback strategy (heroic nativo → flatpak).
+#
+# Como:
+# - Se `heroic` existir: tenta envolver com `proton-safe` (se disponível), senão exporta envs e executa.
+# - Se não existir: tenta `flatpak run` com envs.
+#
+# Riscos:
+# - Forçar `PROTON_ENABLE_WAYLAND/HDR=0` pode desabilitar recursos desejados em máquinas compatíveis.
+# - Depende de `flatpak` para o caminho fallback.
+# =============================================================================
+
+# Wrapper para rodar Heroic com variáveis "seguras" pro Proton.
+# Tenta usar heroic nativo; se não existir, cai pro Flatpak.
+
+if command -v heroic >/dev/null 2>&1; then
+  if command -v proton-safe >/dev/null 2>&1; then
+    exec proton-safe heroic "$@"
+  fi
+
+  export PROTON_ENABLE_WAYLAND=0
+  export PROTON_ENABLE_HDR=0
+  export DXVK_HDR=0
+  exec heroic "$@"
+fi
+
+if command -v flatpak >/dev/null 2>&1; then
+  exec flatpak run \
+    --env=PROTON_ENABLE_WAYLAND=0 \
+    --env=PROTON_ENABLE_HDR=0 \
+    --env=DXVK_HDR=0 \
+    com.heroicgameslauncher.hgl "$@"
+fi
+
+echo "heroic-safe: não achei 'heroic' nem 'flatpak'" >&2
+exit 127

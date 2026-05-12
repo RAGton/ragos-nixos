@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  lib,
   ...
 }:
 {
@@ -8,27 +9,30 @@
   gtk = {
     enable = true;
     colorScheme = "dark";
-    theme = {
-      name = "catppuccin-macchiato-lavender-compact";
-      package = pkgs.catppuccin-gtk.override {
-        accents = [ "lavender" ];
-        variant = "macchiato";
-        size = "compact";
-      };
+
+    # Tema padrão do stack Hyprland/DMS: base GNOME/Libadwaita.
+    theme = lib.mkDefault {
+      name = "adw-gtk3-dark";
+      package = pkgs.adw-gtk3;
     };
-    iconTheme = {
-      name = "Tela-circle-dark";
-      package = pkgs.tela-circle-icon-theme;
+
+    iconTheme = lib.mkDefault {
+      name = "Papirus-Dark";
+      package = pkgs.papirus-icon-theme;
     };
+
     cursorTheme = {
-      name = "Yaru";
-      package = pkgs.yaru-theme;
+      name = "Bibata-Modern-Classic";
+      package = pkgs.bibata-cursors;
       size = 24;
     };
+
     font = {
-      name = "Roboto";
+      name = "Monocraft";
       size = 11;
+      package = pkgs.monocraft;
     };
+
     gtk3 = {
       bookmarks = [
         "file://${config.home.homeDirectory}/Documents"

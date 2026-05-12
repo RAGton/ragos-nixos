@@ -1,3 +1,20 @@
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Módulo Home Manager para habilitar e configurar o `fastfetch`.
+#
+# Por quê:
+# - Exibe um “banner” consistente com informações do sistema/desktop.
+# - Útil para diagnóstico rápido e estética no startup do shell.
+#
+# Como:
+# - Define `programs.fastfetch.settings` com layout, separador e módulos exibidos.
+#
+# Riscos:
+# - Alguns ícones dependem de fontes Nerd Font configuradas.
+# - Módulos como `publicip` dependem de rede e podem atrasar a execução.
+# =============================================================================
 { ... }:
 {
   # Instala e configura o fastfetch via módulo do Home Manager

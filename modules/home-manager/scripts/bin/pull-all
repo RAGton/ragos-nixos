@@ -1,4 +1,22 @@
 #!/usr/bin/env python3
+
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Script Python para atualizar (git pull) múltiplos repositórios em lote.
+#
+# Por quê:
+# - Acelera “sync” de vários projetos sem entrar em cada pasta manualmente.
+#
+# Como:
+# - Percorre `~/Documents/repositories`, detecta repos Git e executa `git pull` no branch atual.
+# - Ignora diretórios de cache do Terraform/Terragrunt.
+#
+# Riscos:
+# - Pode trazer mudanças remotas e causar conflitos se houver alterações locais.
+# - O script é upstream (mantém metadados de autor/licença originais abaixo).
+# =============================================================================
 """Atualiza repositórios Git em lote.
 
 Este script automatiza o processo de atualizar repositórios Git dentro de um diretório.

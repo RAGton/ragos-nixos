@@ -1,5 +1,22 @@
 #!/usr/bin/env bash
 
+# =============================================================================
+# Autor: rag
+#
+# O que é:
+# - Wrapper que expõe o comando `docker` redirecionando para `podman`.
+#
+# Por quê:
+# - `virtualisation.podman.dockerCompat` nem sempre funciona no macOS.
+# - Aliases não funcionam em shells não-interativos (ex.: Makefile).
+#
+# Como:
+# - Executa `podman` com os mesmos argumentos recebidos.
+#
+# Riscos:
+# - Nem toda compatibilidade Docker é perfeita no Podman; alguns flags/comportamentos podem divergir.
+# =============================================================================
+
 # virtualisation.podman.dockerCompat não funciona no mac
 # aliases não funcionam em shells não-interativos (ex.: Makefile)
 # este wrapper é a solução que funciona em Linux e mac sem depender do podman-desktop
