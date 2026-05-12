@@ -279,7 +279,7 @@ kryonix remote vnc stop    # Para os serviços correspondentes
 
 - [Operação diária e CLI](docs/OPERATIONS.md)
 - [Papel do host glacier](docs/GLACIER.md)
-- [Índice da documentação](docs/INDEX.md)
+- [Índice da documentação](docs/README.md)
 - [Comandos canônicos validados](docs/operations/KRYONIX_COMMANDS_CANONICAL.md)
 - [Matriz de runtime (Inspiron/Glacier)](docs/operations/KRYONIX_RUNTIME_MATRIX.md)
 - [Checklist de validação operacional](docs/operations/KRYONIX_VALIDATION.md)

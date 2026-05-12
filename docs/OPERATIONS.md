@@ -4,7 +4,7 @@
 
 ## Fluxo oficial
 
-- [CLI Kryonix](cli/README.md)
+- [CLI Kryonix](CLI.md)
 - [Acesso Remoto (VNC)](operations/REMOTE_DESKTOP_WAYVNC.md)
 - [Status da Rede e Tailscale](operations/KRYONIX_NETWORK_STATUS.md)
 - [Instalação Btrfs Manual no Glacier](operations/GLACIER_BTRFS_INSTALL.md)

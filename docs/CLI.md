@@ -13,7 +13,7 @@ O CLI `kryonix` é o ponto central de entrada para gerenciamento do sistema, ope
 
 ## ⚙️ Como funciona (Internal Mechanics)
 
-O `kryonix` não é apenas um script, mas um **orquestrador declarativo**. Ele é implementado via [kryonix-cli.nix](file:///etc/kryonix/packages/kryonix-cli.nix) usando `writeShellApplication` do Nixpkgs.
+O `kryonix` não é apenas um script, mas um **orquestrador declarativo**. Ele é implementado via [kryonix-cli.nix](../packages/kryonix-cli.nix) usando `writeShellApplication` do Nixpkgs.
 
 ### 1. Resolução de Contexto
 
@@ -138,4 +138,4 @@ O `kryonix` garante que:
 
 > [!IMPORTANT]
 > **O CLI `kryonix` é a fonte de verdade operacional.** Ao usá-lo, você garante que o sistema permaneça consistente com a arquitetura declarada no repositório.
-> Para detalhes formais sobre sintaxe e proibições, consulte o [Contrato Canônico](file:///etc/kryonix/docs/cli/KRYONIX_COMMAND_CONTRACT.md).
+> Para detalhes formais sobre sintaxe e proibições, consulte o [Contrato Canônico](cli/KRYONIX_COMMAND_CONTRACT.md).

@@ -30,7 +30,7 @@ A tabela abaixo resume a evolução estrutural do Grafo de Conhecimento RAG ante
 ## 3. Segurança e Auditoria de Segredos
 
 ### 3.1 Hardening do `config.py`
-Para garantir uma barreira contra vazamentos involuntários, a configuração do indexador ([config.py](file:///etc/kryonix/packages/kryonix-brain-lightrag/kryonix_brain_lightrag/config.py)) foi endurecida com regras explícitas de exclusão:
+Para garantir uma barreira contra vazamentos involuntários, a configuração do indexador ([config.py](../../packages/kryonix-brain-lightrag/kryonix_brain_lightrag/config.py)) foi endurecida com regras explícitas de exclusão:
 
 *   **Bloqueio de Pastas Ocultas de Rascunho/Logs:** `.context/`, `.gemini/`, `.antigravity/`, `.agents/scratch/` e subpastas.
 *   **Bloqueio de Extensões de Risco:** `*.pem`, `*.key`, `*.env`, `*.bak`, `*.failed`.

@@ -39,6 +39,13 @@ Apply the current host:
 kryonix switch
 ```
 
+## Documentation
+
+- [Documentation Index](docs/INDEX.md)
+- [Daily Operations & CLI](docs/OPERATIONS.md)
+- [Validated Canonical Commands](docs/operations/KRYONIX_COMMANDS_CANONICAL.md)
+- [Roadmap](docs/ROADMAP.md)
+
 ## Operational Safety
 
 - do not use `disko`, `format-*`, or `install-system` on the already-installed `glacier` host

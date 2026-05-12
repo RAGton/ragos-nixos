@@ -226,3 +226,29 @@ COMANDOS DE VALIDAÇÃO:
 ```sh
 kryonix vault sync-docs
 ```
+
+---
+
+## Milestones
+
+### 🏁 v0.4.2 - Stabilization & Governance
+**Status: EM EXECUÇÃO (90%)**
+- [x] #14 — CI Hardening (Nix, Shell, Rust, Python, Secrets)
+- [x] #15 — Auditoria de Licença (Source Available)
+- [/] #16 — Auditoria de Docs/Links
+- [ ] #13 — Auditoria e resolução de PRs abertos
+
+### 🚀 v0.5.0 - Glacier & Brain API
+**Status: PLANEJADO**
+- [ ] #17 — Benchmark Ollama (RTX 4060)
+- [ ] #19 — Kryonix Brain API (Persistência e Health)
+- [ ] #20 — Consolidação MCP Remoto
+- [ ] #21 — Autonomia Plena do Glacier
+
+### 📦 v0.6.0 - ISO & IA Autônoma
+**Status: ROADMAP**
+- [ ] #25 — Finalizar ISO Instalável
+- [ ] #22 — Web Research para Agentes
+- [ ] #23 — Pipeline de Geração de Receitas/Pacotes Nix
+- [ ] #24 — Autocura e Reorganização do Vault
+- [ ] #26 — Sincronização Doc -> Vault -> RAG

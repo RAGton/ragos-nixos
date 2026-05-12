@@ -37,7 +37,7 @@
 - CI: `.github/workflows/ci.yml`.
 - Contexto para IA: `AGENTS.md`, `AGENTS_KRYONIX_EVOLUTION.md`, `context/`, `docs/ai/`, `skills/`.
 - Arquitetura Brain: `docs/ai/BRAIN_SERVER_ARCHITECTURE.md`.
-- Documentacao humana: `README.md`, `docs/INDEX.md`, `docs/CURRENT_STATE.md`, docs tematicas.
+- Documentacao humana: `README.md`, `docs/README.md`, `docs/CURRENT_STATE.md`, docs tematicas.
 
 ## Arquivos sensiveis
 
