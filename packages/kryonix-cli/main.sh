@@ -1,3 +1,7 @@
+# Kryonix CLI — Central de Operações do Sistema
+# Copyright (c) 2026 Gabriel Aguiar Rocha. All rights reserved.
+# Licença: Source Available / Proprietário
+
 print_banner() {
   if [[ "${json_mode:-0}" -eq 1 ]]; then return 0; fi
   

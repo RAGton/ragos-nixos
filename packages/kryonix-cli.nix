@@ -69,4 +69,9 @@ writeShellApplication {
     + builtins.readFile ./kryonix-cli/home.sh
     + builtins.readFile ./kryonix-cli/installer.sh
     + builtins.readFile ./kryonix-cli/main.sh;
+  meta = {
+    description = "Kryonix Unified CLI — System management, AI, and Home Brain interface";
+    license = lib.licenses.unfree;
+    platforms = lib.platforms.linux;
+  };
 }

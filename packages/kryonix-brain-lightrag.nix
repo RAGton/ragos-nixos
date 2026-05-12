@@ -18,5 +18,6 @@ stdenvNoCC.mkDerivation {
   meta = {
     description = "Pinned source snapshot for Kryonix Brain LightRAG";
     platforms = lib.platforms.linux;
+    license = lib.licenses.unfree;
   };
 }
