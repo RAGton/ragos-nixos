@@ -15,7 +15,7 @@ Fortalecer as barreiras de qualidade e segurança do repositório Kryonix, garan
 ### shell
 - **Bash Syntax**: Verifica erros de sintaxe em todos os scripts em `packages/kryonix-cli/` usando `bash -n`.
 - **Git Check**: Valida a higiene do repositório (whitespace e marcadores de conflito) via `git diff --check`.
-- **Documentation Audit**: Executa `./scripts/doc-audit.sh` para garantir que não existam placeholders (`T.O.D.O`, `W.I.P`) na documentação canônica e que os comandos descritos no `USAGE.md` sejam válidos.
+- **Documentation Audit**: Executa `./scripts/doc-audit.sh` para garantir que não existam placeholders (`T-O-D-O`, `W-I-P`) na documentação canônica e que os comandos descritos no `USAGE.md` sejam válidos.
 
 ### rust-home
 - **Cargo Format**: Garante que o código segue o estilo padrão.
@@ -53,7 +53,7 @@ bash -n packages/kryonix-cli/*.sh
 
 ## Como interpretar falhas
 - **Falha no Job `nix`**: Geralmente indica erro de sintaxe Nix ou dependência faltando no flake.
-- **Falha no Job `shell`**: Erro de sintaxe em scripts ou `T.O.D.O` esquecido na documentação.
+- **Falha no Job `shell`**: Erro de sintaxe em scripts ou `T-O-D-O` esquecido na documentação.
 - **Falha no Job `rust-home`**: Erro de lógica, quebra de contrato ou formatação fora do padrão.
 - **Falha no Job `security`**: **PARE IMEDIATAMENTE**. Verifique se você commitou um token ou chave privada. Use `git reset` para remover o segredo do commit antes de tentar novamente.
 
