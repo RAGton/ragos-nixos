@@ -45,7 +45,10 @@ in
     # Carrega módulos de kernel necessários para I2C e OpenRGB
     # Blacklist sp5100_tco para evitar conflito com SMBus (RAM RGB no AM5)
     boot.blacklistedKernelModules = [ "sp5100_tco" ];
-    boot.kernelModules = [ "i2c-dev" "i2c-piix4" ];
+    boot.kernelModules = [
+      "i2c-dev"
+      "i2c-piix4"
+    ];
 
     services.hardware.openrgb = {
       enable = true;

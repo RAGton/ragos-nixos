@@ -24,7 +24,12 @@
 # - O usuário "greeter" é criado automaticamente pelo módulo greetd do NixOS.
 # - UWSM é usado para iniciar Hyprland quando programs.hyprland.withUWSM = true.
 # =============================================================================
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.rag.services.greetdDms;
@@ -156,4 +161,3 @@ in
     services.logind.killUserProcesses = lib.mkDefault false;
   };
 }
-

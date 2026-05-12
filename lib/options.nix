@@ -27,9 +27,9 @@
 
 let
   desktopConfigured =
-    (config.services.displayManager.gdm.enable or false) ||
-    (config.services.greetd.enable or false) ||
-    (config.programs.hyprland.enable or false);
+    (config.services.displayManager.gdm.enable or false)
+    || (config.services.greetd.enable or false)
+    || (config.programs.hyprland.enable or false);
 in
 {
   imports = [
