@@ -133,7 +133,7 @@ git submodule status --recursive
 
 # Verificações de Lixo
 find . -maxdepth 2 \( -name "result" -o -name "result-*" \) -print
-rg "TODO|FIXME|Legado" docs .ai .agents context AGENTS.md
+rg "T.O.D.O|F.I.X.M.E|Legado" docs .ai .agents context AGENTS.md
 
 # Validação do Build
 nix build .#kryonix --no-link

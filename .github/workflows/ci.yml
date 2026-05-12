@@ -1,5 +1,4 @@
-
-name: CI
+name: Kryonix CI
 
 on:
   pull_request:
@@ -7,18 +6,120 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  flake-check:
+  nix:
+    name: Nix Validation
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: read
+    env:
+      NIXPKGS_ALLOW_UNFREE: "1"
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          submodules: recursive
+          fetch-depth: 1
 
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - uses: DeterminateSystems/determinate-nix-action@v11
 
-      - run: nix flake show --all-systems
-      - run: nix flake check --keep-going
+      - name: Flake Show
+        run: nix flake show --all-systems
+
+      - name: Build Kryonix CLI
+        run: nix build .#kryonix --no-link --impure
+
+      - name: Build Kryonix Home
+        run: nix build .#kryonix-home --no-link --impure
+
+      - name: Flake Check
+        run: nix flake check --keep-going --impure
+
+  shell:
+    name: Shell & Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Bash Syntax Check
+        run: bash -n packages/kryonix-cli/*.sh
+
+      - name: Git Diff Check
+        run: git diff --check
+
+      - name: Documentation Audit
+        run: ./scripts/doc-audit.sh
+
+  rust-home:
+    name: Rust Audit (Home)
+    runs-on: ubuntu-latest
+    env:
+      NIXPKGS_ALLOW_UNFREE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - uses: DeterminateSystems/determinate-nix-action@v11
+
+      - name: Cargo Format
+        run: nix develop --command bash -c "cd packages/kryonix-home && cargo fmt --check"
+
+      - name: Cargo Clippy
+        run: nix develop --command bash -c "cd packages/kryonix-home && cargo clippy --all-targets --all-features -- -D warnings"
+
+      - name: Cargo Test
+        run: nix develop --command bash -c "cd packages/kryonix-home && cargo test --all"
+
+      - name: Cargo Build
+        run: nix develop --command bash -c "cd packages/kryonix-home && cargo build"
+
+  python-brain:
+    name: Python Audit (Brain)
+    runs-on: ubuntu-latest
+    env:
+      NIXPKGS_ALLOW_UNFREE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - uses: DeterminateSystems/determinate-nix-action@v11
+
+      - name: Python Syntax Check
+        run: nix develop --command bash -c "cd packages/kryonix-brain-lightrag && python3 -m compileall kryonix_brain_lightrag"
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Gitleaks Detect
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --no-git --source . --redact --verbose
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Critical Pattern Scan
+        run: |
+          if grep -rnE \
+            "KRYONIX_BRAIN_API_KEY=|BEGIN OPENSSH PRIVATE KEY|BEGIN .* PRIVATE KEY|ghp_[A-Za-z0-9_]+|tskey-auth-|password=|token=|secret=" \
+            --exclude-dir={docs,target,.git} \
+            --exclude={"*.md","*.instructions.md"} \
+            . ; then
+            echo "::error::Potential secret pattern found in code!"
+            exit 1
+          fi

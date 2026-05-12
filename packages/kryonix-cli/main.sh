@@ -37,6 +37,7 @@ print_usage() {
   printf '    update     Sincroniza inputs do flake.lock\n'
   printf '    check      Valida integridade do projeto\n'
   printf '    fmt        Auto-formatação de código Nix\n'
+  printf '    git-status Status do git do repositório\n'
   printf '\n'
   printf '  🧠 \033[1mKryonix Brain\033[0m\n'
   printf '    brain      Busca e diagnósticos RAG\n'

@@ -28,7 +28,7 @@ if [ -f "$DOCS_DIR/USAGE.md" ]; then
             echo "ERRO: Comando 'kryonix $cmd' está documentado, mas não existe no 'kryonix --help'."
             exit 1
         fi
-    done < <(grep -oP '(?<=kryonix )\w+' "$DOCS_DIR/USAGE.md" | sort -u | grep -v 'mcp\|brain\|graph\|doctor\|health\|stats\|search\|ask\|print-config')
+    done < <(grep -oP '(?<=kryonix )[\w-]+' "$DOCS_DIR/USAGE.md" | sort -u | grep -v 'mcp\|brain\|graph\|doctor\|health\|stats\|search\|ask\|print-config')
     echo "✓ Comandos documentados no USAGE.md validados."
 else
     echo "ERRO: $DOCS_DIR/USAGE.md não encontrado."
