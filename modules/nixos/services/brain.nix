@@ -38,14 +38,16 @@ let
   # Protege a RTX 4060 (8 GB) contra OOM ao subir modelos no Glacier.
   vramCheckScript = pkgs.writeShellScript "ollama-vram-check" ''
     set -euo pipefail
-    
+
     PROFILE="${cfg.vram.profile}"
     REQUIRED_MIB=${toString cfg.vram.minFreeMiB.${cfg.vram.profile}}
     WARN_ONLY=${if cfg.vram.warnOnly then "1" else "0"}
 
     echo "Kryonix VRAM Check | Perfil: $PROFILE | Mínimo: ''${REQUIRED_MIB}MiB" >&2
 
-    if [ "$PROFILE" = "gaming" ] && [ "${if cfg.vram.allowOllamaStopInGaming then "1" else "0"}" = "1" ]; then
+    if [ "$PROFILE" = "gaming" ] && [ "${
+      if cfg.vram.allowOllamaStopInGaming then "1" else "0"
+    }" = "1" ]; then
       echo "PERFIL: gaming — Parando Ollama para liberar GPU total." >&2
       exit 1
     fi

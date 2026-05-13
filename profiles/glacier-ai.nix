@@ -46,7 +46,11 @@ in
     };
 
     vramProfile = lib.mkOption {
-      type = lib.types.enum [ "ai" "balanced" "gaming" ];
+      type = lib.types.enum [
+        "ai"
+        "balanced"
+        "gaming"
+      ];
       default = "balanced";
       description = "Perfil de VRAM: ai (exigente), balanced (misto), gaming (prioriza GPU).";
     };
