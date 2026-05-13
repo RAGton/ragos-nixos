@@ -241,6 +241,34 @@ in
       };
     };
 
+    llmProvider = mkOption {
+      type = types.enum [
+        "ollama"
+        "llama_cpp"
+        "auto"
+      ];
+      default = "ollama";
+      description = "Provider de LLM principal: ollama, llama_cpp ou auto (fallback).";
+    };
+
+    llamaCppUrl = mkOption {
+      type = types.str;
+      default = "http://127.0.0.1:11435";
+      description = "URL do servidor llama.cpp sidecar.";
+    };
+
+    ollamaUrl = mkOption {
+      type = types.str;
+      default = "http://127.0.0.1:11434";
+      description = "URL do servidor Ollama.";
+    };
+
+    llamaCppTimeoutSeconds = mkOption {
+      type = types.ints.positive;
+      default = 60;
+      description = "Timeout em segundos para o llama.cpp.";
+    };
+
     vram = {
       enable = mkOption {
         type = types.bool;
@@ -402,6 +430,10 @@ in
         LIGHTRAG_VAULT_DIR = "${cfg.vaultPath}";
         LIGHTRAG_WORKING_DIR = "${cfg.storagePath}";
         UV_PROJECT_ENVIRONMENT = "${cfg.brainHome}/.venv";
+        KRYONIX_LLM_PROVIDER = cfg.llmProvider;
+        KRYONIX_LLAMA_CPP_URL = cfg.llamaCppUrl;
+        KRYONIX_OLLAMA_URL = cfg.ollamaUrl;
+        KRYONIX_LLAMA_CPP_TIMEOUT_SECONDS = toString cfg.llamaCppTimeoutSeconds;
       };
       serviceConfig = {
         Type = "oneshot";
@@ -441,6 +473,10 @@ in
         KRYONIX_BRAIN_API_HOST = cfg.bindHost;
         KRYONIX_BRAIN_API_PORT = "${toString cfg.port}";
         UV_PROJECT_ENVIRONMENT = "${cfg.brainHome}/.venv";
+        KRYONIX_LLM_PROVIDER = cfg.llmProvider;
+        KRYONIX_LLAMA_CPP_URL = cfg.llamaCppUrl;
+        KRYONIX_OLLAMA_URL = cfg.ollamaUrl;
+        KRYONIX_LLAMA_CPP_TIMEOUT_SECONDS = toString cfg.llamaCppTimeoutSeconds;
       };
       serviceConfig = {
         ExecStart = brainApiStartScript;
