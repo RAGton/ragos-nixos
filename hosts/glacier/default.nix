@@ -52,6 +52,15 @@
   kryonix.features.remoteDesktop.server.enable = true;
 
   # =========================
+  # EXPERIMENTAL — llama.cpp CUDA Sidecar (A/B Benchmark)
+  # =========================
+  kryonix.services.llama-cpp = {
+    enable = false; # Desabilitado por padrão para economizar VRAM
+    # modelPath = "/var/lib/kryonix/models/qwen2.5-7b-instruct.Q4_K_M.gguf";
+    gpuLayers = -1; # Todas na GPU RTX 4060
+  };
+
+  # =========================
   # TAILSCALE (RVE-specific, não genérico)
   # =========================
   # authKeyFile e extraUpFlags são identidade deste host — ficam aqui.

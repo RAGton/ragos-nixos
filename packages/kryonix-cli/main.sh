@@ -706,8 +706,11 @@ case "$subcommand" in
       vram-profile)
         kryonix_brain_vram_profile "${extra_args[@]}"
         ;;
+      llama-cpp)
+        kryonix_brain_llama_cpp "${extra_args[@]}"
+        ;;
        *)
-         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote|vram-audit|vram-check|vram-clear|vram-profile>"
+         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote|vram-audit|vram-check|vram-clear|vram-profile|llama-cpp>"
          exit 1
          ;;
     esac

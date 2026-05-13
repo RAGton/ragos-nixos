@@ -18,6 +18,7 @@
     ./tlp
     ./brain.nix
     ./neo4j.nix
+    ./llama-cpp.nix
     ./kryonix-state.nix
   ];
 

@@ -2000,3 +2000,108 @@ kryonix_brain_remote() {
       ;;
   esac
 }
+
+kryonix_brain_llama_cpp_status() {
+  printf '[bold cyan]LLAMA.CPP BACKEND STATUS[/bold cyan]\n'
+  local port=11435
+  if ss -ltnp | grep -q ":$port "; then
+    printf 'Serviço: [bold green]ONLINE[/bold green] (Porta %s)\n' "$port"
+    local pid
+    pid=$(ss -ltnp | grep ":$port " | awk -F'pid=' '{print $2}' | cut -d',' -f1)
+    printf 'PID: %s\n' "$pid"
+  else
+    printf 'Serviço: [bold red]OFFLINE[/bold red]\n'
+  fi
+  
+  if systemctl is-active --quiet kryonix-llama-cpp 2>/dev/null; then
+    printf 'Systemd: [bold green]active[/bold green]\n'
+  else
+    printf 'Systemd: [bold yellow]inactive/not found[/bold yellow]\n'
+  fi
+}
+
+kryonix_brain_llama_cpp_smoke() {
+  local port=11435
+  printf 'Testando llama.cpp em 127.0.0.1:%s...\n' "$port"
+  if ! curl -fsS "http://127.0.0.1:$port/health" >/dev/null 2>&1; then
+    printf '[bold red]ERRO:[/bold red] Backend não responde em 127.0.0.1:%s\n' "$port" >&2
+    return 1
+  fi
+  
+  printf 'Enviando chat completion de teste...\n'
+  local res
+  res=$(curl -s -X POST "http://127.0.0.1:$port/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "messages": [{"role": "user", "content": "Hello. Respond with exactly one word: OK."}],
+      "max_tokens": 10
+    }' | grep -oP '"content":\s*"\K[^"]+')
+    
+  if [[ "$res" == "OK" || "$res" == "OK." ]]; then
+    printf 'Smoke Test: [bold green]PASS[/bold green] (Resposta: %s)\n' "$res"
+  else
+    printf 'Smoke Test: [bold yellow]WARN[/bold yellow] (Resposta inesperada: %s)\n' "$res"
+  fi
+}
+
+kryonix_brain_llama_cpp_bench() {
+  local port=11435
+  local model="qwen3-8b"
+  printf 'Iniciando benchmark llama.cpp (127.0.0.1:%s)...\n' "$port"
+  
+  # Usando o endpoint /props para pegar info do modelo se disponível
+  local model_info
+  model_info=$(curl -s "http://127.0.0.1:$port/props" | grep -oP '"model_path":\s*"\K[^"]+' || echo "unknown")
+  printf 'Modelo carregado: [cyan]%s[/cyan]\n' "$model_info"
+  
+  printf 'Executando teste de geração (50 tokens)...\n'
+  local start_time end_time elapsed tokens
+  start_time=$(date +%s%N)
+  
+  # Request real para medir tokens/s
+  local output
+  output=$(curl -s -X POST "http://127.0.0.1:$port/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "messages": [{"role": "user", "content": "Escreva um parágrafo sobre a história da IA."}],
+      "max_tokens": 50,
+      "stream": false
+    }')
+  
+  end_time=$(date +%s%N)
+  elapsed=$(( (end_time - start_time) / 1000000 )) # ms
+  
+  tokens=$(echo "$output" | grep -oP '"completion_tokens":\s*\K\d+' || echo "0")
+  
+  if [[ "$tokens" -gt 0 ]]; then
+    local tps
+    tps=$(awk "BEGIN {print $tokens / ($elapsed / 1000)}")
+    printf 'Tokens gerados: %s\n' "$tokens"
+    printf 'Tempo total: %sms\n' "$elapsed"
+    printf 'Performance: [bold green]%s tokens/s[/bold green]\n' "$tps"
+  else
+    printf '[bold red]ERRO:[/bold red] Falha ao capturar métricas do benchmark.\n' >&2
+    return 1
+  fi
+}
+
+kryonix_brain_llama_cpp() {
+  local sub="${1:-help}"
+  shift || true
+
+  case "$sub" in
+    status)
+      kryonix_brain_llama_cpp_status "$@"
+      ;;
+    smoke)
+      kryonix_brain_llama_cpp_smoke "$@"
+      ;;
+    bench)
+      kryonix_brain_llama_cpp_bench "$@"
+      ;;
+    *)
+      printf 'Uso: kryonix brain llama-cpp <status|smoke|bench>\n' >&2
+      return 2
+      ;;
+  esac
+}
