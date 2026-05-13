@@ -2057,20 +2057,42 @@ kryonix_brain_provider_test() {
   local payload
   payload="$(jq -n --arg query "$query" --arg mode "naive" --arg provider "$target_provider" '{query:$query, mode:$mode, test_provider:$provider}')"
   
-  if brain_should_use_remote "$brain_mode"; then
-    printf 'Testando provider [bold cyan]%s[/bold cyan] (Remote)...\n' "$target_provider"
-    brain_remote_curl POST /search "$payload"
-  else
-    printf 'Testando provider [bold cyan]%s[/bold cyan] (Local)...\n' "$target_provider"
+  local api_url="http://127.0.0.1:8000"
+  if [[ "$(kryonix_brain_role)" == "client" ]]; then
+    api_url="${KRYONIX_BRAIN_URL:-http://10.0.0.2:8000}"
+  fi
+
+  printf 'Testando provider [bold cyan]%s[/bold cyan] via API (%s)...\n' "$target_provider" "$api_url"
+  
+  local tmp_json
+  tmp_json=$(mktemp)
+  
+  # Try to use the API
+  if curl -fsS -X POST "$api_url/search" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: ${KRYONIX_BRAIN_API_KEY:-}" \
+     -d "$payload" > "$tmp_json" 2>/dev/null; then
+     
+    local tps duration
+    tps=$(jq -r '.metrics.tps // 0' "$tmp_json")
+    duration=$(jq -r '.metrics.total_duration_ms // 0' "$tmp_json")
+    
+    if (( $(echo "$tps > 0" | bc -l) )); then
+      LC_NUMERIC=C printf 'Resultado: [bold green]PASS[/bold green] | TPS: [bold yellow]%.2f[/bold yellow] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$tps" "$duration"
+    else
+      LC_NUMERIC=C printf 'Resultado: [bold green]PASS[/bold green] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$duration"
+    fi
+    rm -f "$tmp_json"
+    return 0
+  fi
+
+  # Fallback to local CLI if API fails and we are on server
+  if [[ "$(kryonix_brain_role)" == "server" ]]; then
+    printf '[yellow]API indisponível. Tentando CLI local...[/yellow]\n'
     local project_dir
     project_dir="$(brain_project_dir)" || return 1
     export_brain_env
-    # O CLI local 'search' não aceita --mode (o modo é o subcomando)
-    # Redirecionamos para um arquivo temporário para extrair o JSON
-    local tmp_json
-    tmp_json=$(mktemp)
-    
-    # Executamos com --json para pegar os metadados
+    # Note: this might still fail with libstdc++ if not patched, but it is our last resort
     run_command uv run --project "$project_dir" python -m kryonix_brain_lightrag.cli chunks "$query" --test-provider "$target_provider" --json > "$tmp_json"
     
     local tps duration
@@ -2082,8 +2104,10 @@ kryonix_brain_provider_test() {
     else
       LC_NUMERIC=C printf 'Resultado: [bold green]PASS[/bold green] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$duration"
     fi
-    rm -f "$tmp_json"
+  else
+    printf '[bold red]ERRO:[/bold red] API indisponível em %s\n' "$api_url"
   fi
+  rm -f "$tmp_json"
 }
 
 kryonix_brain_provider() {
