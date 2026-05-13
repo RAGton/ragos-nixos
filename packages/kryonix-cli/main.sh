@@ -142,6 +142,8 @@ print_subcommand_help() {
     vram-check       Valida VRAM contra perfil ativo
     vram-clear       Limpa sessões gráficas inativas (confirmável)
     vram-profile     Altera perfil de VRAM runtime (ai|balanced|gaming)
+    llama-cpp        Gerencia sidecar experimental llama.cpp
+    provider         Gerencia providers de LLM (ollama/llama_cpp/auto)
     preflight-secrets
                     Scanner seguro de secrets antes de deploy
     rotate-api-key   Rotaciona KRYONIX_BRAIN_API_KEY sem imprimir valor
@@ -709,8 +711,11 @@ case "$subcommand" in
       llama-cpp)
         kryonix_brain_llama_cpp "${extra_args[@]}"
         ;;
+      provider)
+        kryonix_brain_provider "${extra_args[@]}"
+        ;;
        *)
-         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote|vram-audit|vram-check|vram-clear|vram-profile|llama-cpp>"
+         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote|vram-audit|vram-check|vram-clear|vram-profile|llama-cpp|provider>"
          exit 1
          ;;
     esac

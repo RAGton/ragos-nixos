@@ -1980,6 +1980,109 @@ kryonix_brain_remote_validate() {
   fi
 }
 
+kryonix_brain_provider_status() {
+  parse_brain_mode "$@"
+  
+  if brain_should_use_remote "$brain_mode"; then
+    printf '🧠 [bold magenta]Kryonix Brain Provider Status (Remote)[/bold magenta]\n'
+    local url
+    url="$(brain_api_url)"
+    printf 'URL da API: %s\n' "$url"
+    
+    # Tentativa de pegar info via /health ou /stats
+    brain_remote_curl GET /health
+    return $?
+  fi
+
+  printf '🧠 [bold magenta]Kryonix Brain Provider Status (Local)[/bold magenta]\n'
+  export_brain_env
+  
+  local provider="${KRYONIX_LLM_PROVIDER:-ollama}"
+  local ollama_url="${KRYONIX_OLLAMA_URL:-http://127.0.0.1:11434}"
+  local llama_url="${KRYONIX_LLAMA_CPP_URL:-http://127.0.0.1:11435}"
+  
+  printf 'Provider configurado: [bold cyan]%s[/bold cyan]\n' "$provider"
+  
+  # Check Ollama
+  printf 'Ollama:    '
+  if curl -fsS --max-time 2 "$ollama_url/api/tags" >/dev/null 2>&1; then
+    printf '[bold green]READY[/bold green]  %s\n' "$ollama_url"
+  else
+    printf '[bold red]OFFLINE[/bold red] %s\n' "$ollama_url"
+  fi
+  
+  # Check llama.cpp
+  printf 'llama.cpp: '
+  if curl -fsS --max-time 2 "$llama_url/health" >/dev/null 2>&1; then
+    printf '[bold green]READY[/bold green]  %s\n' "$llama_url"
+  else
+    printf '[bold red]OFFLINE[/bold red] %s\n' "$llama_url"
+  fi
+  
+  printf 'Embedding: [dim]Ollama / nomic-embed-text[/dim]\n'
+  
+  case "$provider" in
+    auto)
+      printf '\nDecisão: [bold green]llama.cpp[/bold green] será usado para geração; [bold yellow]Ollama[/bold yellow] como fallback.\n'
+      ;;
+    llama_cpp)
+      printf '\nDecisão: Apenas [bold green]llama.cpp[/bold green] será usado para geração.\n'
+      ;;
+    *)
+      printf '\nDecisão: Apenas [bold green]Ollama[/bold green] será usado para geração.\n'
+      ;;
+  esac
+}
+
+kryonix_brain_provider_test() {
+  local target_provider="auto"
+  local -a passthrough=()
+  
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --provider)
+        target_provider="$2"
+        shift 2
+        ;;
+      *)
+        passthrough+=("$1")
+        shift
+        ;;
+    esac
+  done
+
+  parse_brain_mode "${passthrough[@]}"
+  
+  local query="Responda apenas com a palavra TESTE."
+  local payload
+  payload="$(jq -n --arg query "$query" --arg mode "naive" --arg provider "$target_provider" '{query:$query, mode:$mode, test_provider:$provider}')"
+  
+  if brain_should_use_remote "$brain_mode"; then
+    printf 'Testando provider [bold cyan]%s[/bold cyan] (Remote)...\n' "$target_provider"
+    brain_remote_curl POST /search "$payload"
+  else
+    printf 'Testando provider [bold cyan]%s[/bold cyan] (Local)...\n' "$target_provider"
+    local project_dir
+    project_dir="$(brain_project_dir)" || return 1
+    export_brain_env
+    # O CLI local 'search' não aceita --mode (o modo é o subcomando)
+    run_command uv run --project "$project_dir" python -m kryonix_brain_lightrag.cli chunks "$query" --test-provider "$target_provider"
+  fi
+}
+
+kryonix_brain_provider() {
+  local sub="${1:-status}"
+  shift || true
+  case "$sub" in
+    status) kryonix_brain_provider_status "$@" ;;
+    test)   kryonix_brain_provider_test "$@" ;;
+    *)
+      printf 'Uso: kryonix brain provider <status|test [--provider <ollama|llama_cpp|auto>]>\n' >&2
+      return 2
+      ;;
+  esac
+}
+
 kryonix_brain_remote() {
   local sub="${1:-help}"
   shift || true
