@@ -50,14 +50,19 @@ kryonix brain llama-cpp smoke
 kryonix brain llama-cpp bench
 ```
 
-## 4. Comparação A/B (Exemplo de Tabela)
+## 4. Resultados do Benchmark Controlado (RTX 4060)
 
-| Métrica | Ollama (v0.x) | llama.cpp (Sidecar) |
-| :--- | :--- | :--- |
-| **Tokens/s (Qwen2.5 7B)** | ~45 t/s | ? |
-| **VRAM Idle** | ~600 MiB | ? |
-| **VRAM Load (8k ctx)** | ~5.2 GiB | ? |
-| **Latência Primeiro Token** | ~200ms | ? |
+| Backend | Modelo | Quantização | Prompt | Cold/Warm | VRAM Antes | VRAM Depois | Tokens/s | Latência Total |
+| :--- | :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
+| **llama.cpp** | Qwen2.5 7B | Q4_K_M | Short | Cold | 102 MiB | 4805 MiB | **54.44** | 2480ms |
+| **llama.cpp** | Qwen2.5 7B | Q4_K_M | Tech | Warm | 4805 MiB | 4805 MiB | **54.66** | 3659ms |
+| **llama.cpp** | Qwen2.5 7B | Q4_K_M | Code | Warm | 4805 MiB | 4805 MiB | **54.57** | 3665ms |
+| **Ollama** | Qwen2.5 Coder 7B | Q4_0 (approx) | Short | Cold | 102 MiB | 4937 MiB | 38.48 | 3976ms |
+| **Ollama** | Qwen2.5 Coder 7B | Q4_0 (approx) | Tech | Warm | 4937 MiB | 4938 MiB | 40.65 | 4920ms |
+| **Ollama** | Qwen2.5 Coder 7B | Q4_0 (approx) | Code | Warm | 4938 MiB | 4937 MiB | 40.45 | 4944ms |
+
+### Análise Técnica
+O `llama.cpp` demonstrou uma performance consistentemente superior (~35% mais tokens/s) e uma latência total menor. O Ollama, embora tenha melhorado significativamente em relação ao teste anterior, ainda apresenta um overhead de processamento que impacta o throughput final na RTX 4060.
 
 ## 5. Por que usar o llama.cpp?
 - **Controle Total**: Parâmetros granulares como threads, batch size e kv-cache quantization.
