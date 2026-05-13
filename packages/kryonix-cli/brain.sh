@@ -292,7 +292,7 @@ brain_safe_remote_exec() {
   ssh_port="${KRYONIX_GLACIER_SSH_PORT:-2224}"
 
   local -a remote_args=(
-    nix run path:/etc/kryonix#kryonix --
+    nix run git+file:///etc/kryonix#kryonix --
     brain "$sub" --host "$target" --local-exec "$@"
   )
 

@@ -104,6 +104,11 @@ recebeu o commit do próprio comando.
 kryonix brain deploy-safe --host glacier --quarantine-untracked --rotate-if-leaked --test
 ```
 
+Quando o comando precisa executar no Glacier a partir de outro host, ele usa a
+flake Git local (`git+file:///etc/kryonix#kryonix`) em vez de
+`path:/etc/kryonix#kryonix`. Isso evita que o Nix tente copiar arquivos secretos
+fora do Git, como `/etc/kryonix/brain.env`.
+
 Fluxo:
 
 1. roda `preflight-secrets`;
