@@ -21,6 +21,7 @@
   openssl,
   zlib,
   openrgb,
+  bc,
   kryonixHome,
   kryonix-hardware-probe,
   kryonix-disk-planner,
@@ -52,6 +53,7 @@ writeShellApplication {
     util-linux
     uv
     openrgb
+    bc
     kryonixHome
     kryonix-hardware-probe
     kryonix-disk-planner

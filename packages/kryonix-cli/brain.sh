@@ -2066,7 +2066,23 @@ kryonix_brain_provider_test() {
     project_dir="$(brain_project_dir)" || return 1
     export_brain_env
     # O CLI local 'search' não aceita --mode (o modo é o subcomando)
-    run_command uv run --project "$project_dir" python -m kryonix_brain_lightrag.cli chunks "$query" --test-provider "$target_provider"
+    # Redirecionamos para um arquivo temporário para extrair o JSON
+    local tmp_json
+    tmp_json=$(mktemp)
+    
+    # Executamos com --json para pegar os metadados
+    run_command uv run --project "$project_dir" python -m kryonix_brain_lightrag.cli chunks "$query" --test-provider "$target_provider" --json > "$tmp_json"
+    
+    local tps duration
+    tps=$(jq -r '.metrics.tps // 0' "$tmp_json")
+    duration=$(jq -r '.metrics.total_duration_ms // 0' "$tmp_json")
+    
+    if (( $(echo "$tps > 0" | bc -l) )); then
+      printf 'Resultado: [bold green]PASS[/bold green] | TPS: [bold yellow]%.2f[/bold yellow] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$tps" "$duration"
+    else
+      printf 'Resultado: [bold green]PASS[/bold green] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$duration"
+    fi
+    rm -f "$tmp_json"
   fi
 }
 
