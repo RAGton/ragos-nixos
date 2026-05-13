@@ -2073,9 +2073,12 @@ kryonix_brain_provider_test() {
      -H "X-API-Key: ${KRYONIX_BRAIN_API_KEY:-}" \
      -d "$payload" > "$tmp_json" 2>/dev/null; then
      
-    local tps duration
-    tps=$(jq -r '.metrics.tps // 0' "$tmp_json")
-    duration=$(jq -r '.metrics.total_duration_ms // 0' "$tmp_json")
+    local tps duration clean_json
+    clean_json=$(grep '^{.*}$' "$tmp_json" | tail -n 1)
+    if [[ -z "$clean_json" ]]; then clean_json=$(cat "$tmp_json"); fi
+
+    tps=$(echo "$clean_json" | jq -r '.metrics.tps // 0')
+    duration=$(echo "$clean_json" | jq -r '.metrics.total_duration_ms // 0')
     
     if (( $(echo "$tps > 0" | bc -l) )); then
       LC_NUMERIC=C printf 'Resultado: [bold green]PASS[/bold green] | TPS: [bold yellow]%.2f[/bold yellow] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$tps" "$duration"
@@ -2095,9 +2098,12 @@ kryonix_brain_provider_test() {
     # Note: this might still fail with libstdc++ if not patched, but it is our last resort
     run_command uv run --project "$project_dir" python -m kryonix_brain_lightrag.cli chunks "$query" --test-provider "$target_provider" --json > "$tmp_json"
     
-    local tps duration
-    tps=$(jq -r '.metrics.tps // 0' "$tmp_json")
-    duration=$(jq -r '.metrics.total_duration_ms // 0' "$tmp_json")
+    local tps duration clean_json
+    clean_json=$(grep '^{.*}$' "$tmp_json" | tail -n 1)
+    if [[ -z "$clean_json" ]]; then clean_json=$(cat "$tmp_json"); fi
+
+    tps=$(echo "$clean_json" | jq -r '.metrics.tps // 0')
+    duration=$(echo "$clean_json" | jq -r '.metrics.total_duration_ms // 0')
     
     if (( $(echo "$tps > 0" | bc -l) )); then
       LC_NUMERIC=C printf 'Resultado: [bold green]PASS[/bold green] | TPS: [bold yellow]%.2f[/bold yellow] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$tps" "$duration"
