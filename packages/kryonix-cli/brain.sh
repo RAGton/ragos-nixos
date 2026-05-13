@@ -202,9 +202,20 @@ brain_remote_curl() {
     rm -f "$tmp_resp"
     return 1
   elif [[ "$http_code" -ge 400 ]]; then
-    printf 'ERRO: O servidor remoto retornou status HTTP %s.\n' "$http_code" >&2
-    cat "$tmp_resp" >&2
-    printf '\n' >&2
+    if jq -e '(.status == "missing_manifest") or (.detail.status == "missing_manifest")' "$tmp_resp" >/dev/null 2>&1; then
+      printf 'ERRO: CAG manifest ausente no servidor remoto (HTTP %s).\n' "$http_code" >&2
+      jq -r '
+        (.detail // .) as $d
+        | "Mensagem: " + ($d.message // "CAG manifest não encontrado.")
+        , "Manifest: " + ($d.manifest_path // "desconhecido")
+        , "Comandos recomendados:"
+        , (($d.recommended_commands // [])[] | "  - " + .)
+      ' "$tmp_resp" >&2
+    else
+      printf 'ERRO: O servidor remoto retornou status HTTP %s.\n' "$http_code" >&2
+      cat "$tmp_resp" >&2
+      printf '\n' >&2
+    fi
     rm -f "$tmp_resp"
     return 1
   fi
@@ -457,16 +468,31 @@ kryonix_brain_search() {
   local action="$1"
   local query
   local payload
+  local explain
+  local -a query_parts
 
   shift
   parse_brain_mode "$@"
   if brain_should_use_remote "$brain_mode"; then
-    if [[ "${#brain_passthrough[@]}" -eq 0 ]]; then
+    explain="false"
+    query_parts=()
+    for arg in "${brain_passthrough[@]}"; do
+      case "$arg" in
+        --explain)
+          explain="true"
+          ;;
+        *)
+          query_parts+=("$arg")
+          ;;
+      esac
+    done
+
+    if [[ "${#query_parts[@]}" -eq 0 ]]; then
       printf 'Uso: kryonix brain %s "pergunta"\n' "$action" >&2
       return 2
     fi
-    query="${brain_passthrough[*]}"
-    payload="$(jq -n --arg query "$query" --arg mode "hybrid" --arg lang "pt-BR" '{query:$query, mode:$mode, lang:$lang}')"
+    query="${query_parts[*]}"
+    payload="$(jq -n --arg query "$query" --arg mode "hybrid" --arg intent "$action" --arg lang "pt-BR" --argjson explain "$explain" '{query:$query, mode:$mode, intent:$intent, lang:$lang, explain:$explain}')"
 
     if [[ "${KRYONIX_JSON_MODE:-}" == "1" ]]; then
       brain_remote_curl POST /search "$payload"
@@ -493,10 +519,18 @@ if data.get("status") == "success":
     answer = data.get("answer", "")
     sources = data.get("sources", [])
     grounding = data.get("grounding", {})
-    confidence = grounding.get("confidence", "Normal")
+    confidence = grounding.get("grounding_label") or grounding.get("confidence", "Normal")
+    answerability = grounding.get("answerability")
     latency = grounding.get("latency_sec", 0.0)
+    normalized = grounding.get("query_normalized")
+    intent_label = grounding.get("intent", "n/a")
+    mode_label = grounding.get("mode", "n/a")
 
     console.print(f"\n[bold magenta][/bold magenta][black on magenta]BRAIN REMOTE RESPONSE[/black on magenta][bold magenta][/bold magenta] [dim]Grounding: {confidence} ({latency}s)[/dim]")
+    if answerability == "not_answerable" and grounding.get("retrieval_score", 0) > 0.7:
+        console.print("[yellow]Similaridade alta, mas cobertura insuficiente da intenção da pergunta.[/yellow]")
+    if normalized:
+        console.print(f"[dim]Query normalizada: {normalized} | intent: {intent_label} | mode: {mode_label}[/dim]")
     console.print(Panel(Markdown(answer), border_style="magenta", title="[bold magenta]Kryonix RAG (Remote)[/bold magenta]", title_align="left"))
 
     if sources:
