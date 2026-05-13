@@ -1518,15 +1518,30 @@ brain_safe_run_smokes() {
   local failures=0
   local tmp http_code payload
 
-  tmp="$(mktemp)"
-  http_code="$(brain_safe_api_request GET /health "$tmp" || true)"
-  rm -f "$tmp"
-  if [[ "$http_code" == "200" ]]; then
-    brain_safe_status_line "Brain health" "PASS"
-  else
-    brain_safe_status_line "Brain health" "FAIL (HTTP ${http_code:-erro})"
-    failures=$((failures + 1))
+  # Aguarda o serviço subir (até 60s)
+  printf 'Aguardando Brain API subir... '
+  local i=0
+  local max=12
+  while [[ $i -lt $max ]]; do
+    tmp="$(mktemp)"
+    http_code="$(brain_safe_api_request GET /health "$tmp" || true)"
+    rm -f "$tmp"
+    if [[ "$http_code" == "200" ]]; then
+       printf '\033[32mREADY\033[0m\n'
+       break
+    fi
+    printf '.'
+    sleep 5
+    i=$((i + 1))
+  done
+
+  if [[ "$http_code" != "200" ]]; then
+     printf '\033[31mTIMEOUT\033[0m\n'
+     brain_safe_status_line "Brain health" "FAIL (HTTP ${http_code:-erro})"
+     return 1
   fi
+
+  brain_safe_status_line "Brain health" "PASS"
 
   tmp="$(mktemp)"
   http_code="$(brain_safe_api_request GET /stats "$tmp" || true)"
