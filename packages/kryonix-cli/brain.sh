@@ -2052,6 +2052,7 @@ kryonix_brain_provider_test() {
   done
 
   parse_brain_mode "${passthrough[@]}"
+  export_brain_env
   
   local query="Responda apenas com a palavra TESTE."
   local payload
