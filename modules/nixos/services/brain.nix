@@ -35,21 +35,30 @@ let
   ];
 
   # Script de verificação de VRAM antes de iniciar o Ollama.
-  # Aborta se VRAM livre < vramMinGiB * 1024 MiB.
-  # Protege a RTX 4060 (8 GB) contra OOM ao subir qwen2.5-coder:7b.
+  # Protege a RTX 4060 (8 GB) contra OOM ao subir modelos no Glacier.
   vramCheckScript = pkgs.writeShellScript "ollama-vram-check" ''
     set -euo pipefail
-    REQUIRED_MIB=$(( ${toString cfg.ollama.vramMinGiB} * 1024 ))
+    
+    PROFILE="${cfg.vram.profile}"
+    REQUIRED_MIB=${toString cfg.vram.minFreeMiB.${cfg.vram.profile}}
+    WARN_ONLY=${if cfg.vram.warnOnly then "1" else "0"}
 
-    # nvidia-smi fica em /run/current-system/sw/bin no NixOS com hardware.nvidia
+    echo "Kryonix VRAM Check | Perfil: $PROFILE | Mínimo: ''${REQUIRED_MIB}MiB" >&2
+
+    if [ "$PROFILE" = "gaming" ] && [ "${if cfg.vram.allowOllamaStopInGaming then "1" else "0"}" = "1" ]; then
+      echo "PERFIL: gaming — Parando Ollama para liberar GPU total." >&2
+      exit 1
+    fi
+
     NVIDIA_SMI="/run/current-system/sw/bin/nvidia-smi"
     if [ ! -x "$NVIDIA_SMI" ]; then
       echo "WARN: nvidia-smi não encontrado, pulando verificação de VRAM" >&2
       exit 0
     fi
 
-    VRAM_FREE=$("$NVIDIA_SMI" --query-gpu=memory.free --format=csv,noheader,nounits 2>/dev/null \
-      | head -1 | tr -d ' \r' || echo "")
+    # Coleta VRAM livre e processo mais guloso
+    VRAM_FREE=$("$NVIDIA_SMI" --query-gpu=memory.free --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d ' \r' || echo "")
+    TOP_PROC=$("$NVIDIA_SMI" --query-compute-apps=process_name,used_memory --format=csv,noheader,nounits 2>/dev/null | sort -k2 -rn | head -1 || echo "N/A,0")
 
     if [ -z "$VRAM_FREE" ] || ! printf '%s' "$VRAM_FREE" | grep -qE '^[0-9]+$'; then
       echo "WARN: Não foi possível ler VRAM (GPU indisponível?), continuando" >&2
@@ -57,12 +66,20 @@ let
     fi
 
     if [ "$VRAM_FREE" -lt "$REQUIRED_MIB" ]; then
-      echo "ERRO: VRAM insuficiente: ''${VRAM_FREE}MiB livres, ''${REQUIRED_MIB}MiB necessários para ${cfg.ollama.model}" >&2
-      echo "Feche jogos ou apps usando GPU antes de iniciar o Ollama." >&2
-      exit 1
+      MSG="ERRO: VRAM insuficiente: ''${VRAM_FREE}MiB livres, ''${REQUIRED_MIB}MiB necessários para perfil $PROFILE."
+      echo "$MSG" >&2
+      echo "Maior consumidor atual: $TOP_PROC" >&2
+      echo "DICA: kryonix brain vram-audit" >&2
+      
+      if [ "$WARN_ONLY" = "1" ]; then
+        echo "WARN: Prosseguindo mesmo assim (warnOnly=true)..." >&2
+        exit 0
+      else
+        exit 1
+      fi
     fi
 
-    echo "VRAM OK: ''${VRAM_FREE}MiB livres / mínimo ''${REQUIRED_MIB}MiB para ${cfg.ollama.model}"
+    echo "VRAM OK: ''${VRAM_FREE}MiB livres (perfil: $PROFILE)"
   '';
 
   # Script de warmup do índice LightRAG.
@@ -207,15 +224,6 @@ in
         '';
       };
 
-      vramMinGiB = mkOption {
-        type = types.ints.positive;
-        default = 6;
-        description = ''
-          VRAM mínima (GiB) necessária antes de iniciar o Ollama.
-          RTX 4060 = 8 GiB total. Mínimo 6 GiB para qwen2.5-coder:7b.
-        '';
-      };
-
       acceleration = mkOption {
         type = types.nullOr (
           types.enum [
@@ -228,6 +236,52 @@ in
           Aceleração de hardware para o Ollama.
           Mapeia para o pacote correto: cuda→ollama-cuda, rocm→ollama-rocm, null→ollama.
         '';
+      };
+    };
+
+    vram = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Habilita a gestão de VRAM e perfis de IA/Gaming.";
+      };
+
+      profile = mkOption {
+        type = types.enum [
+          "ai"
+          "balanced"
+          "gaming"
+        ];
+        default = "balanced";
+        description = "Perfil ativo: ai (exige VRAM alta), balanced (normal), gaming (prioriza GPU).";
+      };
+
+      minFreeMiB = mkOption {
+        type = types.attrsOf types.ints.positive;
+        default = {
+          ai = 4096;
+          balanced = 2048;
+          gaming = 512;
+        };
+        description = "Mínimo de VRAM livre (MiB) exigido por perfil para o Ollama subir.";
+      };
+
+      allowGraphicalSessionStop = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Permite que a CLI sugira encerramento de sessões gráficas (NUNCA automático via systemd).";
+      };
+
+      allowOllamaStopInGaming = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Se true, o perfil 'gaming' para o Ollama para liberar GPU total.";
+      };
+
+      warnOnly = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Se true, apenas loga avisos de VRAM baixa em vez de abortar o Ollama.";
       };
     };
 

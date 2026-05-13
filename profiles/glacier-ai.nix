@@ -45,10 +45,16 @@ in
       '';
     };
 
-    vramMinGiB = lib.mkOption {
-      type = lib.types.ints.positive;
-      default = 6;
-      description = "VRAM mínima (GiB) para iniciar o Ollama (RTX 4060 = 8 GiB).";
+    vramProfile = lib.mkOption {
+      type = lib.types.enum [ "ai" "balanced" "gaming" ];
+      default = "balanced";
+      description = "Perfil de VRAM: ai (exigente), balanced (misto), gaming (prioriza GPU).";
+    };
+
+    vramWarnOnly = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Se true, apenas avisa em caso de VRAM baixa.";
     };
   };
 
@@ -57,6 +63,12 @@ in
       enable = true;
       role = "server";
       bindHost = "0.0.0.0";
+
+      # Perfil de VRAM
+      vram = {
+        profile = cfg.vramProfile;
+        warnOnly = cfg.vramWarnOnly;
+      };
 
       # NÃO iniciar automaticamente no boot (se quiser manter disabled).
       # Start manual: kryonix ollama start → systemctl start ollama
@@ -68,7 +80,6 @@ in
         enable = true;
         model = cfg.model;
         keepAlive = cfg.keepAlive;
-        vramMinGiB = cfg.vramMinGiB;
         acceleration = "cuda";
       };
       storagePath = "/var/lib/kryonix/brain/storage";

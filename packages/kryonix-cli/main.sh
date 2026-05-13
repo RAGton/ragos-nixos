@@ -138,6 +138,10 @@ print_subcommand_help() {
   API e remoto:
     api              Gerencia API do Brain
     api-key          Gestão da chave de acesso
+    vram-audit       Auditoria de GPU/VRAM e processos (Glacier)
+    vram-check       Valida VRAM contra perfil ativo
+    vram-clear       Limpa sessões gráficas inativas (confirmável)
+    vram-profile     Altera perfil de VRAM runtime (ai|balanced|gaming)
     preflight-secrets
                     Scanner seguro de secrets antes de deploy
     rotate-api-key   Rotaciona KRYONIX_BRAIN_API_KEY sem imprimir valor
@@ -690,8 +694,20 @@ case "$subcommand" in
       remote)
         kryonix_brain_remote "${extra_args[@]}"
         ;;
+      vram-audit)
+        kryonix_brain_vram_audit "${extra_args[@]}"
+        ;;
+      vram-check)
+        kryonix_brain_vram_check "${extra_args[@]}"
+        ;;
+      vram-clear)
+        kryonix_brain_vram_clear "${extra_args[@]}"
+        ;;
+      vram-profile)
+        kryonix_brain_vram_profile "${extra_args[@]}"
+        ;;
        *)
-         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote>"
+         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote|vram-audit|vram-check|vram-clear|vram-profile>"
          exit 1
          ;;
     esac

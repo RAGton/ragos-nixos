@@ -124,7 +124,8 @@ Fluxo:
 11. roda `kryonix rebuild --host glacier`;
 12. roda `kryonix test --host glacier` somente com `--test`;
 13. executa smokes Brain/RAG/CAG;
-14. executa `kryonix switch --host glacier` somente com `--switch`.
+14. roda `kryonix brain vram-check` para garantir que o perfil selecionado é atendido;
+15. executa `kryonix switch --host glacier` somente com `--switch`.
 
 Para aplicar permanente:
 
@@ -133,6 +134,14 @@ kryonix brain deploy-safe --host glacier --quarantine-untracked --rotate-if-leak
 ```
 
 `--switch` requer `--test`.
+
+## VRAM & Resource Preflight
+
+O deploy seguro no Glacier agora valida se a VRAM livre é compatível com o perfil configurado em `brain.nix`.
+
+- Se o perfil for `ai` ou `balanced`, o deploy falhará no estágio de preflight se a GPU estiver ocupada por jogos ou sessões inativas.
+- Use `kryonix brain vram-audit` para diagnosticar o consumo.
+- Use `kryonix brain vram-clear --confirm` para liberar espaço antes do deploy.
 
 ## Smokes
 

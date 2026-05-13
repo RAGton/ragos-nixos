@@ -1564,6 +1564,192 @@ brain_safe_run_smokes() {
   [[ "$failures" -eq 0 ]]
 }
 
+kryonix_brain_vram_audit() {
+  local target
+  target="$(map_runtime_host)"
+  
+  if [[ "$target" != "glacier" ]]; then
+    printf 'VRAM audit é uma operação do servidor Glacier.\n' >&2
+    return 0
+  fi
+
+  if ! command -v nvidia-smi >/dev/null 2>&1; then
+    printf 'nvidia-smi não encontrado. GPU NVIDIA não disponível?\n' >&2
+    return 1
+  fi
+
+  local total used free profile
+  total=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1 | tr -d ' \r')
+  used=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1 | tr -d ' \r')
+  free=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits | head -1 | tr -d ' \r')
+  
+  # Tenta ler o perfil atual se houver nix-instantiate ou se estiver no ambiente NixOS
+  profile="unknown"
+  if command -v nix-instantiate >/dev/null 2>&1; then
+    profile=$(nix eval --raw "/etc/kryonix#nixosConfigurations.glacier.config.kryonix.services.brain.vram.profile" 2>/dev/null || echo "unknown")
+  fi
+
+  local status="OK"
+  if [[ "$free" -lt 2048 ]]; then status="WARN"; fi
+  if [[ "$free" -lt 512 ]]; then status="FAIL"; fi
+
+  printf '\n[bold magenta][/bold magenta][black on magenta]GLACIER VRAM AUDIT[/black on magenta][bold magenta][/bold magenta]\n'
+  printf 'GPU: [cyan]NVIDIA RTX 4060[/cyan]\n'
+  printf 'VRAM: %s MiB usados / %s MiB total\n' "$used" "$total"
+  printf 'Livre: [bold green]%s MiB[/bold green]\n' "$free"
+  printf 'Perfil: [bold cyan]%s[/bold cyan]\n' "$profile"
+  
+  case "$status" in
+    OK)   printf 'Status: [bold green]OK[/bold green]\n' ;;
+    WARN) printf 'Status: [bold yellow]WARN[/bold yellow]\n' ;;
+    FAIL) printf 'Status: [bold red]FAIL[/bold red]\n' ;;
+  esac
+
+  printf '\n[bold cyan]Top processos consumindo VRAM:[/bold cyan]\n'
+  printf '%-8s %-10s %s\n' "PID" "VRAM" "Processo"
+  nvidia-smi --query-compute-apps=pid,used_gpu_memory,process_name --format=csv,noheader,nounits | sort -k2 -rn | head -n 5 | while IFS=',' read -r pid vram proc; do
+    printf '%-8s %-10s %s\n' "$pid" "${vram}MiB" "$proc"
+  done
+
+  printf '\n[bold yellow]Sessões Ativas:[/bold yellow]\n'
+  loginctl list-sessions --no-legend
+}
+
+kryonix_brain_vram_check() {
+  # Chama o script do NixOS que já implementa a lógica de perfil
+  local check_script="/run/current-system/sw/bin/ollama-vram-check"
+  if [[ -x "$check_script" ]]; then
+    "$check_script"
+  else
+    # Fallback manual se o script não estiver no path
+    /run/current-system/sw/bin/bash -c "source /etc/set-environment; /run/current-system/sw/bin/nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits"
+  fi
+}
+
+kryonix_brain_vram_clear() {
+  local confirm=0 dry_run=1
+  for arg in "$@"; do
+    case "$arg" in
+      --confirm) confirm=1; dry_run=0 ;;
+      --dry-run) dry_run=1; confirm=0 ;;
+    esac
+  done
+
+  local target
+  target="$(map_runtime_host)"
+  if [[ "$target" != "glacier" ]]; then
+    printf 'VRAM clear é uma operação do servidor Glacier.\n' >&2
+    return 0
+  fi
+
+  printf 'Iniciando auditoria de candidatos a limpeza de VRAM...\n'
+  
+  local candidates=()
+  # 1. Identifica sessões gráficas (gdm, hyprland, gnome)
+  while read -r id user _seat type _state; do
+    # Ignora sessões tty/ssh
+    if [[ "$type" != "wayland" && "$type" != "x11" ]]; then continue; fi
+    
+    # Ignora a sessão atual
+    if [[ "$id" == "$XDG_SESSION_ID" ]]; then continue; fi
+    
+    # Ignora sessões com jogos/apps críticos
+    local session_procs
+    session_procs=$(loginctl session-status "$id" --no-pager | grep -iE "steam|cs2|blender|obs|vnc|rdp" || true)
+    if [[ -n "$session_procs" ]]; then
+       printf 'Sessão %s ([cyan]%s[/cyan]) preservada (contém processos críticos: %s)\n' "$id" "$user" "$(echo "$session_procs" | awk '{print $1}' | tr '\n' ' ')"
+       continue
+    fi
+
+    # Candidato detectado
+    candidates+=("$id:$user:$type")
+  done < <(loginctl list-sessions --no-legend)
+
+  if [[ ${#candidates[@]} -eq 0 ]]; then
+    printf 'Nenhum candidato seguro para encerramento automático encontrado.\n'
+    return 0
+  fi
+
+  printf '\n[bold yellow]Candidatos detectados:[/bold yellow]\n'
+  for c in "${candidates[@]}"; do
+    IFS=':' read -r id user type <<< "$c"
+    printf ' - Sessão [cyan]%s[/cyan] / usuário [bold]%s[/bold] / tipo %s / motivo: sessão gráfica inativa ou órfã\n' "$id" "$user" "$type"
+  done
+
+  if [[ "$confirm" -eq 1 ]]; then
+    for c in "${candidates[@]}"; do
+      IFS=':' read -r id user type <<< "$c"
+      printf 'Encerrando sessão %s via loginctl terminate-session...\n' "$id"
+      sudo loginctl terminate-session "$id"
+    done
+    printf 'Limpeza concluída.\n'
+  else
+    printf '\n[bold cyan]DICA:[/bold cyan] Para encerrar esses candidatos, use: [bold]kryonix brain vram-clear --confirm[/bold]\n'
+  fi
+}
+
+kryonix_brain_vram_profile() {
+  local profile="${1:-}"
+  local confirm=0 dry_run=1
+  shift || true
+  for arg in "$@"; do
+    case "$arg" in
+      --confirm) confirm=1; dry_run=0 ;;
+      --dry-run) dry_run=1; confirm=0 ;;
+    esac
+  done
+
+  if [[ -z "$profile" ]]; then
+    printf 'Uso: kryonix brain vram-profile <ai|balanced|gaming> [--dry-run|--confirm]\n' >&2
+    return 2
+  fi
+
+  printf 'Operação de Perfil Runtime: [bold cyan]%s[/bold cyan]\n' "$profile"
+  
+  if [[ "$dry_run" -eq 1 ]]; then
+    printf '[yellow]MODO DRY-RUN[/yellow] (não altera serviços)\n'
+    case "$profile" in
+      ai)
+        printf ' - Validaria VRAM contra threshold AI (4GiB)\n'
+        printf ' - Sugeriria vram-clear se necessário\n'
+        printf ' - Reiniciaria ollama.service e kryonix-brain-api.service\n'
+        ;;
+      gaming)
+        printf ' - Pararia ollama.service\n'
+        printf ' - Manteria Brain API ativa (degradada)\n'
+        ;;
+      balanced)
+        printf ' - Reiniciaria serviços com perfil padrão\n'
+        ;;
+    esac
+    printf '\nUse [bold]--confirm[/bold] para aplicar no runtime.\n'
+    return 0
+  fi
+
+  # Modo --confirm
+  case "$profile" in
+    ai)
+      kryonix_brain_vram_audit
+      if ! kryonix_brain_vram_check; then
+        printf '[bold red]ERRO:[/bold red] VRAM insuficiente para modo AI. Tente [bold]kryonix brain vram-clear --confirm[/bold] primeiro.\n' >&2
+        return 1
+      fi
+      printf 'Iniciando serviços modo AI...\n'
+      sudo systemctl restart ollama kryonix-brain-api
+      kryonix_brain_health || true
+      ;;
+    gaming)
+      printf 'Entrando em modo GAMING (liberando GPU)...\n'
+      sudo systemctl stop ollama
+      printf 'Ollama parado. Brain API permanece ativa (search degradado).\n'
+      ;;
+    balanced)
+      printf 'Retornando ao perfil BALANCED...\n'
+      sudo systemctl restart ollama kryonix-brain-api
+      ;;
+  esac
+}
+
 kryonix_brain_deploy_safe() {
   brain_strip_local_exec_flag "$@"
 

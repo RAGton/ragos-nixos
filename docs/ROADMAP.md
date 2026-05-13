@@ -6,13 +6,13 @@ Este documento contém o planejamento futuro do projeto Kryonix. O repositório 
 
 ## Kryonix Brain API
 
-STATUS: NOT_IMPLEMENTED
+STATUS: PARTIAL
 
 DESCRIÇÃO:
 API central do Kryonix Brain para centralizar o processamento do LightRAG e LLM operations, abstraindo a IA do host cliente (`inspiron`).
 
 EVIDÊNCIA ATUAL:
-- Serviço systemd existente: `kryonix-brain-api.service` (atualmente inativo/morto).
+- Serviço systemd funcional: `kryonix-brain-api.service`.
 
 GAPS:
 - O serviço não roda nativamente de modo persistente.
@@ -239,11 +239,11 @@ kryonix vault sync-docs
 - [ ] #13 — Auditoria e resolução de PRs abertos
 
 ### 🚀 v0.5.0 - Glacier & Brain API
-**Status: PLANEJADO**
-- [ ] #17 — Benchmark Ollama (RTX 4060)
-- [ ] #19 — Kryonix Brain API (Persistência e Health)
+**Status: EM EXECUÇÃO (40%)**
+- [x] #17 — Benchmark Ollama (RTX 4060)
+- [/] #19 — Kryonix Brain API (Persistência, Health e VRAM Profiles)
 - [ ] #20 — Consolidação MCP Remoto
-- [ ] #21 — Autonomia Plena do Glacier
+- [/] #21 — Autonomia Plena do Glacier (VRAM Profiles e Safe Deploy)
 
 ### 📦 v0.6.0 - ISO & IA Autônoma
 **Status: ROADMAP**
