@@ -53,12 +53,16 @@
 
   # =========================
   # EXPERIMENTAL — llama.cpp CUDA Sidecar (A/B Benchmark)
+  # Issue: #48 — Backend experimental llama.cpp/provider auto/fallback
   # =========================
   kryonix.services.llama-cpp = {
-    enable = false; # Desabilitado por padrão para economizar VRAM
-    # modelPath = "/var/lib/kryonix/models/qwen2.5-7b-instruct.Q4_K_M.gguf";
+    enable = true;
+    modelPath = "/var/lib/kryonix/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf";
     gpuLayers = -1; # Todas na GPU RTX 4060
   };
+
+  # Configuração do Brain para usar o backend experimental com fallback automático
+  kryonix.services.brain.llmProvider = "auto";
 
   # =========================
   # TAILSCALE (RVE-specific, não genérico)
