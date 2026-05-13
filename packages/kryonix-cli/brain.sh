@@ -260,6 +260,113 @@ parse_brain_mode() {
   done
 }
 
+brain_safe_target_host() {
+  printf '%s\n' "${flake_host:-$(map_runtime_host)}"
+}
+
+brain_safe_is_local_target() {
+  local target="$1"
+  [[ "$(map_runtime_host)" == "$target" ]]
+}
+
+brain_safe_ssh_target_for_host() {
+  local target="$1"
+  case "$target" in
+    glacier)
+      printf '%s\n' "${KRYONIX_GLACIER_SSH_TARGET:-rocha@rve-glacier}"
+      ;;
+    *)
+      printf 'ERRO: deploy remoto do Brain só está definido para --host glacier.\n' >&2
+      return 2
+      ;;
+  esac
+}
+
+brain_safe_remote_exec() {
+  local sub="$1"
+  shift
+  local target ssh_target ssh_port remote_cmd
+
+  target="$(brain_safe_target_host)"
+  ssh_target="$(brain_safe_ssh_target_for_host "$target")" || return $?
+  ssh_port="${KRYONIX_GLACIER_SSH_PORT:-2224}"
+
+  local -a remote_args=(
+    nix run path:/etc/kryonix#kryonix --
+    brain "$sub" --host "$target" --local-exec "$@"
+  )
+
+  printf -v remote_cmd '%q ' "${remote_args[@]}"
+  blue_line "Brain safe deploy: SSH $ssh_target:$ssh_port ($sub)"
+  ssh -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=8 "$ssh_target" "cd /etc/kryonix && $remote_cmd"
+}
+
+brain_strip_local_exec_flag() {
+  brain_local_exec=0
+  brain_passthrough=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --local-exec)
+        brain_local_exec=1
+        ;;
+      *)
+        brain_passthrough+=("$1")
+        ;;
+    esac
+    shift
+  done
+}
+
+brain_should_run_remote_target() {
+  local target
+  target="$(brain_safe_target_host)"
+  [[ "${brain_local_exec:-0}" -eq 0 ]] && ! brain_safe_is_local_target "$target"
+}
+
+brain_secret_scan_script() {
+  local repo_root script
+  repo_root="$(kryonix_repo_root)" || return 1
+  script="$repo_root/scripts/kryonix-secret-scan.py"
+  if [[ ! -f "$script" ]]; then
+    printf 'ERRO: scanner não encontrado: %s\n' "$script" >&2
+    return 1
+  fi
+  printf '%s\n' "$script"
+}
+
+kryonix_brain_preflight_secrets() {
+  brain_strip_local_exec_flag "$@"
+  if brain_should_run_remote_target; then
+    brain_safe_remote_exec preflight-secrets "${brain_passthrough[@]}"
+    return $?
+  fi
+
+  local repo_root scanner
+  repo_root="$(kryonix_repo_root)" || return 1
+  scanner="$(brain_secret_scan_script)" || return 1
+
+  local -a scan_args=(--repo "$repo_root")
+  local arg
+  for arg in "${brain_passthrough[@]}"; do
+    case "$arg" in
+      --json|--quarantine-untracked)
+        scan_args+=("$arg")
+        ;;
+      --help|-h)
+        printf 'Uso: kryonix brain preflight-secrets [--json] [--quarantine-untracked] [--host glacier]\n'
+        return 0
+        ;;
+      *)
+        printf 'Opção desconhecida para preflight-secrets: %s\n' "$arg" >&2
+        return 2
+        ;;
+    esac
+  done
+
+  python3 "$scanner" "${scan_args[@]}"
+}
+
 kryonix_graph_query_usage() {
   cat >&2 <<'EOF'
 Uso: kryonix graph query [--cypher] 'MATCH ... RETURN ... LIMIT N'
@@ -920,6 +1027,21 @@ else:
 
 _brain_env_file="/etc/kryonix/brain.env"
 
+brain_api_key_restart_service() {
+  local unit
+  for unit in kryonix-brain-api.service kryonix-brain.service; do
+    if systemctl list-unit-files "$unit" --no-pager --no-legend 2>/dev/null | grep -q "^$unit"; then
+      printf '  reiniciando %s...\n' "$unit"
+      sudo systemctl restart "$unit"
+      sleep 2
+      return $?
+    fi
+  done
+
+  printf '  serviço    : WARN (kryonix-brain-api/kryonix-brain não encontrado)\n'
+  return 0
+}
+
 brain_api_key_status() {
   local env_file="$_brain_env_file"
 
@@ -998,14 +1120,41 @@ brain_api_key_generate() {
 brain_api_key_rotate() {
   local env_file="$_brain_env_file"
   local confirmed=0
+  local dry_run=0
+  local validate_after=1
   local arg
 
-  # Verificar flag --yes
   for arg in "$@"; do
-    if [[ "$arg" == "--yes" || "$arg" == "-y" ]]; then
-      confirmed=1
-    fi
+    case "$arg" in
+      --yes|-y|--confirm)
+        confirmed=1
+        ;;
+      --dry-run)
+        dry_run=1
+        ;;
+      --validate)
+        validate_after=1
+        ;;
+      --no-validate)
+        validate_after=0
+        ;;
+      *)
+        printf 'Opção desconhecida para rotate-api-key: %s\n' "$arg" >&2
+        return 2
+        ;;
+    esac
   done
+
+  if [[ "$dry_run" -eq 1 ]]; then
+    printf 'Brain API key rotate — dry-run\n'
+    printf '  arquivo    : %s\n' "$env_file"
+    printf '  backup     : /root/kryonix-secret-backups/brain.env.<timestamp>.bak\n'
+    printf '  restart    : kryonix-brain-api.service ou kryonix-brain.service\n'
+    printf '  validate   : %s\n' "$([[ "$validate_after" -eq 1 ]] && printf 'yes' || printf 'no')"
+    printf '  mutação    : nenhuma\n'
+    printf 'Secret value printed: no\n'
+    return 0
+  fi
 
   if ! sudo test -f "$env_file" 2>/dev/null; then
     printf 'ERRO: %s não existe. Use "kryonix brain api-key generate" primeiro.\n' "$env_file" >&2
@@ -1031,9 +1180,13 @@ brain_api_key_rotate() {
   # Backup atômico com timestamp
   local ts
   ts="$(date +%Y%m%d-%H%M%S)"
-  local backup_file="${env_file}.bak.${ts}"
+  local backup_dir="/root/kryonix-secret-backups"
+  local backup_file="${backup_dir}/brain.env.${ts}.bak"
 
+  sudo mkdir -p "$backup_dir"
+  sudo chmod 700 "$backup_dir"
   sudo cp "$env_file" "$backup_file"
+  sudo chown root:root "$backup_file"
   sudo chmod 600 "$backup_file"
   printf '  backup     : %s\n' "$backup_file"
 
@@ -1056,15 +1209,16 @@ brain_api_key_rotate() {
 
   sudo stat -c '  dono/perm  : %U:%G %a  arquivo: %n' "$env_file"
 
-  if systemctl list-unit-files 2>/dev/null | grep -q 'kryonix-brain-api.service'; then
-    printf '  reiniciando kryonix-brain-api...\n'
-    sudo systemctl restart kryonix-brain-api || true
-    sleep 2
-  fi
+  brain_api_key_restart_service || return $?
 
-  printf 'Chave rotacionada. Valor NÃO exibido.\n'
-  printf 'Validando nova chave...\n'
-  brain_api_key_validate
+  printf 'KRYONIX_BRAIN_API_KEY rotated.\n'
+  printf 'File: %s\n' "$env_file"
+  printf 'Secret value printed: no\n'
+
+  if [[ "$validate_after" -eq 1 ]]; then
+    printf 'Validando nova chave...\n'
+    brain_api_key_validate
+  fi
 }
 
 brain_api_key_validate() {
@@ -1119,6 +1273,50 @@ brain_api_key_validate() {
   printf '  resultado  : OK (valor não exibido)\n'
 }
 
+kryonix_brain_rotate_api_key() {
+  brain_strip_local_exec_flag "$@"
+
+  local arg confirmed=0 dry_run=0
+  for arg in "${brain_passthrough[@]}"; do
+    case "$arg" in
+      --help|-h)
+        cat <<'EOF'
+Uso: kryonix brain rotate-api-key [--host glacier] [--dry-run|--confirm] [--validate]
+
+Rotaciona KRYONIX_BRAIN_API_KEY sem imprimir a chave:
+  - sem --confirm, não altera nada e retorna erro
+  - --dry-run mostra o plano e não altera nada
+  - backup root-only em /root/kryonix-secret-backups/
+  - escrita atômica em /etc/kryonix/brain.env
+  - permissão root:root 0600
+  - restart de kryonix-brain-api.service ou kryonix-brain.service
+  - validação de /health e /stats
+EOF
+        return 0
+        ;;
+      --confirm)
+        confirmed=1
+        ;;
+      --dry-run)
+        dry_run=1
+        ;;
+    esac
+  done
+
+  if [[ "$confirmed" -ne 1 && "$dry_run" -ne 1 ]]; then
+    printf 'ERRO: rotate-api-key exige --confirm para alterar a chave real.\n' >&2
+    printf 'Use --dry-run para simular sem mutação.\n' >&2
+    return 2
+  fi
+
+  if brain_should_run_remote_target; then
+    brain_safe_remote_exec rotate-api-key "${brain_passthrough[@]}"
+    return $?
+  fi
+
+  brain_api_key_rotate "${brain_passthrough[@]}"
+}
+
 kryonix_brain_api_key() {
   local sub="${1:-status}"
   shift || true
@@ -1146,6 +1344,339 @@ kryonix_brain_api_key() {
       return 1
       ;;
   esac
+}
+
+brain_safe_status_line() {
+  printf '%-24s %s\n' "$1:" "$2"
+}
+
+brain_safe_scan_json() {
+  local repo_root scanner
+  repo_root="$(kryonix_repo_root)" || return 1
+  scanner="$(brain_secret_scan_script)" || return 1
+  python3 "$scanner" --repo "$repo_root" --json "$@"
+}
+
+brain_safe_scan_has_leak() {
+  jq -e '
+    any(.suspects[]?;
+      ((.severity == "high" or .severity == "critical")
+       and (.rule | test("possible_|private_key|env_file|pem_key|private_ssh"; "i")))
+    )
+  ' >/dev/null
+}
+
+brain_safe_print_scan_summary() {
+  jq -r '
+    "Preflight secrets: " + (.status | ascii_upcase),
+    (if (.quarantine_dir // "") != "" then "Quarantine: " + .quarantine_dir else empty end),
+    (if (.suspects | length) > 0 then
+      "Suspects:" ,
+      (.suspects[] | "- " + .path + " | tracked=" + (.tracked|tostring) + " | rule=" + .rule + " | severity=" + .severity + " | action=" + .recommended_action)
+    else
+      "Suspects: none"
+    end),
+    "No secret values were printed."
+  '
+}
+
+brain_safe_require_clean_repo() {
+  local repo_root changes
+  repo_root="$(kryonix_repo_root)" || return 1
+  changes="$(git -C "$repo_root" status --short)"
+  if [[ -n "$changes" ]]; then
+    printf 'Repo status: BLOCKED\n' >&2
+    printf '%s\n' "$changes" >&2
+    return 1
+  fi
+  brain_safe_status_line "Repo status" "PASS"
+}
+
+brain_safe_run_step() {
+  local label="$1"
+  shift
+  printf '%s...\n' "$label"
+  if "$@"; then
+    brain_safe_status_line "$label" "PASS"
+    return 0
+  fi
+  local status=$?
+  brain_safe_status_line "$label" "FAIL ($status)"
+  return "$status"
+}
+
+brain_safe_local_api_key() {
+  local env_file="$_brain_env_file"
+  if ! sudo test -f "$env_file" 2>/dev/null; then
+    return 1
+  fi
+  sudo sed -n 's/^KRYONIX_BRAIN_API_KEY=//p' "$env_file" | tail -1 | tr -d '[:space:]'
+}
+
+brain_safe_api_request() {
+  local method="$1"
+  local path="$2"
+  local output="$3"
+  local data="${4:-}"
+  local key
+  local -a args
+
+  args=(--connect-timeout 5 --max-time 120 -sS -w '%{http_code}' -o "$output" -X "$method")
+  if [[ "$path" != "/health" ]]; then
+    key="$(brain_safe_local_api_key)" || return 97
+    if [[ -z "$key" ]]; then
+      return 97
+    fi
+    args+=(-H "X-API-Key: $key")
+  fi
+  if [[ -n "$data" ]]; then
+    args+=(-H "Content-Type: application/json" --data "$data")
+  fi
+
+  curl "${args[@]}" "http://127.0.0.1:8000$path"
+}
+
+brain_safe_search_smoke() {
+  local label="$1"
+  local intent="$2"
+  local query="$3"
+  local expect_normalized="${4:-0}"
+  local tmp payload http_code grounding_label answer normalized mode returned_intent
+
+  tmp="$(mktemp)"
+  payload="$(jq -n --arg query "$query" --arg mode "hybrid" --arg intent "$intent" --arg lang "pt-BR" --argjson explain true '{query:$query, mode:$mode, intent:$intent, lang:$lang, explain:$explain}')"
+  http_code="$(brain_safe_api_request POST /search "$tmp" "$payload" || true)"
+
+  if [[ "$http_code" != "200" ]]; then
+    rm -f "$tmp"
+    brain_safe_status_line "$label" "FAIL (HTTP ${http_code:-erro})"
+    return 1
+  fi
+
+  grounding_label="$(jq -r '.grounding.grounding_label // .grounding.confidence // .confidence // ""' "$tmp")"
+  answer="$(jq -r '.answer // ""' "$tmp")"
+  normalized="$(jq -r '.grounding.query_normalized // ""' "$tmp")"
+  mode="$(jq -r '.grounding.mode // .mode // ""' "$tmp")"
+  returned_intent="$(jq -r '.grounding.intent // .intent // ""' "$tmp")"
+
+  if [[ "$grounding_label" == "Alta" && "$answer" == *"Não encontrei grounding suficiente"* ]]; then
+    rm -f "$tmp"
+    brain_safe_status_line "$label" "FAIL (grounding contraditório)"
+    return 1
+  fi
+  if [[ "$mode" != "hybrid" || "$returned_intent" != "$intent" ]]; then
+    rm -f "$tmp"
+    brain_safe_status_line "$label" "FAIL (intent/mode ausente)"
+    return 1
+  fi
+  if [[ "$expect_normalized" -eq 1 ]]; then
+    if [[ "$normalized" != *"search"* || "$normalized" == *"seaarch"* || "$normalized" == *"diferena"* ]]; then
+      rm -f "$tmp"
+      brain_safe_status_line "$label" "FAIL (normalização ausente)"
+      return 1
+    fi
+  fi
+
+  rm -f "$tmp"
+  brain_safe_status_line "$label" "PASS"
+}
+
+brain_safe_cag_smoke() {
+  local label="$1"
+  local method="$2"
+  local path="$3"
+  local data="${4:-}"
+  local tmp http_code missing_status detail_text
+
+  tmp="$(mktemp)"
+  http_code="$(brain_safe_api_request "$method" "$path" "$tmp" "$data" || true)"
+  missing_status="$(jq -r '.status // .detail.status // ""' "$tmp" 2>/dev/null || true)"
+  detail_text="$(jq -r '.detail // ""' "$tmp" 2>/dev/null || true)"
+
+  if [[ "$http_code" == "200" ]]; then
+    rm -f "$tmp"
+    brain_safe_status_line "$label" "PASS"
+    return 0
+  fi
+  if [[ "$missing_status" == "missing_manifest" ]]; then
+    rm -f "$tmp"
+    brain_safe_status_line "$label" "WARN missing_manifest"
+    return 0
+  fi
+  if [[ "$http_code" == "500" && "$detail_text" == *"No manifest found"* ]]; then
+    rm -f "$tmp"
+    brain_safe_status_line "$label" "FAIL (manifest virou HTTP 500)"
+    return 1
+  fi
+
+  rm -f "$tmp"
+  brain_safe_status_line "$label" "FAIL (HTTP ${http_code:-erro})"
+  return 1
+}
+
+brain_safe_run_smokes() {
+  local failures=0
+  local tmp http_code payload
+
+  tmp="$(mktemp)"
+  http_code="$(brain_safe_api_request GET /health "$tmp" || true)"
+  rm -f "$tmp"
+  if [[ "$http_code" == "200" ]]; then
+    brain_safe_status_line "Brain health" "PASS"
+  else
+    brain_safe_status_line "Brain health" "FAIL (HTTP ${http_code:-erro})"
+    failures=$((failures + 1))
+  fi
+
+  tmp="$(mktemp)"
+  http_code="$(brain_safe_api_request GET /stats "$tmp" || true)"
+  rm -f "$tmp"
+  if [[ "$http_code" == "200" ]]; then
+    brain_safe_status_line "Brain stats" "PASS"
+  else
+    brain_safe_status_line "Brain stats" "FAIL (HTTP ${http_code:-erro})"
+    failures=$((failures + 1))
+  fi
+
+  brain_safe_search_smoke "Ask/Search smoke" ask "qual diferença tem entre ask e search" 0 || failures=$((failures + 1))
+  brain_safe_search_smoke "Search smoke" search "qual diferença tem entre ask e search" 0 || failures=$((failures + 1))
+  brain_safe_search_smoke "Typo normalize smoke" ask "qual diferena tem entre o ask e seaarch" 1 || failures=$((failures + 1))
+
+  brain_safe_cag_smoke "CAG status" GET /cag/status || failures=$((failures + 1))
+  payload="$(jq -n --arg query "qual diferença tem entre ask e search" --argjson top_k 5 '{query:$query, top_k:$top_k}')"
+  brain_safe_cag_smoke "CAG ask" POST /cag/ask "$payload" || failures=$((failures + 1))
+
+  [[ "$failures" -eq 0 ]]
+}
+
+kryonix_brain_deploy_safe() {
+  brain_strip_local_exec_flag "$@"
+
+  local quarantine=0 rotate_if_leaked=0 rotate_key=0 run_test=0 run_switch=0
+  local arg
+  for arg in "${brain_passthrough[@]}"; do
+    case "$arg" in
+      --quarantine-untracked)
+        quarantine=1
+        ;;
+      --rotate-if-leaked)
+        rotate_if_leaked=1
+        ;;
+      --rotate-key)
+        rotate_key=1
+        ;;
+      --test)
+        run_test=1
+        ;;
+      --switch)
+        run_switch=1
+        ;;
+      --help|-h)
+        cat <<'EOF'
+Uso: kryonix brain deploy-safe --host glacier [flags]
+
+Flags:
+  --quarantine-untracked  move somente suspeitos não rastreados para quarentena privada
+  --rotate-if-leaked      rotaciona KRYONIX_BRAIN_API_KEY se o preflight detectar vazamento
+  --rotate-key            força rotação da KRYONIX_BRAIN_API_KEY
+  --test                  executa kryonix test --host glacier
+  --switch                executa kryonix switch --host glacier após todos os gates
+
+Sem --switch, o deploy permanente é sempre SKIPPED.
+EOF
+        return 0
+        ;;
+      *)
+        printf 'Opção desconhecida para deploy-safe: %s\n' "$arg" >&2
+        return 2
+        ;;
+    esac
+  done
+
+  if [[ "$run_switch" -eq 1 && "$run_test" -ne 1 ]]; then
+    printf 'ERRO: --switch requer --test no deploy-safe.\n' >&2
+    return 2
+  fi
+
+  if brain_should_run_remote_target; then
+    brain_safe_require_clean_repo || return $?
+    brain_safe_remote_exec deploy-safe "${brain_passthrough[@]}"
+    return $?
+  fi
+
+  local repo_root scan_json scan_status leak_detected=0 self target
+  repo_root="$(kryonix_repo_root)" || return 1
+  target="$(brain_safe_target_host)"
+  self="${KRYONIX_BIN:-$0}"
+
+  printf 'Kryonix Brain Safe Deploy\n\n'
+
+  scan_status=0
+  scan_json="$(brain_safe_scan_json)" || scan_status=$?
+  scan_status="${scan_status:-0}"
+  if printf '%s\n' "$scan_json" | brain_safe_scan_has_leak; then
+    leak_detected=1
+  fi
+
+  if [[ "$scan_status" -ne 0 ]]; then
+    if [[ "$quarantine" -eq 1 ]]; then
+      printf '%s\n' "$scan_json" | brain_safe_print_scan_summary
+      printf 'Quarentenando suspeitos não rastreados...\n'
+      scan_status=0
+      scan_json="$(brain_safe_scan_json --quarantine-untracked)" || scan_status=$?
+    else
+      printf '%s\n' "$scan_json" | brain_safe_print_scan_summary
+      printf 'Status: BLOCKED\n' >&2
+      return 1
+    fi
+  fi
+
+  scan_status=0
+  scan_json="$(brain_safe_scan_json)" || scan_status=$?
+  scan_status="${scan_status:-0}"
+  printf '%s\n' "$scan_json" | brain_safe_print_scan_summary
+  if [[ "$scan_status" -ne 0 ]]; then
+    printf 'Status: BLOCKED\n' >&2
+    return 1
+  fi
+
+  if [[ "$rotate_key" -eq 1 || ( "$rotate_if_leaked" -eq 1 && "$leak_detected" -eq 1 ) ]]; then
+    brain_safe_run_step "API key rotation" "$self" brain rotate-api-key --host "$target" --local-exec --confirm --validate || return $?
+  else
+    brain_safe_status_line "API key rotation" "SKIPPED"
+  fi
+
+  brain_safe_require_clean_repo || return $?
+
+  brain_safe_run_step "Git fetch" git -C "$repo_root" fetch origin || return $?
+  brain_safe_run_step "Git pull" git -C "$repo_root" pull --ff-only origin main || return $?
+  brain_safe_run_step "Submodules" git -C "$repo_root" submodule update --init --recursive || return $?
+  git -C "$repo_root" submodule status --recursive
+
+  brain_safe_run_step "Git status" "$self" git-status || return $?
+  brain_safe_run_step "Build check" "$self" check --host "$target" || return $?
+  brain_safe_run_step "Rebuild" "$self" rebuild --host "$target" || return $?
+
+  if [[ "$run_test" -eq 1 ]]; then
+    brain_safe_run_step "Test activation" "$self" test --host "$target" || return $?
+  else
+    brain_safe_status_line "Test activation" "SKIPPED"
+  fi
+
+  if brain_safe_run_smokes; then
+    brain_safe_status_line "Brain/CAG smokes" "PASS"
+  else
+    brain_safe_status_line "Brain/CAG smokes" "FAIL"
+    return 1
+  fi
+
+  if [[ "$run_switch" -eq 1 ]]; then
+    brain_safe_run_step "Switch" "$self" switch --host "$target" || return $?
+    printf '\nStatus: DEPLOYED\n'
+  else
+    brain_safe_status_line "Switch" "SKIPPED"
+    printf '\nStatus: READY_FOR_SWITCH\n'
+  fi
 }
 
 kryonix_brain_remote_status() {

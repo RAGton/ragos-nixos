@@ -138,6 +138,10 @@ print_subcommand_help() {
   API e remoto:
     api              Gerencia API do Brain
     api-key          Gestão da chave de acesso
+    preflight-secrets
+                    Scanner seguro de secrets antes de deploy
+    rotate-api-key   Rotaciona KRYONIX_BRAIN_API_KEY sem imprimir valor
+    deploy-safe      Deploy seguro do Brain no Glacier
     remote           Operações remotas do Brain
 
   Exemplos:
@@ -148,6 +152,8 @@ print_subcommand_help() {
     kryonix brain ask "Como funciona o Kryonix?"
     kryonix brain api-key status
     kryonix brain api-key validate
+    kryonix brain preflight-secrets --host glacier
+    kryonix brain deploy-safe --host glacier --quarantine-untracked --rotate-if-leaked --test
     kryonix brain remote status
 ──────────────────────────────────────────────────────────
 EOF
@@ -355,7 +361,7 @@ if [[ "${#extra_args[@]}" -gt 0 ]]; then
       ;;
     brain)
       case "${extra_args[0]}" in
-        health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|remote)
+        health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote)
           delegate_nested_help=true
           ;;
       esac
@@ -672,11 +678,20 @@ case "$subcommand" in
       api-key)
         kryonix_brain_api_key "${extra_args[@]}"
         ;;
+      preflight-secrets)
+        kryonix_brain_preflight_secrets "${extra_args[@]}"
+        ;;
+      rotate-api-key)
+        kryonix_brain_rotate_api_key "${extra_args[@]}"
+        ;;
+      deploy-safe)
+        kryonix_brain_deploy_safe "${extra_args[@]}"
+        ;;
       remote)
         kryonix_brain_remote "${extra_args[@]}"
         ;;
        *)
-         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|remote>"
+         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote>"
          exit 1
          ;;
     esac
