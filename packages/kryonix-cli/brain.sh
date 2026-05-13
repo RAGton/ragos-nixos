@@ -2078,9 +2078,9 @@ kryonix_brain_provider_test() {
     duration=$(jq -r '.metrics.total_duration_ms // 0' "$tmp_json")
     
     if (( $(echo "$tps > 0" | bc -l) )); then
-      printf 'Resultado: [bold green]PASS[/bold green] | TPS: [bold yellow]%.2f[/bold yellow] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$tps" "$duration"
+      LC_NUMERIC=C printf 'Resultado: [bold green]PASS[/bold green] | TPS: [bold yellow]%.2f[/bold yellow] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$tps" "$duration"
     else
-      printf 'Resultado: [bold green]PASS[/bold green] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$duration"
+      LC_NUMERIC=C printf 'Resultado: [bold green]PASS[/bold green] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$duration"
     fi
     rm -f "$tmp_json"
   fi
@@ -2194,10 +2194,10 @@ kryonix_brain_llama_cpp_bench() {
   
   if [[ "$tokens" -gt 0 ]]; then
     local tps
-    tps=$(awk "BEGIN {print $tokens / ($elapsed / 1000)}")
+    tps=$(LC_NUMERIC=C awk "BEGIN {print $tokens / ($elapsed / 1000)}")
     printf 'Tokens gerados: %s\n' "$tokens"
     printf 'Tempo total: %sms\n' "$elapsed"
-    printf 'Performance: [bold green]%s tokens/s[/bold green]\n' "$tps"
+    LC_NUMERIC=C printf 'Performance: [bold green]%.2f tokens/s[/bold green]\n' "$tps"
   else
     printf '[bold red]ERRO:[/bold red] Falha ao capturar métricas do benchmark.\n' >&2
     return 1
