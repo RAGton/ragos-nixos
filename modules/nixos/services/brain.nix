@@ -345,6 +345,7 @@ in
         KRYONIX_BRAIN_HOME = "/var/lib/kryonix";
         LIGHTRAG_VAULT_DIR = "${cfg.vaultPath}";
         LIGHTRAG_WORKING_DIR = "${cfg.storagePath}";
+        UV_PROJECT_ENVIRONMENT = "${cfg.brainHome}/.venv";
       };
       serviceConfig = {
         Type = "oneshot";
@@ -383,6 +384,7 @@ in
         KRYONIX_NEO4J_HTTP_URL = "http://127.0.0.1:7474";
         KRYONIX_BRAIN_API_HOST = cfg.bindHost;
         KRYONIX_BRAIN_API_PORT = "${toString cfg.port}";
+        UV_PROJECT_ENVIRONMENT = "${cfg.brainHome}/.venv";
       };
       serviceConfig = {
         ExecStart = brainApiStartScript;
