@@ -31,7 +31,10 @@
         "-y",
         "@modelcontextprotocol/server-github",
         "--stdio"
-      ]
+      ],
+      "env": {
+        "GITHUB_TOKEN": ""
+      }
     }
   }
 }

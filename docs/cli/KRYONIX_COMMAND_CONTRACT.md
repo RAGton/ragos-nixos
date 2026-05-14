@@ -17,7 +17,7 @@ kryonix <comando> --host <hostname>
 **Exemplos Válidos:**
 - `kryonix check --host glacier`
 - `kryonix test --host glacier`
-- `kryonix build --host glacier`
+- `kryonix rebuild --host glacier`
 - `kryonix switch --host glacier`
 - `kryonix home --host glacier`
 - `kryonix diff --host glacier`

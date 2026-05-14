@@ -13,7 +13,7 @@
     - **Validadores:** `check-kryonix-cli-help.sh` agora valida contrato JSON v2.
 - **Brain & AI:**
     - **Health:** API e Storage estáveis no Glacier.
-    - **Registry Integration:** Ingestão do Registry v2 no grafo 100% implementada e validada via dry-run.
+    - **Registry Integration:** Ingestão do Registry v2 no grafo 100% implementada e persistida no Neo4j do Glacier (26 comandos principais mapeados).
 - **Próxima Meta:** Ingestão de logs técnicos e eventos históricos no Knowledge Graph.
 - **Bloqueios:** Nenhum.
 
