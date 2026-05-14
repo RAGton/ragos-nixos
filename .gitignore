@@ -43,3 +43,7 @@ kryonix-artifacts/
 id_ed25519
 id_ed25519.*
 packages/kryonix-home/target/
+
+# Local MCP runtime config
+.mcp.json
+.mcp.*.json
