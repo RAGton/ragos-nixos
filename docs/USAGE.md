@@ -3,12 +3,12 @@
 A CLI `kryonix` é o ponto de entrada operacional oficial do projeto.
 
 ## Fonte de Verdade
-- **Serviço:** N/A (Client CLI local)
-- **Comando:** `kryonix --help`
-- **Validação:** Todos os comandos descritos abaixo foram validados diretamente na API da CLI atual.
+- **Auto-documentação:** `kryonix --help` (Derivado do `registry.sh`)
+- **Introspecção:** `kryonix commands --json` (Para IAs e automação)
+- **Validação:** Todos os comandos são registrados centralmente e validados via CI (`nix flake check`).
 
 ## Garantia de Execução
-> Todos os comandos documentados foram validados em runtime real e encontram-se plenamente operacionais no wrapper Nix. Nenhuma chamada descrita abaixo é vaga ou não implementada.
+> Todos os comandos documentados são derivados diretamente do código-fonte real. O help da CLI é a única fonte de verdade operacional.
 
 ## Comandos Principais
 

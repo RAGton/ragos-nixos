@@ -25,43 +25,37 @@ print_banner() {
 print_usage() {
   print_banner
 
-  printf '  🖥️  \033[1mComandos de Sistema\033[0m\n'
-  printf '    switch     Aplica configuração NixOS\n'
-  printf '    test       Testa a configuração sem persistir\n'
-  printf '    boot       Gera próxima ativação no boot\n'
-  printf '    all        \033[32m[Premium]\033[0m Aplica OS + Home Manager juntos\n'
-  printf '    rebuild    Compila o sistema sem ativar\n'
-  printf '    clean      Limpa gerações antigas\n'
-  printf '    diff       Compara mudanças de sistema\n'
-  printf '    iso        Gera imagem ISO instalável\n'
-  printf '    install    Instalador Kryonix (Fase 1: API & Dry-run)\n'
-  printf '    hardware   Diagnóstico e scan de hardware\n'
-  printf '    disk       Gestão e planejamento de discos\n'
-  printf '    doctor     Diagnóstico e saúde do sistema\n'
-  printf '\n'
-  printf '  🏠 \033[1mHome & Auditoria\033[0m\n'
-  printf '    home       Gestão de Home Manager e Brain Scan\n'
-  printf '    update     Sincroniza inputs do flake.lock\n'
-  printf '    check      Valida integridade do projeto\n'
-  printf '    fmt        Auto-formatação de código Nix\n'
-  printf '    git-status Status do git do repositório\n'
-  printf '\n'
-  printf '  🧠 \033[1mKryonix Brain\033[0m\n'
-  printf '    brain      Busca e diagnósticos RAG\n'
-  printf '    graph      Operações no Grafo de Conhecimento\n'
-  printf '    vault      Gestão do Obsidian Vault\n'
-  printf '    mcp        Interface Model Context Protocol\n'
-  printf '\n'
-  printf '  ⚡ \033[1mUtilidades\033[0m\n'
-  printf '    ollama     Gerencia LLMs locais\n'
-  printf '    ai         Estado da camada de IA\n'
-  printf '    remote     VNC, SSH e Túneis\n'
-  printf '    rgb        Customização visual OpenRGB\n'
-  printf '\n'
-  printf '  ⚙️  \033[1mOpções Globais\033[0m\n'
+  local group cmd desc
+  local -A group_labels=(
+    [system]="🖥️  Comandos de Sistema"
+    [home]="🏠 Home & Auditoria"
+    [brain]="🧠 Kryonix Brain"
+    [graph]="🕸️  Graph"
+    [mcp]="🔌 MCP"
+    [vault]="📖 Vault"
+    [utils]="⚡ Utilidades"
+  )
+
+  local current_group=""
+  local line group cmd sub desc
+  for line in "${KRYONIX_REGISTRY[@]}"; do
+    IFS='|' read -r group cmd sub desc _ <<< "$line"
+    if [[ -n "$sub" ]]; then continue; fi # Pula subcomandos no help global
+
+    if [[ "$group" != "$current_group" ]]; then
+      if [[ -n "$current_group" ]]; then printf '\n'; fi
+      printf '  %b\033[1m%s\033[0m\n' "$blue" "${group_labels[$group]:-$group}"
+      current_group="$group"
+    fi
+    printf '    %-10s %s\n' "$cmd" "$desc"
+  done
+
+  printf '\n  ⚙️  \033[1mOpções Globais\033[0m\n'
   printf '    --host <h>   Define alvo (glacier, inspiron)\n'
+  printf '    --flake <p>  Define caminho da flake\n'
   printf '    --update     Força atualização de inputs\n'
   printf '    --dry        Simulação segura\n'
+  printf '    --json       Saída em formato JSON\n'
   printf '\n'
   printf '  💡 \033[1mExemplos\033[0m\n'
   printf '    kryonix switch all --update\n'
@@ -70,170 +64,33 @@ print_usage() {
 }
 
 print_subcommand_help() {
-  local sub="$1"
+  local parent="$1"
   print_banner
-  case "$sub" in
-    switch|boot)
-      printf '  🚀 \033[1m%s\033[0m\n' "${sub^^}"
-      printf '  Uso: kryonix %s [host] [--update] [--dry]\n\n' "$sub"
-      printf '  Aplica a configuração do host especificado (ou detectado).\n'
-      printf '  Use \033[32mall\033[0m como host para atualizar NixOS e Home Manager em um passo.\n'
-      ;;
-    home)
-      printf '  🏠 \033[1mHOME\033[0m\n'
-      printf '  Uso: kryonix home [subcomando] [args]\n\n'
-      printf '  Sem argumentos: Aplica perfil Home Manager via nh.\n'
-      printf '  Subcomandos Home Brain:\n'
-      printf '    scan                  Escaneia diretórios seguros da Home\n'
-      printf '    report                Mostra relatório do último scan\n'
-      printf '    duplicates            Lista duplicatas exatas por SHA256\n'
-      printf '    projects              Lista projetos detectados como unidades\n'
-      printf '    categories            Lista categorias da taxonomia\n'
-      printf '    explain <arquivo>     Explica classificação de arquivo/projeto\n'
-      printf '    plan                  Gera plano seguro\n'
-      printf '    plan --summary        Mostra dashboard curto\n'
-      printf '    plan --only-projects  Mostra apenas projetos\n'
-      printf '    plan --limit N        Limita propostas exibidas\n'
-      printf '    manifest create       Cria manifesto auditável\n'
-      printf '    manifest show         Mostra manifesto mais recente\n'
-      printf '    apply --dry-run       Simula manifesto\n'
-      printf '    apply --confirm       Aplica manifesto revisado\n'
-      printf '    rollback              Reverte último apply\n'
-      printf '    autopilot             Organizador autônomo seguro (Autopilot)\n'
-      printf '    export-memory         Exporta eventos JSONL\n'
-      printf '\n'
-      printf '  Home Manager:\n'
-      printf '    kryonix home     Aplica perfil Home Manager via nh\n'
-      printf '\n'
-      printf '  ⚠ apply --confirm nunca deve ser usado sem revisar o manifesto.\n'
-      ;;
-    brain)
-      print_banner
-      cat <<'EOF'
-──────────────────────────────────────────────────────────
-  🧠 BRAIN
-  Uso:
-    kryonix brain <subcomando> [args]
 
-  Status e diagnóstico:
-    health           Status da API Brain
-    doctor           Diagnóstico completo do Brain
-    stats            Estatísticas do índice/RAG
-    diagnostics      Diagnósticos avançados
-    storage-check    Verifica storage do Brain
-    ollama-check     Verifica integração com Ollama
+  local desc
+  desc="$(kryonix_get_description "$parent")"
+  printf '  🚀 \033[1m%s\033[0m — %s\n' "${parent^^}" "$desc"
+  printf '  Uso: kryonix %s [subcomando] [opções]\n\n' "$parent"
 
-  Busca e conversa:
-    search <query>   Busca semântica no RAG
-    ask <pergunta>   Pergunta ao Brain usando contexto
-    normalize <q>    Normaliza typos e aliases (debug)
-    cag              Operações CAG/cache/contexto
+  local sub flags
+  local line c s d f
+  local found=0
+  for line in "${KRYONIX_REGISTRY[@]}"; do
+    IFS='|' read -r _ c s d f <<< "$line"
+    if [[ "$c" == "$parent" && -n "$s" ]]; then
+      printf '    %-15s %s\n' "$s" "$d"
+      if [[ -n "$f" ]]; then
+        printf '      \033[dim]Flags: %s\033[0m\n' "$f"
+      fi
+      found=1
+    fi
+  done
 
-  Vault e indexação:
-    vault-scan       Escaneia o Vault/Obsidian
-    index            Indexa conteúdo no Brain
-    sync             Sincroniza fontes configuradas
-    watch            Observa mudanças
-    export           Exporta dados/índices
+  if [[ $found -eq 0 ]]; then
+    printf '  Esta seção não possui subcomandos ou o help específico ainda não foi detalhado no registry.\n'
+  fi
 
-  API e remoto:
-    api              Gerencia API do Brain
-    api-key          Gestão da chave de acesso
-    vram-audit       Auditoria de GPU/VRAM e processos (Glacier)
-    vram-check       Valida VRAM contra perfil ativo
-    vram-clear       Limpa sessões gráficas inativas (confirmável)
-    vram-profile     Altera perfil de VRAM runtime (ai|balanced|gaming)
-    llama-cpp        Gerencia sidecar experimental llama.cpp
-    provider         Gerencia providers de LLM (ollama/llama_cpp/auto)
-    preflight-secrets
-                    Scanner seguro de secrets antes de deploy
-    rotate-api-key   Rotaciona KRYONIX_BRAIN_API_KEY sem imprimir valor
-    deploy-safe      Deploy seguro do Brain no Glacier
-    remote           Operações remotas do Brain
-
-  Exemplos:
-    kryonix brain health
-    kryonix brain doctor
-    kryonix brain stats
-    kryonix brain search "Kryonix Home Brain"
-    kryonix brain ask "Como funciona o Kryonix?"
-    kryonix brain api-key status
-    kryonix brain api-key validate
-    kryonix brain preflight-secrets --host glacier
-    kryonix brain deploy-safe --host glacier --quarantine-untracked --rotate-if-leaked --test
-    kryonix brain remote status
-──────────────────────────────────────────────────────────
-EOF
-      ;;
-    graph)
-      printf '  🕸️  \033[1mGRAPH\033[0m\n'
-      printf '  Uso: kryonix graph <subcomando> [args]\n\n'
-      printf '    status     Conexão com Neo4j\n'
-      printf '    ingest     Ingestão de dados no grafo\n'
-      printf '    query      Consulta Cypher direta\n'
-      ;;
-    ollama)
-      printf '  ⚡ \033[1mOLLAMA\033[0m\n'
-      printf '  Uso: kryonix ollama [list|run|pull|rm] [modelo]\n\n'
-      printf '    list       Lista modelos carregados\n'
-      printf '    run        Inicia chat interativo\n'
-      printf '    pull       Baixa novo modelo do registro\n'
-      ;;
-    ai)
-      printf '  🤖 \033[1mAI\033[0m\n'
-      printf '  Uso: kryonix ai [status|doctor|models]\n\n'
-      printf '    status     Visão geral do ecossistema de IA\n'
-      printf '    doctor     Diagnóstico de dependências e GPU\n'
-      ;;
-    remote)
-      printf '  🌐 \033[1mREMOTE\033[0m\n'
-      printf '  Uso: kryonix remote [vnc|ssh|tunnel] [alvo]\n\n'
-      printf '    vnc        Inicia/Conecta via WayVNC\n'
-      printf '    ssh        Acesso seguro via terminal\n'
-      printf '    tunnel     Gerecia túneis via Tailscale/SSH\n'
-      ;;
-    mcp)
-      printf '  🔌 \033[1mMCP\033[0m\n'
-      printf '  Uso: kryonix mcp [list|status|doctor]\n\n'
-      printf '    list       Lista servidores MCP ativos\n'
-      printf '    doctor     Valida conectividade JSON-RPC\n'
-      ;;
-    rgb)
-      printf '  🌈 \033[1mRGB\033[0m\n'
-      printf '  Uso: kryonix rgb [on|off|color|mode] [args]\n\n'
-      printf '    on/off     Alterna iluminação global\n'
-      printf '    color      Define cor estática (ex: FF0000)\n'
-      printf '    mode       Altera padrão de animação\n'
-      ;;
-    all)
-      printf '  ⚡ \033[1mALL\033[0m\n'
-      printf '  Uso: kryonix all [--update] [--dry]\n\n'
-      printf '  Executa a unificação total: NixOS Rebuild + Home Manager Switch.\n'
-      printf '  É o comando recomendado para manter o sistema 100%% sincronizado.\n'
-      ;;
-    install)
-      printf '  🏗️  \033[1mINSTALL\033[0m\n'
-      printf '  Uso: kryonix install [server|gui|tui]\n\n'
-      printf '    server     Inicia o backend Axum na porta 3000\n'
-      printf '    gui        Inicia interface gráfica (Fase 2)\n'
-      printf '    tui        Inicia interface de terminal (Fase 2)\n'
-      ;;
-    hardware)
-      printf '  🔍 \033[1mHARDWARE\033[0m\n'
-      printf '  Uso: kryonix hardware scan [--json]\n\n'
-      printf '    scan       Executa o probe de hardware e exibe relatório\n'
-      ;;
-    disk)
-      printf '  💾 \033[1mDISK\033[0m\n'
-      printf '  Uso: kryonix disk [list|plan]\n\n'
-      printf '    list       Lista discos detectados via lsblk\n'
-      printf '    plan       Gera sugestão de particionamento (dry-run)\n'
-      ;;
-    *)
-      printf '  ℹ️  Ajuda específica para \033[1m%s\033[0m ainda não implementada.\n' "$sub"
-      ;;
-  esac
-  printf '──────────────────────────────────────────────────────────\n'
+  printf '\n──────────────────────────────────────────────────────────\n'
 }
 
 # --- Inicialização ---
@@ -397,6 +254,48 @@ fi
 case "$subcommand" in
   help|--help|-h|"")
     print_usage
+    exit 0
+    ;;
+
+  commands)
+    if [[ "$json_mode" -eq 1 ]]; then
+      kryonix_get_registry_json
+    elif [[ "${extra_args[0]:-}" == "--plain" ]]; then
+      for cmd in $(kryonix_get_commands); do
+        kryonix_get_subcommands "$cmd" | while read -r sub; do
+          printf "%s %s\n" "$cmd" "$sub"
+        done
+      done
+    elif [[ "${extra_args[0]:-}" == "--groups" ]]; then
+      kryonix_get_groups
+    elif [[ "${extra_args[0]:-}" == "--subcommands" ]]; then
+      if [[ -n "${extra_args[1]:-}" ]]; then
+        kryonix_get_subcommands "${extra_args[1]}"
+      else
+        printf "ERRO: --subcommands requer um grupo.\n" >&2
+        exit 1
+      fi
+    elif [[ "${extra_args[0]:-}" == "--flags" ]]; then
+      if [[ -n "${extra_args[1]:-}" ]]; then
+        kryonix_get_flags "${extra_args[1]}" "${extra_args[2]:-}"
+      else
+        printf "ERRO: --flags requer um comando.\n" >&2
+        exit 1
+      fi
+    else
+      kryonix_get_commands
+    fi
+    exit 0
+    ;;
+
+  __complete)
+    shell="${1:-bash}"
+    case "$shell" in
+      bash|zsh|fish)
+        # Interface para ser chamada pelos scripts de completion se necessário
+        # Mas os scripts de completion podem simplesmente chamar 'kryonix commands --plain' etc.
+        ;;
+    esac
     exit 0
     ;;
 

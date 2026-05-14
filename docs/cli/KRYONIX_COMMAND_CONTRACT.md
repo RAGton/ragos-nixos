@@ -1,7 +1,7 @@
 # KRYONIX COMMAND CONTRACT
 
 Este documento é a **fonte de verdade canônica** para a operação da CLI Kryonix.
-Qualquer comando sugerido ou executado deve seguir rigorosamente estas regras.
+Qualquer comando sugerido ou executado deve seguir rigorosamente estas regras. O comportamento real da CLI é definido no `registry.sh` e exposto via `kryonix commands`.
 
 ## 1. Sintaxe Fundamental
 
