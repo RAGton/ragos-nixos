@@ -6,18 +6,18 @@ Este documento contém o planejamento futuro do projeto Kryonix. O repositório 
 
 ## Kryonix Brain API
 
-STATUS: PARTIAL
+STATUS: STABLE
 
 DESCRIÇÃO:
 API central do Kryonix Brain para centralizar o processamento do LightRAG e LLM operations, abstraindo a IA do host cliente (`inspiron`).
 
 EVIDÊNCIA ATUAL:
-- Serviço systemd funcional: `kryonix-brain-api.service`.
+- Serviço systemd funcional e persistente: `kryonix-brain-api.service`.
+- Porta `8000` ativa e respondendo via Tailscale/LAN no Glacier.
+- Endpoint `GET /health` validado.
 
 GAPS:
-- O serviço não roda nativamente de modo persistente.
-- A porta `8000` não se encontra exposta e respondendo ativamente.
-- O daemon falha ou não tem script de `ExecStart` plenamente validado e robusto no NixOS.
+- Nenhum gap crítico remanescente na infraestrutura de serviço.
 
 CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
 - impacto documentado em ARCHITECTURE.md ou USAGE.md
@@ -72,7 +72,7 @@ RISCOS:
 
 ## Glacier NixOS Definitivo (Autônomo)
 
-STATUS: PARTIAL
+STATUS: STABLE
 
 DESCRIÇÃO:
 Consolidação do Glacier como backend headless autônomo. O gerenciamento das cargas de inteligência deve inicializar automaticamente independente do login gráfico.
@@ -80,9 +80,10 @@ Consolidação do Glacier como backend headless autônomo. O gerenciamento das c
 EVIDÊNCIA ATUAL:
 - Host profile presente em `hosts/glacier`.
 - `ollama.service` funcional.
+- Inicialização autônoma via SSH/Tailscale validada.
 
 GAPS:
-- Serviços dependentes do usuário logado ao invés do boot system (falta de isolamento autônomo pleno).
+- Nenhum gap de autonomia operacional identificado.
 
 CRITÉRIO DE CONCLUSÃO (OBRIGATÓRIO):
 - impacto documentado em ARCHITECTURE.md ou USAGE.md
@@ -232,18 +233,18 @@ kryonix vault sync-docs
 ## Milestones
 
 ### 🏁 v0.4.2 - Stabilization & Governance
-**Status: EM EXECUÇÃO (90%)**
+**Status: DONE (100%)**
 - [x] #14 — CI Hardening (Nix, Shell, Rust, Python, Secrets)
 - [x] #15 — Auditoria de Licença (Source Available)
-- [/] #16 — Auditoria de Docs/Links
-- [ ] #13 — Auditoria e resolução de PRs abertos
+- [x] #16 — Auditoria de Docs/Links
+- [x] #13 — Auditoria e resolução de PRs abertos
 
 ### 🚀 v0.5.0 - Glacier & Brain API
-**Status: EM EXECUÇÃO (40%)**
+**Status: EM EXECUÇÃO (70%)**
 - [x] #17 — Benchmark Ollama (RTX 4060)
-- [/] #19 — Kryonix Brain API (Persistência, Health e VRAM Profiles)
+- [x] #19 — Kryonix Brain API (Persistência, Health e VRAM Profiles)
 - [ ] #20 — Consolidação MCP Remoto
-- [/] #21 — Autonomia Plena do Glacier (VRAM Profiles e Safe Deploy)
+- [x] #21 — Autonomia Plena do Glacier (VRAM Profiles e Safe Deploy)
 
 ### 📦 v0.6.0 - ISO & IA Autônoma
 **Status: ROADMAP**

@@ -200,17 +200,20 @@ Se esse arquivo não existir, o systemd se recusará a subir as units `kryonix-b
 - `GET /health` — público, sem autenticação
 - `GET /stats`, `POST /search`, `GET /graph/*` — requerem header `X-API-Key`
 
+### Busca Semântica vs Síntese de Resposta
+
+O Kryonix Brain agora separa claramente a recuperação de evidências da geração de respostas:
+
+- **`kryonix brain search`**: Recuperação de evidências puramente vetorial/grafo. **Não chama LLM**, sendo extremamente rápido e econômico. Ideal para localizar fontes e chunks.
+- **`kryonix brain ask`**: Síntese de resposta baseada nas evidências encontradas (**Grounded Synthesis**). Chama o LLM para responder à pergunta usando apenas o contexto recuperado.
+
+Exemplo de uso:
 ```sh
-# Health check (público)
-curl -fsS http://10.0.0.2:8000/health
+# Localizar onde algo está documentado (Rápido)
+kryonix brain search "configuração do glacier" --explain
 
-# Stats autenticado
-curl -fsS -H "X-API-Key: <chave>" http://10.0.0.2:8000/stats
-
-# Busca semântica autenticada
-curl -fsS -H "X-API-Key: <chave>" http://10.0.0.2:8000/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "pipeline RAG Kryonix"}'
+# Obter uma resposta explicada (Síntese)
+kryonix brain ask "Como eu configuro o acesso remoto no glacier?"
 ```
 
 > ⚠️ **Nunca commite** `brain.env`, `neo4j.env` ou qualquer arquivo com API keys ou tokens.
