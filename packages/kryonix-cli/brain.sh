@@ -500,14 +500,57 @@ kryonix_brain_doctor() {
   parse_brain_mode "$@"
   if brain_should_use_remote "$brain_mode"; then
     brain_remote_required || return $?
-    if ! brain_remote_curl GET /health; then
+    if ! brain_remote_curl GET /health >/dev/null 2>&1; then
       blue_line "WARN: Brain remoto indisponível; runtime depende do Glacier."
       return 0
     fi
-    if ! brain_remote_curl GET /stats; then
-      blue_line "WARN: Brain remoto respondeu health, mas stats falhou; runtime depende do Glacier."
-      return 0
-    fi
+    
+    local response
+    response="$(brain_remote_curl GET /stats)" || return $?
+    local cag_response
+    cag_response="$(brain_remote_curl GET /cag/status)" || return $?
+    
+    local project_dir
+    project_dir="$(brain_project_dir)" || return 1
+    
+    printf '%s|%s' "$response" "$cag_response" | uv run --project "$project_dir" python -c '
+import sys, json
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+try:
+    raw = sys.stdin.read().split("|")
+    stats = json.loads(raw[0])
+    cag = json.loads(raw[1])
+except Exception:
+    print("Erro ao decodificar a resposta remota.")
+    sys.exit(1)
+
+console = Console()
+console.print("\n[bold cyan][/bold cyan][black on cyan]KRYONIX BRAIN DOCTOR (REMOTE)[/black on cyan][bold cyan][/bold cyan]")
+
+# RAG Integrity
+integrity = stats.get("integrity", "OK")
+color = "green" if "OK" in integrity else "yellow" if "WARNING" in integrity else "red"
+console.print(Panel(f"[bold {color}]{integrity}[/bold {color}]", title="RAG Integrity", border_style=color))
+
+# CAG Health
+cag_status = cag.get("status", "unknown")
+cag_freshness = cag.get("freshness", "unknown")
+cag_ok = cag_status == "ok"
+
+cag_msg = "CAG Ativo" if cag_ok else cag.get("message", "CAG Inativo")
+cag_color = "green" if cag_ok else "red"
+if cag_ok and cag_freshness == "STALE":
+    cag_msg += " (STALE)"
+    cag_color = "yellow"
+
+console.print(Panel(f"[bold {cag_color}]{cag_msg}[/bold {cag_color}]", title="CAG Health", border_style=cag_color))
+
+if not cag_ok:
+    console.print("[dim]DICA: Execute \"kryonix brain cag build\" no servidor Glacier.[/dim]")
+'
     return 0
   fi
 
@@ -985,17 +1028,30 @@ except Exception:
 
 console = Console()
 console.print("\n[bold green][/bold green][black on green]CAG REMOTE STATUS[/black on green][bold green][/bold green]")
-is_active = "version" in data or "total_files" in data or "num_files" in data
+
+status_val = data.get("status", "unknown")
+is_active = status_val == "ok" or "version" in data or "total_files" in data
+
 if is_active:
     num_files = data.get("total_files", data.get("num_files", 0))
     size_bytes = data.get("total_bytes", data.get("size_bytes", 0))
     created_at = data.get("built_at", data.get("created_at", "n/a"))
+    freshness = data.get("freshness", "unknown")
+    repo_commit = data.get("repo_commit", "n/a")
+    
+    fresh_label = f"[bold green]{freshness}[/bold green]" if freshness == "OK" else f"[bold yellow]{freshness}[/bold yellow]"
+    if freshness == "unknown": fresh_label = "[dim]unknown[/dim]"
+    
     console.print(f"  [cyan]Status:[/cyan]      [bold green]Ativo[/bold green]")
+    console.print(f"  [cyan]Freshness:[/cyan]   {fresh_label}")
     console.print(f"  [cyan]Ficheiros:[/cyan]   {num_files}")
     console.print(f"  [cyan]Tamanho:[/cyan]     {size_bytes} bytes")
     console.print(f"  [cyan]Gerado em:[/cyan]   {created_at}")
+    if repo_commit != "n/a":
+        console.print(f"  [cyan]Commit:[/cyan]      [dim]{repo_commit[:8]}[/dim]")
 else:
-    console.print(f"  [cyan]Status:[/cyan]      [bold red]Inativo / Não Encontrado[/bold red]")
+    msg = data.get("message", "Inativo / Não Encontrado")
+    console.print(f"  [cyan]Status:[/cyan]      [bold red]{msg}[/bold red]")
     console.print("[dim]Use \"kryonix brain cag build\" no servidor para inicializar o CAG.[/dim]")
 '
           return $?
