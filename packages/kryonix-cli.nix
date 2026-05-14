@@ -82,7 +82,7 @@ symlinkJoin {
   nativeBuildInputs = [ installShellFiles ];
   postBuild = ''
     installShellCompletion --cmd kryonix \
-      --bash ${./kryonix-cli/completions/kryonix.bash} \
+      --bash --name kryonix ${./kryonix-cli/completions/kryonix} \
       --zsh ${./kryonix-cli/completions/_kryonix} \
       --fish ${./kryonix-cli/completions/kryonix.fish}
   '';
