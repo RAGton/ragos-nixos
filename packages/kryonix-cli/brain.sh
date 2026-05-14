@@ -646,17 +646,32 @@ if data.get("status") == "success":
         title_text = "[bold magenta]Kryonix Ask (Remote)[/bold magenta]"
 
     console.print(f"\n[bold {border_style}][/bold {border_style}]{header_text}[bold {border_style}][/bold {border_style}] [dim]Grounding: {confidence} ({latency}s)[/dim]")
-    
+
     if answerability == "not_answerable" and grounding.get("retrieval_score", 0) > 0.7:
         console.print("[yellow]Similaridade alta, mas cobertura insuficiente da intenção da pergunta.[/yellow]")
-    
+
     if normalized:
+        # Novas métricas de Grounding vs Answerability (#39)
+        r_score = grounding.get("retrieval_score", 0)
+        a_score = grounding.get("answerability_score", 0)
+        a_reason = grounding.get("answerability_reason", "")
+
         meta_info = f"[dim]Query normalizada: {normalized} | intent: {intent_label} | mode: {mode_label}"
         if not skipped and provider:
             meta_info += f" | provider: {provider}"
             if tps: meta_info += f" | tps: {tps}"
+        meta_info += f" | Retrieval: {r_score}"
+
+        if skipped:
+            meta_info += " | Answerability: não sintetizada"
+        else:
+            meta_info += f" | Answerability: {a_score}"
+
         meta_info += "[/dim]"
         console.print(meta_info)
+
+        if a_reason and a_score < 0.7:
+             console.print(f"[yellow]⚠ {a_reason}[/yellow]")
 
     console.print(Panel(Markdown(answer), border_style=border_style, title=title_text, title_align="left"))
 
@@ -942,7 +957,7 @@ kryonix_brain_cag() {
 
   # Parse --local or --remote
   parse_brain_mode "$@"
-  
+
   if brain_should_use_remote "$brain_mode"; then
     if [[ -z "$sub_action" ]]; then
       sub_action="status"
@@ -1021,7 +1036,7 @@ if "answer" in data:
     console.print("\n[bold green][/bold green][black on green]CAG REMOTE ASK[/black on green][bold green][/bold green]")
     answer_str = data.get("answer", "")
     console.print(Panel(Markdown(answer_str), border_style="green", title="[bold green]Kryonix CAG (Remote)[/bold green]", title_align="left"))
-    
+
     sources = data.get("sources", [])
     if sources:
         console.print("\n[bold cyan]Ficheiros usados:[/bold cyan]")
@@ -1032,7 +1047,7 @@ elif "matched_files" in data:
     t = Table(show_header=True, header_style="bold green")
     t.add_column("Ficheiro", style="cyan")
     t.add_column("Score", justify="right", style="green")
-    
+
     for f in data.get("matched_files", []):
         f_path = f.get("path", "n/a")
         f_score = f.get("score", 0.0)
@@ -1613,7 +1628,7 @@ brain_safe_run_smokes() {
 kryonix_brain_vram_audit() {
   local target
   target="$(map_runtime_host)"
-  
+
   if [[ "$target" != "glacier" ]]; then
     printf 'VRAM audit é uma operação do servidor Glacier.\n' >&2
     return 0
@@ -1628,7 +1643,7 @@ kryonix_brain_vram_audit() {
   total=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1 | tr -d ' \r')
   used=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1 | tr -d ' \r')
   free=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits | head -1 | tr -d ' \r')
-  
+
   # Tenta ler o perfil atual se houver nix-instantiate ou se estiver no ambiente NixOS
   profile="unknown"
   if command -v nix-instantiate >/dev/null 2>&1; then
@@ -1644,7 +1659,7 @@ kryonix_brain_vram_audit() {
   printf 'VRAM: %s MiB usados / %s MiB total\n' "$used" "$total"
   printf 'Livre: [bold green]%s MiB[/bold green]\n' "$free"
   printf 'Perfil: [bold cyan]%s[/bold cyan]\n' "$profile"
-  
+
   case "$status" in
     OK)   printf 'Status: [bold green]OK[/bold green]\n' ;;
     WARN) printf 'Status: [bold yellow]WARN[/bold yellow]\n' ;;
@@ -1689,16 +1704,16 @@ kryonix_brain_vram_clear() {
   fi
 
   printf 'Iniciando auditoria de candidatos a limpeza de VRAM...\n'
-  
+
   local candidates=()
   # 1. Identifica sessões gráficas (gdm, hyprland, gnome)
   while read -r id user _seat type _state; do
     # Ignora sessões tty/ssh
     if [[ "$type" != "wayland" && "$type" != "x11" ]]; then continue; fi
-    
+
     # Ignora a sessão atual
     if [[ "$id" == "$XDG_SESSION_ID" ]]; then continue; fi
-    
+
     # Ignora sessões com jogos/apps críticos
     local session_procs
     session_procs=$(loginctl session-status "$id" --no-pager | grep -iE "steam|cs2|blender|obs|vnc|rdp" || true)
@@ -1751,7 +1766,7 @@ kryonix_brain_vram_profile() {
   fi
 
   printf 'Operação de Perfil Runtime: [bold cyan]%s[/bold cyan]\n' "$profile"
-  
+
   if [[ "$dry_run" -eq 1 ]]; then
     printf '[yellow]MODO DRY-RUN[/yellow] (não altera serviços)\n'
     case "$profile" in
@@ -2028,13 +2043,13 @@ kryonix_brain_remote_validate() {
 
 kryonix_brain_provider_status() {
   parse_brain_mode "$@"
-  
+
   if brain_should_use_remote "$brain_mode"; then
     printf '🧠 [bold magenta]Kryonix Brain Provider Status (Remote)[/bold magenta]\n'
     local url
     url="$(brain_api_url)"
     printf 'URL da API: %s\n' "$url"
-    
+
     # Tentativa de pegar info via /health ou /stats
     brain_remote_curl GET /health
     return $?
@@ -2042,13 +2057,13 @@ kryonix_brain_provider_status() {
 
   printf '🧠 [bold magenta]Kryonix Brain Provider Status (Local)[/bold magenta]\n'
   export_brain_env
-  
+
   local provider="${KRYONIX_LLM_PROVIDER:-ollama}"
   local ollama_url="${KRYONIX_OLLAMA_URL:-http://127.0.0.1:11434}"
   local llama_url="${KRYONIX_LLAMA_CPP_URL:-http://127.0.0.1:11435}"
-  
+
   printf 'Provider configurado: [bold cyan]%s[/bold cyan]\n' "$provider"
-  
+
   # Check Ollama
   printf 'Ollama:    '
   if curl -fsS --max-time 2 "$ollama_url/api/tags" >/dev/null 2>&1; then
@@ -2056,7 +2071,7 @@ kryonix_brain_provider_status() {
   else
     printf '[bold red]OFFLINE[/bold red] %s\n' "$ollama_url"
   fi
-  
+
   # Check llama.cpp
   printf 'llama.cpp: '
   if curl -fsS --max-time 2 "$llama_url/health" >/dev/null 2>&1; then
@@ -2064,9 +2079,9 @@ kryonix_brain_provider_status() {
   else
     printf '[bold red]OFFLINE[/bold red] %s\n' "$llama_url"
   fi
-  
+
   printf 'Embedding: [dim]Ollama / nomic-embed-text[/dim]\n'
-  
+
   case "$provider" in
     auto)
       printf '\nDecisão: [bold green]llama.cpp[/bold green] será usado para geração; [bold yellow]Ollama[/bold yellow] como fallback.\n'
@@ -2083,7 +2098,7 @@ kryonix_brain_provider_status() {
 kryonix_brain_provider_test() {
   local target_provider="auto"
   local -a passthrough=()
-  
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --provider)
@@ -2099,34 +2114,34 @@ kryonix_brain_provider_test() {
 
   parse_brain_mode "${passthrough[@]}"
   export_brain_env
-  
+
   local query="Responda apenas com a palavra TESTE."
   local payload
   payload="$(jq -n --arg query "$query" --arg mode "naive" --arg provider "$target_provider" '{query:$query, mode:$mode, test_provider:$provider}')"
-  
+
   local api_url="http://127.0.0.1:8000"
   if [[ "$(kryonix_brain_role)" == "client" ]]; then
     api_url="${KRYONIX_BRAIN_URL:-http://10.0.0.2:8000}"
   fi
 
   printf 'Testando provider [bold cyan]%s[/bold cyan] via API (%s)...\n' "$target_provider" "$api_url"
-  
+
   local tmp_json
   tmp_json=$(mktemp)
-  
+
   # Try to use the API
   if curl -fsS -X POST "$api_url/search" \
      -H "Content-Type: application/json" \
      -H "X-API-Key: ${KRYONIX_BRAIN_API_KEY:-}" \
      -d "$payload" > "$tmp_json" 2>/dev/null; then
-     
+
     local tps duration clean_json
     clean_json=$(grep '^{.*}$' "$tmp_json" | tail -n 1)
     if [[ -z "$clean_json" ]]; then clean_json=$(cat "$tmp_json"); fi
 
     tps=$(echo "$clean_json" | jq -r '.metrics.tps // 0')
     duration=$(echo "$clean_json" | jq -r '.metrics.total_duration_ms // 0')
-    
+
     if (( $(echo "$tps > 0" | bc -l) )); then
       LC_NUMERIC=C printf 'Resultado: [bold green]PASS[/bold green] | TPS: [bold yellow]%.2f[/bold yellow] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$tps" "$duration"
     else
@@ -2144,14 +2159,14 @@ kryonix_brain_provider_test() {
     export_brain_env
     # Note: this might still fail with libstdc++ if not patched, but it is our last resort
     run_command uv run --project "$project_dir" python -m kryonix_brain_lightrag.cli chunks "$query" --test-provider "$target_provider" --json > "$tmp_json"
-    
+
     local tps duration clean_json
     clean_json=$(grep '^{.*}$' "$tmp_json" | tail -n 1)
     if [[ -z "$clean_json" ]]; then clean_json=$(cat "$tmp_json"); fi
 
     tps=$(echo "$clean_json" | jq -r '.metrics.tps // 0')
     duration=$(echo "$clean_json" | jq -r '.metrics.total_duration_ms // 0')
-    
+
     if (( $(echo "$tps > 0" | bc -l) )); then
       LC_NUMERIC=C printf 'Resultado: [bold green]PASS[/bold green] | TPS: [bold yellow]%.2f[/bold yellow] | Latência: [bold blue]%.0f ms[/bold blue]\n' "$tps" "$duration"
     else
@@ -2208,7 +2223,7 @@ kryonix_brain_llama_cpp_status() {
   else
     printf 'Serviço: [bold red]OFFLINE[/bold red]\n'
   fi
-  
+
   if systemctl is-active --quiet kryonix-llama-cpp 2>/dev/null; then
     printf 'Systemd: [bold green]active[/bold green]\n'
   else
@@ -2223,7 +2238,7 @@ kryonix_brain_llama_cpp_smoke() {
     printf '[bold red]ERRO:[/bold red] Backend não responde em 127.0.0.1:%s\n' "$port" >&2
     return 1
   fi
-  
+
   printf 'Enviando chat completion de teste...\n'
   local res
   res=$(curl -s -X POST "http://127.0.0.1:$port/v1/chat/completions" \
@@ -2232,7 +2247,7 @@ kryonix_brain_llama_cpp_smoke() {
       "messages": [{"role": "user", "content": "Hello. Respond with exactly one word: OK."}],
       "max_tokens": 10
     }' | grep -oP '"content":\s*"\K[^"]+')
-    
+
   if [[ "$res" == "OK" || "$res" == "OK." ]]; then
     printf 'Smoke Test: [bold green]PASS[/bold green] (Resposta: %s)\n' "$res"
   else
@@ -2244,16 +2259,16 @@ kryonix_brain_llama_cpp_bench() {
   local port=11435
   local model="qwen3-8b"
   printf 'Iniciando benchmark llama.cpp (127.0.0.1:%s)...\n' "$port"
-  
+
   # Usando o endpoint /props para pegar info do modelo se disponível
   local model_info
   model_info=$(curl -s "http://127.0.0.1:$port/props" | grep -oP '"model_path":\s*"\K[^"]+' || echo "unknown")
   printf 'Modelo carregado: [cyan]%s[/cyan]\n' "$model_info"
-  
+
   printf 'Executando teste de geração (50 tokens)...\n'
   local start_time end_time elapsed tokens
   start_time=$(date +%s%N)
-  
+
   # Request real para medir tokens/s
   local output
   output=$(curl -s -X POST "http://127.0.0.1:$port/v1/chat/completions" \
@@ -2263,12 +2278,12 @@ kryonix_brain_llama_cpp_bench() {
       "max_tokens": 50,
       "stream": false
     }')
-  
+
   end_time=$(date +%s%N)
   elapsed=$(( (end_time - start_time) / 1000000 )) # ms
-  
+
   tokens=$(echo "$output" | grep -oP '"completion_tokens":\s*\K\d+' || echo "0")
-  
+
   if [[ "$tokens" -gt 0 ]]; then
     local tps
     tps=$(LC_NUMERIC=C awk "BEGIN {print $tokens / ($elapsed / 1000)}")
