@@ -253,3 +253,4 @@ kryonix vault sync-docs
 - [ ] #23 — Pipeline de Geração de Receitas/Pacotes Nix
 - [ ] #24 — Autocura e Reorganização do Vault
 - [ ] #26 — Sincronização Doc -> Vault -> RAG
+- [ ] #18 — [P1][home-brain] Fechar Autopilot seguro (UNSTABLE)

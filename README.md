@@ -223,9 +223,15 @@ kryonix brain ask "Como eu configuro o acesso remoto no glacier?"
 
 ## Kryonix Home Brain
 
+> [!CAUTION]
+> **Status: PARTIAL / UNSTABLE**  
+> **Production Ready: FALSE**  
+> **Execute Enabled: FALSE**  
+> O Home Brain é um componente experimental. O uso em diretórios de produção não é recomendado nesta fase.
+
 O **Kryonix Home Brain** organiza e estrutura arquivos pessoais da sua Home de forma segura, declarativa e auditável.
 
-Fases concluídas:
+Fases em desenvolvimento:
 - **Fase 1**: scan / report / duplicates / plan
 - **Fase 2**: manifest / apply / rollback
 - **Fase 3A**: renomeação determinística ABNT-like
