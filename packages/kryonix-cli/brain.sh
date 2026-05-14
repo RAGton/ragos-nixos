@@ -829,6 +829,42 @@ kryonix_graph_ingest() {
   esac
 }
 
+kryonix_graph_ingest_registry() {
+  local mode="${1:-}"
+  shift || true
+  parse_brain_mode "$@"
+
+  if ! brain_should_use_remote "$brain_mode"; then
+    if ! curl -sS --max-time 2 -o /dev/null "http://127.0.0.1:8000/health"; then
+      printf 'ERRO: Brain API local (127.0.0.1:8000) não está ativa.\n' >&2
+      return 2
+    fi
+    export KRYONIX_REMOTE_BRAIN_URL="http://127.0.0.1:8000"
+  fi
+
+  case "$mode" in
+    --dry-run)
+      # Nota: Atualmente o manifest inclui tudo (hosts, services, registry).
+      # No futuro podemos adicionar um filtro ?type=registry se necessário.
+      brain_remote_curl POST /graph/ingest/dry-run "{}"
+      ;;
+    --apply)
+      local manifest_id="${brain_passthrough[0]:-}"
+      if [[ -z "$manifest_id" ]]; then
+        printf '%s\n' "Uso: kryonix graph ingest-registry --apply <manifest_id>" >&2
+        return 2
+      fi
+      local payload
+      payload="$(jq -n --arg manifest_id "$manifest_id" '{manifest_id:$manifest_id}')"
+      brain_remote_curl POST /graph/ingest/apply "$payload"
+      ;;
+    *)
+      printf '%s\n' "Uso: kryonix graph ingest-registry <--dry-run|--apply <manifest_id>> [--remote|--local]" >&2
+      return 2
+      ;;
+  esac
+}
+
 kryonix_graph_query() {
   if [[ $# -eq 0 ]]; then
     kryonix_graph_query_usage

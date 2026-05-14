@@ -1,5 +1,10 @@
 # Decision Records - Kryonix 🧊⚡
 
+### [2026-05-14] Neo4j/Graph somente no Glacier
+- **Decisão:** Toda geração final de manifesto, dry-run oficial, apply e validação de escrita no Neo4j deve ocorrer no Glacier.
+- **Motivo:** Centralização da autoridade de dados, consistência de artefatos e segurança (credenciais do Neo4j residem apenas no Glacier).
+- **Responsabilidades:** Inspiron desenvolve código e revisa manifestos. Glacier gera e aplica.
+
 Este documento registra decisões arquiteturais e operacionais importantes para evitar regressões.
 
 ### [2026-05-14] CLI Registry v2

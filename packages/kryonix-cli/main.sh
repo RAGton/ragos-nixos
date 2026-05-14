@@ -660,6 +660,9 @@ case "$subcommand" in
       ingest)
         kryonix_graph_ingest "${extra_args[@]}"
         ;;
+      ingest-registry)
+        kryonix_graph_ingest_registry "${extra_args[@]}"
+        ;;
       query)
         if [[ "${#extra_args[@]}" -eq 0 ]]; then
           kryonix_graph_query_usage
@@ -686,7 +689,7 @@ case "$subcommand" in
         kryonix_graph_server_only repair "${extra_args[@]}"
         ;;
       *)
-        printf 'Uso: kryonix graph <status|schema|ingest|query|examples|doctor|stats|top|heal|repair> [--remote|--local]\n' >&2
+        printf 'Uso: kryonix graph <status|schema|ingest|ingest-registry|query|examples|doctor|stats|top|heal|repair> [--remote|--local]\n' >&2
         exit 1
         ;;
     esac

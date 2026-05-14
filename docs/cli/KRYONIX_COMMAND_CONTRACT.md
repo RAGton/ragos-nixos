@@ -32,19 +32,28 @@ Estas sintaxes são consideradas inseguras, misturam camadas de abstração ou s
 | `nh os switch .#glacier` | Comando de baixo nível. Use o wrapper `kryonix`. |
 | `nixos-rebuild switch ...` | Comando manual não-declarativo. Use `kryonix`. |
 
-## 2. Opções Globais
+## 4. Registry v2 e Grounding (Brain)
 
-| Opção | Descrição |
-| :--- | :--- |
-| `--host <host>` | (Obrigatório para operações de host) Define o host alvo. |
-| `--flake <path>` | Caminho para o flake (default: `/etc/kryonix`). |
-| `--user <user>` | Usuário alvo para comandos `home`. |
-| `--json` | Saída em formato JSON puro para integrações. |
-| `--verbose` | Aumenta o nível de log (direcionado para stderr). |
-| `--dry` | Simulação sem aplicar alterações. |
+A CLI Kryonix expõe seus metadados operacionais via `kryonix commands --json`. Este contrato (v2) é a fonte de verdade para o Knowledge Graph do Brain.
 
-## 3. Garantia de Operação
+### Metadados por Comando
+- **Risk Level**: `low`, `medium`, `high`, `critical`.
+- **Requires Host**: `any`, `glacier`, `inspiron`.
+- **Requires Runtime**: Array de dependências (ex: `ollama`, `neo4j`).
+- **Category**: Agrupamento lógico (ex: `ai`, `system`, `git`).
+- **Examples**: Lista de exemplos de uso prático.
+
+### Ingestão no Grafo
+A ingestão deve ocorrer exclusivamente no host **Glacier** para garantir a integridade dos artefatos:
+
+```bash
+kryonix graph ingest-registry --dry-run
+kryonix graph ingest-registry --apply <manifest_id>
+```
+
+## 5. Garantia de Operação
 
 1. **Check First**: Sempre execute `kryonix check --host <host>` antes de um switch.
 2. **Test Before Switch**: Use `kryonix test --host <host>` para validar o boot e serviços antes de tornar a mudança permanente.
-3. **Logs**: Todos os logs operacionais são direcionados para `stderr`. `stdout` é reservado para o resultado final ou JSON.
+3. **Graph Sync**: Após alterações significativas na CLI ou configuração de serviços, sincronize o Registry com o Knowledge Graph via `kryonix graph ingest-registry`.
+4. **Logs**: Todos os logs operacionais são direcionados para `stderr`. `stdout` é reservado para o resultado final ou JSON.
