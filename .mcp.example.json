@@ -1,14 +1,14 @@
 {
   "mcpServers": {
     "kryonix-brain": {
-      "command": "ssh",
+      "command": "/run/current-system/sw/bin/ssh",
       "args": [
         "glacier",
-        "cd /etc/kryonix && uv run --project packages/kryonix-brain-lightrag kg-server"
+        "cd /etc/kryonix && /run/current-system/sw/bin/uv run --project packages/kryonix-brain-lightrag kg-server"
       ]
     },
     "mcp-nixos": {
-      "command": "uv",
+      "command": "/run/current-system/sw/bin/uv",
       "args": [
         "tool",
         "run",
@@ -17,21 +17,24 @@
       ]
     },
     "vault-readonly": {
-      "command": "npx",
+      "command": "/run/current-system/sw/bin/npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
         "/etc/kryonix",
-        "/ABSOLUTE/PATH/TO/kryonix-vault"
+        "/home/rocha/.local/share/kryonix/kryonix-vault"
       ]
     },
     "github": {
-      "command": "npx",
+      "command": "/run/current-system/sw/bin/npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-github",
         "--stdio"
-      ]
+      ],
+      "env": {
+        "GITHUB_TOKEN": ""
+      }
     }
   }
 }
