@@ -59,6 +59,8 @@
     enable = true;
     modelPath = "/var/lib/kryonix/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf";
     gpuLayers = -1; # Todas na GPU RTX 4060
+    ctxSize = 16384; # Aumentado de 8k para 16k para suportar RAG denso
+    extraArgs = [ "--flash-attn" "on" ]; # Melhor performance e menor uso de VRAM
   };
 
   # Configuração do Brain para usar o backend experimental com fallback automático
