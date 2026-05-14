@@ -7,7 +7,7 @@
 { pkgs, lib, ... }:
 
 let
-  netXml = pkgs.writeText "net-ragthink.xml" (builtins.readFile ../../net-ragthink.xml);
+  netXml = pkgs.writeText "net-ragthink.xml" (builtins.readFile ./net-ragthink.xml);
   virsh = "${pkgs.libvirt}/bin/virsh";
   diff = "${pkgs.diffutils}/bin/diff";
 in
