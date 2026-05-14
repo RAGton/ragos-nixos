@@ -43,8 +43,13 @@ kryonix brain doctor --local # Checagem detalhada de permissões/serviços local
 O MCP fornece interfaces JSON-RPC seguras para LLMs sob demanda.
 
 ```sh
-kryonix mcp check        # Valida a configuração local do MCP (secrets, syntax)
-kryonix mcp doctor       # Verifica estado dos servidores MCP definidos
+kryonix mcp check        # Inspiron: check leve/local de config, paths e segurança (sem acionar RAG local)
+kryonix mcp doctor       # Glacier: valida o runtime real do Brain MCP e dependências pesadas
 ```
+
+### Regras de Ouro
+- **Inspiron:** Validação leve e focada na segurança do cliente MCP (`kryonix mcp check`).
+- **Glacier:** Servidor do runtime real do Brain e armazenamento pesado.
+- **Segurança:** Nunca armazene tokens literais de API ou senhas em `.mcp.json`. Utilize wrappers locais (ex: `kryonix-github-mcp`) ou variáveis de ambiente.
 
 Para o Codex, o arquivo canônico do projeto é `.codex/config.toml`. Clientes como Claude/Cursor continuam usando `.mcp.json`.

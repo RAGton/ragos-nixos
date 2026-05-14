@@ -20,6 +20,7 @@
 ## Decisões Recentes
 - **Neo4j/Graph somente no Glacier**: Toda geração final de manifesto, dry-run oficial, apply e validação de escrita no Neo4j deve ocorrer no Glacier. Inspiron atua como cliente de desenvolvimento e consulta.
 - **Registry v2 como Contrato**: O `kryonix commands --json` é o contrato formal para o Knowledge Graph.
-- **MCP Quality Layer**: Planejado como próxima etapa após consolidação do Registry no grafo.
+- **MCP Decoupled**: `kryonix mcp check` e `kryonix mcp doctor` desacoplados do runtime do RAG local no Inspiron. No cliente, a validação é focada em segurança, syntax e paths (via `scripts/check-mcp.sh`).
+- **MCP Quality Layer**: Planejado como próxima etapa (Issue #51).
 
 *Última atualização: 2026-05-14 por Antigravity*

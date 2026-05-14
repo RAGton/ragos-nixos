@@ -33,7 +33,7 @@
         "--stdio"
       ],
       "env": {
-        "GITHUB_TOKEN": ""
+        "GITHUB_TOKEN": "your_github_token_here"
       }
     }
   }

@@ -980,18 +980,50 @@ print_mcp_config() {
 }
 
 kryonix_mcp_check() {
-  run_brain_cli mcp-check "$@"
+  local brain_runtime=0
+  local passthrough=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --brain-runtime)
+        brain_runtime=1
+        ;;
+      *)
+        passthrough+=("$1")
+        ;;
+    esac
+    shift
+  done
+
+  if (( brain_runtime )); then
+    run_brain_cli mcp-check "${passthrough[@]}"
+    return $?
+  fi
+
+  local repo_root
+  repo_root="$(kryonix_repo_root)" || return 1
+
+  if [[ -x "$repo_root/scripts/check-mcp.sh" ]]; then
+    (
+      cd "$repo_root"
+      KRYONIX_MCP_SKIP_CLI=1 bash scripts/check-mcp.sh
+    )
+  else
+    printf '%s\n' "kryonix: scripts/check-mcp.sh não encontrado ou não executável." >&2
+    return 1
+  fi
 }
 
 kryonix_mcp_doctor() {
   local repo_root
-
   repo_root="$(kryonix_repo_root)" || return 1
-  kryonix_mcp_check "$@"
+
+  print_mcp_config || true
+
   if [[ -x "$repo_root/scripts/check-mcp.sh" ]]; then
     (
       cd "$repo_root"
-      KRYONIX_BIN="$0" bash scripts/check-mcp.sh
+      KRYONIX_MCP_SKIP_CLI=1 bash scripts/check-mcp.sh
     )
   else
     printf '%s\n' "kryonix: scripts/check-mcp.sh não encontrado ou não executável." >&2
