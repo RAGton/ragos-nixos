@@ -72,15 +72,30 @@ print_subcommand_help() {
   printf '  🚀 \033[1m%s\033[0m — %s\n' "${parent^^}" "$desc"
   printf '  Uso: kryonix %s [subcomando] [opções]\n\n' "$parent"
 
-  local sub flags
-  local line c s d f
+  local sub flags examples risk host runtime sudo cat status
+  local line c s d f ex r _ _ sd _ st
   local found=0
   for line in "${KRYONIX_REGISTRY[@]}"; do
-    IFS='|' read -r _ c s d f <<< "$line"
+    IFS='|' read -r _ c s d f ex r _ _ sd _ st <<< "$line"
     if [[ "$c" == "$parent" && -n "$s" ]]; then
-      printf '    %-15s %s\n' "$s" "$d"
+      local risk_color="\033[32m" # Green for low
+      if [[ "$r" == "medium" ]]; then risk_color="\033[33m"; fi # Yellow
+      if [[ "$r" == "high" ]]; then risk_color="\033[31m"; fi # Red
+
+      printf '    %-15s %s' "$s" "$d"
+      if [[ -n "$r" ]]; then
+        printf " (${risk_color}%s\033[0m)" "$r"
+      fi
+      printf "\n"
+
       if [[ -n "$f" ]]; then
         printf '      \033[dim]Flags: %s\033[0m\n' "$f"
+      fi
+      if [[ -n "$ex" ]]; then
+        printf '      \033[dim]Ex: %s\033[0m\n' "$ex"
+      fi
+      if [[ "$sd" == "true" ]]; then
+        printf '      \033[31m[!] Requer sudo\033[0m\n'
       fi
       found=1
     fi

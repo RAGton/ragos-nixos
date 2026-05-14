@@ -25,6 +25,26 @@ if ! echo "$JSON" | jq . > /dev/null; then
   exit 1
 fi
 
+# 2. Verifica integridade do Registry (campos v2)
+echo "Validando campos do Registry (v2)..."
+# Filtra apenas as linhas dentro da definição do array KRYONIX_REGISTRY
+sed -n '/KRYONIX_REGISTRY=(/,/)/p' packages/kryonix-cli/registry.sh | grep -E '^[[:space:]]+"' | while read -r line; do
+  # Remove quotes and spaces
+  clean_line=$(echo "$line" | sed 's/^[[:space:]]*"//; s/",*[[:space:]]*$//')
+  pipe_count=$(echo "$clean_line" | tr -cd '|' | wc -c)
+  if [[ "$pipe_count" -ne 11 ]]; then
+    echo "ERRO: Linha do registry possui $pipe_count pipes (esperado 11 para 12 campos): $clean_line" >&2
+    exit 1
+  fi
+done
+
+# Valida valores permitidos no JSON
+INVALID_RISK=$(echo "$JSON" | jq -r '.commands[].risk_level' | grep -vE 'low|medium|high' | head -n 1 || true)
+if [[ -n "$INVALID_RISK" ]]; then
+  echo "ERRO: risk_level inválido encontrado: $INVALID_RISK" >&2
+  exit 1
+fi
+
 # 2. Cross-check: Registry vs Implementação (main.sh)
 echo "Validando consistência Registry vs main.sh..."
 REG_COMMANDS=$(nix run .#kryonix -- commands)
