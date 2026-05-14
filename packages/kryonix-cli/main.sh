@@ -78,9 +78,12 @@ print_subcommand_help() {
   for line in "${KRYONIX_REGISTRY[@]}"; do
     IFS='|' read -r _ c s d f ex r _ _ sd _ st <<< "$line"
     if [[ "$c" == "$parent" && -n "$s" ]]; then
-      local risk_color="\033[32m" # Green for low
-      if [[ "$r" == "medium" ]]; then risk_color="\033[33m"; fi # Yellow
-      if [[ "$r" == "high" ]]; then risk_color="\033[31m"; fi # Red
+      local risk_color="\e[32m" # low: green
+      case "$r" in
+        medium) risk_color="\e[33m" ;; # yellow
+        high) risk_color="\e[31m" ;; # red
+        critical) risk_color="\e[1;97;45m" ;; # white on magenta bold
+      esac
 
       printf '    %-15s %s' "$s" "$d"
       if [[ -n "$r" ]]; then
@@ -89,10 +92,10 @@ print_subcommand_help() {
       printf "\n"
 
       if [[ -n "$f" ]]; then
-        printf '      \033[dim]Flags: %s\033[0m\n' "$f"
+        printf '      \e[2mFlags: %s\e[0m\n' "$f"
       fi
       if [[ -n "$ex" ]]; then
-        printf '      \033[dim]Ex: %s\033[0m\n' "$ex"
+        printf '      \e[2mEx: %s\e[0m\n' "$ex"
       fi
       if [[ "$sd" == "true" ]]; then
         printf '      \033[31m[!] Requer sudo\033[0m\n'

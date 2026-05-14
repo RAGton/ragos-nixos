@@ -25,6 +25,11 @@ if ! echo "$JSON" | jq . > /dev/null; then
   exit 1
 fi
 
+if [[ "$(echo "$JSON" | jq -r '.schema_version')" != "2" ]]; then
+  echo "ERRO: 'kryonix commands --json' não reportou schema_version 2." >&2
+  exit 1
+fi
+
 # 2. Verifica integridade do Registry (campos v2)
 echo "Validando campos do Registry (v2)..."
 # Filtra apenas as linhas dentro da definição do array KRYONIX_REGISTRY
@@ -39,9 +44,15 @@ sed -n '/KRYONIX_REGISTRY=(/,/)/p' packages/kryonix-cli/registry.sh | grep -E '^
 done
 
 # Valida valores permitidos no JSON
-INVALID_RISK=$(echo "$JSON" | jq -r '.commands[].risk_level' | grep -vE 'low|medium|high' | head -n 1 || true)
+INVALID_RISK=$(echo "$JSON" | jq -r '.commands[].risk_level' | grep -vE 'low|medium|high|critical' | head -n 1 || true)
 if [[ -n "$INVALID_RISK" ]]; then
   echo "ERRO: risk_level inválido encontrado: $INVALID_RISK" >&2
+  exit 1
+fi
+
+# Valida se requires_runtime é array
+if ! echo "$JSON" | jq -e '.commands[] | .requires_runtime | type == "array"' > /dev/null; then
+  echo "ERRO: requires_runtime deve ser um array no JSON." >&2
   exit 1
 fi
 
