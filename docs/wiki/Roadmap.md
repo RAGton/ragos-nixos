@@ -5,6 +5,9 @@ Status: Roadmap
 ## Resumo
 Este documento consolida o que ainda não está plenamente implementado ou validado. Não trate itens abaixo como prontos.
 
+## Fonte canônica
+Este resumo reflete o conteúdo de `docs/ROADMAP.md`. Para detalhes completos e status oficial, consulte o documento canônico no repositório.
+
 ## Itens principais
 ### Brain API
 - Status: **Parcial**
@@ -33,7 +36,7 @@ Este documento consolida o que ainda não está plenamente implementado ou valid
 ### Pipeline docs → vault → RAG
 - Status: **Não implementado**
 
-## Milestones (resumo)
+## Milestones (resumo, conforme `docs/ROADMAP.md`)
 - **v0.4.2**: estabilização e governança (em execução).
 - **v0.5.0**: Glacier e Brain API (em execução).
 - **v0.6.0**: ISO e IA autônoma (roadmap).
