@@ -48,7 +48,7 @@ Simula a execução das propostas pendentes, listando as etapas exatas, comandos
 Aprova formalmente uma proposta gerada. A aprovação é obrigatória para que a proposta possa ser processada pelo comando `apply`.
 
 ### `kryonix brain autopilot apply --proposal <id>`
-Valida e simula a aplicação de uma proposta aprovada. 
+Valida e simula a aplicação de uma proposta aprovada.
 **Nota (Fase 4B):** Atualmente em modo de simulação/autorização. Valida o esquema, o host (`Glacier` para operações de storage), o nível de risco e a existência dos comandos no Registry v2, mas não executa mutações reais ainda.
 
 ### `kryonix brain autopilot audit`
