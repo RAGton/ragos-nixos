@@ -657,6 +657,31 @@ else:
   run_brain_cli "$action" "${brain_passthrough[@]}"
 }
 
+kryonix_brain_normalize() {
+  local query="$*"
+  if [[ -z "$query" ]]; then
+    printf 'Uso: kryonix brain normalize "pergunta"\n' >&2
+    return 2
+  fi
+
+  parse_brain_mode "$@"
+  if brain_should_use_remote "$brain_mode"; then
+    local payload
+    payload="$(jq -n --arg query "$query" '{query:$query}')"
+    brain_remote_curl POST /normalize "$payload" | jq .
+  else
+    local project_dir
+    project_dir="$(brain_project_dir)" || return 1
+    export_brain_env
+    run_command uv run --project "$project_dir" python -c "
+import sys
+from kryonix_brain_lightrag.query_utils import normalize_query_details
+import json
+print(json.dumps(normalize_query_details(\"$query\"), indent=2, ensure_ascii=False))
+"
+  fi
+}
+
 kryonix_graph_stats() {
   parse_brain_mode "$@"
   if brain_should_use_remote "$brain_mode"; then

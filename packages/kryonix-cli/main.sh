@@ -126,6 +126,7 @@ print_subcommand_help() {
   Busca e conversa:
     search <query>   Busca semântica no RAG
     ask <pergunta>   Pergunta ao Brain usando contexto
+    normalize <q>    Normaliza typos e aliases (debug)
     cag              Operações CAG/cache/contexto
 
   Vault e indexação:
@@ -658,6 +659,9 @@ case "$subcommand" in
         ;;
       stats)
         kryonix_brain_stats "${extra_args[@]}"
+        ;;
+      normalize)
+        kryonix_brain_normalize "${extra_args[@]}"
         ;;
       vault-scan)
         kryonix_brain_vault_scan "${extra_args[@]}"
