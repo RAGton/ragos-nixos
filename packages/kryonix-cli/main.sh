@@ -243,7 +243,7 @@ if [[ "${#extra_args[@]}" -gt 0 ]]; then
       ;;
     brain)
       case "${extra_args[0]}" in
-        health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote)
+        health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote|autopilot)
           delegate_nested_help=true
           ;;
       esac
@@ -593,7 +593,7 @@ case "$subcommand" in
       storage-check|ollama-check)
         run_brain_cli "$brain_sub" "${extra_args[@]}"
         ;;
-      sync|watch|diagnostics|index|export)
+      sync|watch|diagnostics|index|export|autopilot)
         run_brain_cli "$brain_sub" "${extra_args[@]}"
         ;;
       api)

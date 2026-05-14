@@ -37,6 +37,7 @@ KRYONIX_REGISTRY=(
   "brain|brain|vram-audit|Auditoria de GPU/VRAM (Glacier)||kryonix brain vram-audit|low|glacier|brain-api|false|ai|stable"
   "brain|brain|vram-profile|Altera perfil de VRAM runtime|ai balanced gaming|kryonix brain vram-profile|low|glacier|brain-api|false|ai|stable"
   "brain|brain|remote|Operações remotas do Brain|status|kryonix brain remote|medium|glacier|brain-api|false|ai|stable"
+  "brain|brain|autopilot|Piloto automático de curadoria e melhorias|status observe diagnose propose dry-run apply audit|kryonix brain autopilot status|low|glacier|brain-api,neo4j|false|brain|experimental"
 
   # --- Graph ---
   "graph|graph||Operações no Grafo de Conhecimento||kryonix graph --help|low|glacier|neo4j|false|ai|stable"

@@ -39,6 +39,7 @@ Estes componentes representam as funcionalidades implementadas, validadas e atua
 - ☊ **[LightRAG (GraphRAG Engine)](lightrag.md):** Especificação do motor primário de GraphRAG do projeto, com comandos CLI de gerenciamento local de grafos (`stats`, `top`, `heal`, `repair`).
 - 🔌 **[Kryonix Brain MCP Server](mcp.md):** Protocolo de segurança e ferramentas JSON-RPC expostas a agentes (consultas ao grafo, busca no Obsidian, e envio de propostas de aprendizagem seguras).
 - 🗃️ **[Vault Obsidian (Rules & Enforcement)](vault.md):** Políticas de acesso seguro para agentes (Obsidian CLI Brain Enforcement), saúde de indexação e hierarquias de notas canônicas.
+- 🤖 **[Safe Autopilot](AUTOPILOT.md):** Loop autônomo seguro de curadoria, observação e simulação contínua para governança de Graph, RAG, CAG e LightRAG.
 
 ---
 

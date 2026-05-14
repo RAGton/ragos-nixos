@@ -22,5 +22,6 @@
 - **Registry v2 como Contrato**: O `kryonix commands --json` é o contrato formal para o Knowledge Graph.
 - **MCP Decoupled**: `kryonix mcp check` e `kryonix mcp doctor` desacoplados do runtime do RAG local no Inspiron. No cliente, a validação é focada em segurança, syntax e paths (via `scripts/check-mcp.sh`).
 - **MCP Quality Layer**: Implementado servidor MCP Read-Only expondo recursos canônicos e ferramentas de diagnóstico sem exposição de segredos ou ações destrutivas (Issue #51 concluída).
+- **Safe Autopilot Loop**: Implementado o subsistema de melhoria autônoma segura (`autopilot`, `autopilot_graph`, `autopilot_rag`, `autopilot_cag`, `autopilot_lightrag`) em conformidade com as restrições da Issue #52.
 
 *Última atualização: 2026-05-14 por Antigravity*

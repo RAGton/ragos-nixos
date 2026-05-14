@@ -67,7 +67,7 @@ run_brain_cli() {
   local project_dir
   project_dir="$(brain_project_dir)" || return 1
 
-  if [[ "$(kryonix_brain_role)" == "client" ]] && [[ "${KRYONIX_LOCAL_RAG_ENABLE:-}" != "true" ]]; then
+  if [[ "$1" != "autopilot" ]] && [[ "$(kryonix_brain_role)" == "client" ]] && [[ "${KRYONIX_LOCAL_RAG_ENABLE:-}" != "true" ]]; then
     printf 'ERRO: O RAG local está desabilitado por padrão no cliente (Inspiron) para evitar duplicação de índices pesados.\n' >&2
     printf 'Para forçar a execução local, defina a variável: export KRYONIX_LOCAL_RAG_ENABLE=true\n' >&2
     return 1
