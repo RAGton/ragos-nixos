@@ -29,15 +29,14 @@ fi
 echo "Validando consistência Registry vs main.sh..."
 REG_COMMANDS=$(nix run .#kryonix -- commands)
 
-# Pega os comandos do case statement do main.sh
-# Filtra comandos de sistema e internos conhecidos
-IMPL_COMMANDS=$(grep -E '^[[:space:]]+[a-z0-9-]+)\b' packages/kryonix-cli/main.sh | sed 's/^[[:space:]]*//; s/).*//' | grep -vE 'help|--help|__complete|commands|clean|vm|git-status|pull|deploy|sync|brain|graph|mcp|vault|rgb|ollama|ai|remote|install|hardware|disk|test|home|rebuild|update|all|diff|repl|doctor|iso|fmt|check')
+# Pega os comandos do case statement do main.sh e filtra os conhecidos
+IMPL_COMMANDS=$(grep -E '^[[:space:]]+[a-z0-9-]+)\b' packages/kryonix-cli/main.sh | sed 's/^[[:space:]]*//; s/).*//' | grep -vE 'help|--help|__complete|commands|clean|vm|git-status|pull|deploy|sync|brain|graph|mcp|vault|rgb|ollama|ai|remote|install|hardware|disk|test|home|rebuild|update|all|diff|repl|doctor|iso|fmt|check' || true)
 
 # Nota: A lista acima de grep -vE deve conter comandos que EU JÁ SEI que estão no main.sh.
 # Na verdade, o ideal é comparar se cada comando do registry está no case do main.sh.
 
 for cmd in $REG_COMMANDS; do
-  if ! grep -qE "^[[:space:]]+$cmd\)" packages/kryonix-cli/main.sh; then
+  if ! grep -qE "^[[:space:]]+([^)]*\|)?$cmd(\|[^)]*)?)" packages/kryonix-cli/main.sh; then
      echo "ERRO: Comando '$cmd' está no registry mas não foi encontrado no case principal do main.sh" >&2
      exit 1
   fi

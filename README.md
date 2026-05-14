@@ -286,6 +286,7 @@ kryonix remote vnc stop    # Para os serviços correspondentes
 
 ## Documentação
 
+- [Atalhos do teclado](docs/SHORTCUTS.md)
 - [Operação diária e CLI](docs/OPERATIONS.md)
 - [Papel do host glacier](docs/GLACIER.md)
 - [Índice da documentação](docs/README.md)

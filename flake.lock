@@ -75,11 +75,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1778600460,
-        "narHash": "sha256-Z+ThBcASq+BQEFF6N6+OlZdB8cvh40YGnmQ0rEIhKK0=",
+        "lastModified": 1778750637,
+        "narHash": "sha256-Yf06Lbs7gttDJ9ohTaryLeOEWQd45It36ONahnnEaJA=",
         "owner": "openai",
         "repo": "codex",
-        "rev": "5e3ee5eddfa5333f2e0b011880abf0cbf92bd295",
+        "rev": "6d65686313d484db0bb1212cf1a8e1915282024d",
         "type": "github"
       },
       "original": {
@@ -168,11 +168,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778609305,
-        "narHash": "sha256-muTc+WME6k3sfTr/Pvmw8hrK7zXrbl961TEF9wPeAnk=",
+        "lastModified": 1778728372,
+        "narHash": "sha256-8pArLaovyMHR9VHa6eVk4e5vgvDS+Dg9J8pxPBjAE18=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "5878fdadfe2cfe1b3383b38d66117f7b80696b68",
+        "rev": "f04b141d1a0d6d7d62aa9678aef602dfb61e8bb1",
         "type": "github"
       },
       "original": {
@@ -184,11 +184,11 @@
     "kryonix-brain-lightrag": {
       "flake": false,
       "locked": {
-        "lastModified": 1778621356,
-        "narHash": "sha256-EkvO9XWyYMtxIbiy2ejvAkTAcmcwkj6x5e5EV69lI/Y=",
+        "lastModified": 1778731833,
+        "narHash": "sha256-PN39zz+9jzynMlzZhSIDGaZpkfuc9b3NsylAvvVl0Nw=",
         "owner": "RAGEnterprise",
         "repo": "kryonix-brain-lightrag",
-        "rev": "7add7aa27ebc206c323df229edec2dea55e7fbd0",
+        "rev": "99ff463242a608902eee6e464e81e8caf1f7c0be",
         "type": "github"
       },
       "original": {

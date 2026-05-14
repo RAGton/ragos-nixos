@@ -11,6 +11,7 @@ O projeto **Kryonix** é uma plataforma NixOS declarativa para workstation, gami
 - [Instalação](INSTALL.md)
 - [Uso e Comandos](USAGE.md)
 - [Operações e CLI](OPERATIONS.md)
+- [Atalhos do Teclado](SHORTCUTS.md)
 - [Documentação Técnica da CLI](cli/README.md)
 - [Status da Rede](operations/KRYONIX_NETWORK_STATUS.md)
 - [Auditoria de Licença](operations/KRYONIX_LICENSE_AUDIT.md)
