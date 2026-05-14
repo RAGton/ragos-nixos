@@ -8,38 +8,14 @@ Este documento consolida o que ainda não está plenamente implementado ou valid
 ## Fonte canônica
 Este resumo reflete o conteúdo de `docs/ROADMAP.md`. Para detalhes completos e status oficial, consulte o documento canônico no repositório.
 
-## Itens principais
-### Brain API
-- Status: **Parcial**
-- Gap: persistência/robustez e validações completas.
+## Resumo de alto nível (intencionalmente curto)
+- **Brain API / MCP remoto:** Parcial, com validações pendentes.
+- **Glacier autônomo (server IA):** Parcial.
+- **ISO instalável:** Parcial.
+- **Automação avançada (web research, geração de pacotes, autocuradoria):** Não implementado.
 
-### MCP remoto completo
-- Status: **Parcial**
-- Gap: validação end-to-end no Glacier.
-
-### Glacier autônomo (server IA)
-- Status: **Parcial**
-- Gap: serviços boot-first sem login manual.
-
-### Web research controlado
-- Status: **Não implementado**
-
-### Geração de pacotes com IA
-- Status: **Não implementado**
-
-### Autocuradoria do Vault
-- Status: **Não implementado**
-
-### ISO instalável Kryonix
-- Status: **Parcial**
-
-### Pipeline docs → vault → RAG
-- Status: **Não implementado**
-
-## Milestones (resumo, conforme `docs/ROADMAP.md`)
-- **v0.4.2**: estabilização e governança (em execução).
-- **v0.5.0**: Glacier e Brain API (em execução).
-- **v0.6.0**: ISO e IA autônoma (roadmap).
+## Milestones detalhados
+Consulte `docs/ROADMAP.md` para versões, critérios e evidências atualizadas.
 
 ## Quando usar
 Para alinhar expectativas antes de prometer funcionalidades.
