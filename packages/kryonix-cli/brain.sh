@@ -630,19 +630,40 @@ if data.get("status") == "success":
     answerability = grounding.get("answerability")
     latency = grounding.get("latency_sec", 0.0)
     normalized = grounding.get("query_normalized")
-    intent_label = grounding.get("intent", "n/a")
-    mode_label = grounding.get("mode", "n/a")
+    intent_label = data.get("intent") or grounding.get("intent", "n/a")
+    mode_label = data.get("mode") or grounding.get("mode", "n/a")
+    skipped = data.get("generation_skipped", False)
+    provider = data.get("provider_used")
+    tps = data.get("tps")
 
-    console.print(f"\n[bold magenta][/bold magenta][black on magenta]BRAIN REMOTE RESPONSE[/black on magenta][bold magenta][/bold magenta] [dim]Grounding: {confidence} ({latency}s)[/dim]")
+    if skipped:
+        header_text = "🔎 [black on cyan]EVIDÊNCIAS LOCALIZADAS[/black on cyan]"
+        border_style = "cyan"
+        title_text = "[bold cyan]Kryonix Search (Remote)[/bold cyan]"
+    else:
+        header_text = "🧠 [black on magenta]RESPOSTA FUNDAMENTADA[/black on magenta]"
+        border_style = "magenta"
+        title_text = "[bold magenta]Kryonix Ask (Remote)[/bold magenta]"
+
+    console.print(f"\n[bold {border_style}][/bold {border_style}]{header_text}[bold {border_style}][/bold {border_style}] [dim]Grounding: {confidence} ({latency}s)[/dim]")
+    
     if answerability == "not_answerable" and grounding.get("retrieval_score", 0) > 0.7:
         console.print("[yellow]Similaridade alta, mas cobertura insuficiente da intenção da pergunta.[/yellow]")
+    
     if normalized:
-        console.print(f"[dim]Query normalizada: {normalized} | intent: {intent_label} | mode: {mode_label}[/dim]")
-    console.print(Panel(Markdown(answer), border_style="magenta", title="[bold magenta]Kryonix RAG (Remote)[/bold magenta]", title_align="left"))
+        meta_info = f"[dim]Query normalizada: {normalized} | intent: {intent_label} | mode: {mode_label}"
+        if not skipped and provider:
+            meta_info += f" | provider: {provider}"
+            if tps: meta_info += f" | tps: {tps}"
+        meta_info += "[/dim]"
+        console.print(meta_info)
+
+    console.print(Panel(Markdown(answer), border_style=border_style, title=title_text, title_align="left"))
 
     if sources:
-        console.print("\n[bold cyan]Fontes usadas (Glacier RAG):[/bold cyan]")
-        for i, src in enumerate(sources[:5]):
+        limit = 10 if skipped else 5
+        console.print(f"\n[bold {border_style}]Fontes usadas (Glacier RAG):[/bold {border_style}]")
+        for i, src in enumerate(sources[:limit]):
             title = src.get("file") or src.get("title") or src.get("path") or "fonte desconhecida"
             score = src.get("score", "n/a")
             mode_used = src.get("mode") or "hybrid"
