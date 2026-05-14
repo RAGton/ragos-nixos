@@ -24,3 +24,7 @@ Este documento registra decisões arquiteturais e operacionais importantes para 
 ### [2026-05-12] Governança Source Available
 - **Decisão:** Transição para licenciamento Source Available / Proprietário (Issue #15).
 - **Impacto:** Adição de headers de licença em todos os arquivos core.
+
+### [2026-05-14] PATH Explícito para Coletores de Grafo
+- **Decisão:** Coletores executados pela Brain API em background devem injetar `/run/current-system/sw/bin` no `PATH` antes de chamar comandos do sistema, como `kryonix commands --json`.
+- **Motivo:** Serviços systemd podem não herdar o mesmo ambiente do shell interativo, garantindo determinismo na reingestão do registry.
