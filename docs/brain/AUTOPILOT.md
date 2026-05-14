@@ -44,11 +44,15 @@ Gera um manifesto estruturado em JSON com as ações corretivas recomendadas, ca
 ### `kryonix brain autopilot dry-run`
 Simula a execução das propostas pendentes, listando as etapas exatas, comandos e planos de rollback automatizados.
 
+### `kryonix brain autopilot approve --id <id>`
+Aprova formalmente uma proposta gerada. A aprovação é obrigatória para que a proposta possa ser processada pelo comando `apply`.
+
 ### `kryonix brain autopilot apply --proposal <id>`
-Aplica uma proposta aprovada, executando a sincronização ou os reparos necessários e gerando logs detalhados.
+Valida e simula a aplicação de uma proposta aprovada. 
+**Nota (Fase 4B):** Atualmente em modo de simulação/autorização. Valida o esquema, o host (`Glacier` para operações de storage), o nível de risco e a existência dos comandos no Registry v2, mas não executa mutações reais ainda.
 
 ### `kryonix brain autopilot audit`
-Retorna o histórico persistente de auditoria (em formato JSONL) armazenado em `/var/lib/kryonix/brain/autopilot/audit.jsonl`.
+Retorna o histórico persistente de auditoria (em formato JSONL) armazenado em `~/.local/share/kryonix/autopilot/audit.jsonl`.
 
 ---
 
