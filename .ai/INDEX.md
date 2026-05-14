@@ -6,6 +6,7 @@
 - [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
 - [docs/USAGE.md](../docs/USAGE.md)
 - [docs/TESTING.md](../docs/TESTING.md)
+- [packages/kryonix-cli/registry.sh](../packages/kryonix-cli/registry.sh) (Registry v2 - Fonte de Ferramentas)
 
 ## Kryonix Vault (Obsidian)
 

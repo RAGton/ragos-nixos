@@ -44,9 +44,11 @@ Este documento cataloga todos os arquivos relacionados a agentes, contexto e gov
 | `docs/TESTING.md` | Docs | Testes | Humano/Agente | keep | Médio | Manter |
 | `docs/TROUBLESHOOTING.md` | Docs | Troubleshooting | Humano/Agente | keep | Médio | Manter |
 | `docs/USAGE.md` | Docs | Guia de uso | Humano/Agente | keep | Médio | Manter |
+| `.context/` | Context | Estado operacional volátil | Agente | keep | Baixo | ATIVO - Consultar primeiro |
+| `AGENTS.md` | Mandate | Mandato canônico do projeto | Agente/Humano | keep | Crítico | LEITURA OBRIGATÓRIA |
 
 ## Próximos Passos
-- Criar `.agents/rules/` para centralizar políticas.
-- Criar `.agents/workflows/` para procedimentos operacionais.
-- Criar `.context/` para estado operacional volátil.
-- Integrar com `AGENTS.md`.
+- [ ] Criar `.agents/rules/` para centralizar políticas.
+- [ ] Criar `.agents/workflows/` para procedimentos operacionais.
+- [x] Criar `.context/` para estado operacional volátil (ATIVO).
+- [x] Integrar com `AGENTS.md` (CONCLUÍDO).

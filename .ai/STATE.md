@@ -1,24 +1,21 @@
-# Kryonix AI State
+# Kryonix AI State - 🧊⚡
 
-- **Objetivo atual**: Brain global operacional + Remote Desktop Estável.
-- **Último passo concluído**: S7 — Acesso Remoto WayVNC seguro implementado e validado. (2026-05-07T20:26:00Z)
-  - CLI `kryonix remote vnc` host-aware e educativa.
-  - Túnel SSH isolado em porta local `5901`.
-  - WayVNC servidor limpo e estável no Glacier.
-  - Remmina instalado declarativamente no Inspiron.
-- **Estado anterior**: VS Code Insiders activated and Zen Browser set as default browser. (2026-05-02T11:08:54Z)
-  - Backup criado em `backups/pre-full-index-20260502-000103`
-  - **Llama 3.1:8b** configurado como modelo padrão para extração de qualidade.
-  - Storage resetado para garantir indexação limpa e consistente.
-  - **644 wikilinks** gerados no vault Obsidian.
-  - 11 notas canônicas fundamentais criadas em `vault/01-Canonical/`.
-- **Storage canônico**: `/home/rocha/.local/share/kryonix/kryonix-vault/storage` ✅
-- **Vault canônico**: `/home/rocha/.local/share/kryonix/kryonix-vault/vault` ✅
+- **Objetivo atual**: Estabilização v0.5.0 e Automação de Governança.
+- **Último passo concluído**: **Registry v2** implementado. (2026-05-14T09:35:00Z)
+  - CLI `kryonix commands --json` agora fornece metadados de risco e host.
+  - Sincronização operacional Glacier/Inspiron validada via SSH porta 2224.
+  - Limpeza de artefatos de build e resíduos no repo.
+- **Estado anterior**: Acesso Remoto WayVNC seguro implementado e validado. (2026-05-07)
+- **Infraestrutura IA**:
+    - **Glacier (Server)**: RTX 4060, Ollama + Brain API + Neo4j.
+    - **Inspiron (Client)**: Acesso via CLI remota.
+- **Storage canônico**: `/var/lib/kryonix/brain/storage` ✅
+- **Vault canônico**: `/home/rocha/.local/share/kryonix/kryonix-vault` ✅
+- **Status do Brain**: ESTÁVEL (Health OK, Search/Ask OK).
+- **Modelos**: `nomic-embed-text`, `qwen2.5-coder`, `llama3.1:8b`.
 - **Próximos passos**:
-  1. Aguardar conclusão da indexação total (Repo + Vault).
-  2. Re-injetar grafo canônico se necessário (opcional, pois as notas canônicas agora estão interligadas).
-  3. Validar buscas complexas com `llama3.1:8b`.
-- **Status do grafo**: INDEXANDO (Llama 3.1:8b)
-- **Status do Obsidian**: ✅ 644 links reais + 11 notas canônicas
-- **Ollama**: rodando, modelos: `nomic-embed-text:latest`, `qwen2.5-coder:7b`, `llama3.1:8b` ✅
-- **Timestamp da última execução**: 2026-05-07T20:26:00Z
+  1. Integrar Registry v2 no grafo do Brain (Grounding Operacional).
+  2. Implementar Autocura do Vault (Doctor local).
+  3. Expandir documentação de Shortcuts e UX.
+
+*Última atualização: 2026-05-14T09:38:00Z*
