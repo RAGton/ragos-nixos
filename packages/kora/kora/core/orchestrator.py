@@ -249,15 +249,21 @@ async def process_message_stream(
     """Process an incoming message and yield a stream of chunks."""
     ctx = await _prepare_session_and_context(message, session_id, user, speaker, is_voice, mode)
     
+    # Se tiver saudação pendente, yield ela primeiro
+    if ctx.get("greeting"):
+        yield f"data: {json.dumps({'type': 'content', 'chunk': ctx['greeting'] + '\n\n'})}\n\n"
+    
     # Detecção determinística de identidade
     if is_identity_query(message):
         profile = get_known_user_profile(user)
         if profile:
             yield f"data: {json.dumps({'type': 'meta', 'mode': 'deterministic', 'session_id': session_id})}\n\n"
             answer = get_identity_response(profile)
-            for chunk in [answer[i:i+20] for i in range(0, len(answer), 20)]:
+            # Enviar em pequenos chunks para simular streaming
+            for chunk in [answer[i:i+40] for i in range(0, len(answer), 40)]:
                 yield f"data: {json.dumps({'type': 'content', 'chunk': chunk})}\n\n"
-                await asyncio.sleep(0.02)
+                await asyncio.sleep(0.01)
+            
             asyncio.create_task(_process_background_memory(message, answer, user))
             yield f"data: {json.dumps({'type': 'stats', 'elapsed_sec': time.monotonic() - ctx['start_time']})}\n\n"
             return

@@ -41,6 +41,7 @@ from ..integrations import brain as brain_adapter
 from ..llm import ollama as ollama_adapter
 from .routes_chat import router as chat_router
 from .routes_stream import router as stream_router
+from .routes_audit import router as audit_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("kora.api.server")
@@ -83,6 +84,12 @@ app.include_router(
 # Protected stream routes
 app.include_router(
     stream_router,
+    dependencies=[Depends(verify_api_key)],
+)
+
+# Protected audit routes
+app.include_router(
+    audit_router,
     dependencies=[Depends(verify_api_key)],
 )
 

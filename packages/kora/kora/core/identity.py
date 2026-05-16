@@ -73,13 +73,48 @@ def detect_runtime_identity() -> Dict[str, Any]:
 def get_known_user_profile(user: str) -> Optional[Dict[str, Any]]:
     """
     Retorna o perfil do usuário se ele for reconhecido.
-    Por enquanto, mapeia 'rocha' para o perfil do Ragton.
+    Tenta:
+    1. Mapeamento estático (Ragton)
+    2. Cache em JSON em PROFILE_CACHE_DIR
+    3. Perfil no Vault (Markdown/JSON)
     """
+    # 1. Mapeamento estático prioritário
     if user == "rocha":
         return RAGTON_PROFILE
     
-    # Futuramente: carregar de /var/lib/kryonix/kora/profile/{user}.json
-    # ou do Vault.
+    # 2. Tenta carregar do cache JSON
+    PROFILE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cache_file = PROFILE_CACHE_DIR / f"{user}.json"
+    if cache_file.exists():
+        try:
+            with open(cache_file, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Erro ao ler cache de perfil para {user}: {e}")
+
+    # 3. Tenta carregar do Vault
+    vault_file = VAULT_USER_DIR / f"{user}.md"
+    if vault_file.exists():
+        # Por enquanto, uma lógica simples de parsing de metadados se existir
+        # Futuramente: usar um parser de frontmatter real
+        try:
+            with open(vault_file, "r") as f:
+                content = f.read()
+                # Tenta extrair display_name: "Valor"
+                display_match = re.search(r"display_name:\s*\"?([^\"]+)\"?", content)
+                full_name_match = re.search(r"full_name:\s*\"?([^\"]+)\"?", content)
+                if display_match:
+                    return {
+                        "display_name": display_match.group(1),
+                        "full_name": full_name_match.group(1) if full_name_match else user,
+                        "unix_user": user,
+                        "role": "Usuário Kryonix",
+                        "preferences": ["PT-BR"],
+                        "interests": []
+                    }
+        except Exception as e:
+            logger.error(f"Erro ao ler perfil no Vault para {user}: {e}")
+
     return None
 
 def is_known_admin(user: str) -> bool:
@@ -152,15 +187,22 @@ def is_identity_query(message: str) -> bool:
     """
     Detecta se a mensagem é uma pergunta sobre a identidade do usuário.
     """
+    message_lower = message.lower()
+    
+    # Se perguntar quem é a Kora, NÃO interceptar (deixar o LLM responder)
+    if re.search(r"quem (é você|vc é|é a kora)", message_lower):
+        return False
+
     patterns = [
         r"quem sou eu",
-        r"vc sabe quem sou eu",
-        r"você sabe quem eu sou",
-        r"o que você lembra de mim",
-        r"qual meu perfil",
-        r"você me conhece"
+        r"vc sabe quem (eu )?sou eu",
+        r"você sabe quem (eu )?sou eu",
+        r"o que (você )?(sabe|lembra) de mim",
+        r"qual (é )?meu perfil",
+        r"você me conhece",
+        r"me identifique",
+        r"quem está digitando"
     ]
-    message_lower = message.lower()
     for p in patterns:
         if re.search(p, message_lower):
             return True
