@@ -453,8 +453,18 @@ kryonix_kora_voice() {
         identity)
             kora voice identity "$@"
             ;;
+        daemon)
+            shift
+            kora voice daemon "$@"
+            ;;
+        mute)
+            kora voice daemon stop # Fallback for now
+            ;;
+        unmute)
+            kora voice daemon start # Fallback for now
+            ;;
         *)
-            printf 'Uso: kryonix kora voice [devices|test-mic|transcribe|speak|identity]\n' >&2
+            printf 'Uso: kryonix kora voice [devices|test-mic|transcribe|speak|identity|daemon|mute|unmute]\n' >&2
             return 1
             ;;
     esac

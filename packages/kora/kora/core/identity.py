@@ -1,7 +1,7 @@
 # =============================================================================
 # Kora — Identity Module
 #
-# Gerencia a identidade do usuário, perfis persistentes e estado de saudação.
+# Gerencia a identidade do usuário, perfis persistentes e níveis de permissão.
 # =============================================================================
 
 import os
@@ -14,50 +14,59 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger("kora.core.identity")
 
-# Caminhos canônicos com fallback para ambiente de desenvolvimento/teste
+# ── Configuração de Caminhos ─────────────────────────────────────
+
 def _get_base_dir() -> Path:
     base = Path("/var/lib/kryonix")
     if os.access(base.parent, os.W_OK) or base.exists():
         return base
-    # Fallback para home do usuário se /var/lib não for acessível
     fallback = Path.home() / ".local/share/kryonix"
     fallback.mkdir(parents=True, exist_ok=True)
     return fallback
 
 BASE_DIR = _get_base_dir()
-SESSIONS_DIR = BASE_DIR / "kora/sessions"
 VAULT_USER_DIR = BASE_DIR / "vault/Kora/User"
 PROFILE_CACHE_DIR = BASE_DIR / "kora/profile"
 
-# Perfil padrão para o criador (Ragton)
+# ── Perfis e Modelos ─────────────────────────────────────────────
+
 RAGTON_PROFILE = {
+    "id": "ragton",
     "display_name": "Ragton",
     "full_name": "Gabriel Aguiar Rocha",
     "unix_user": "rocha",
-    "role": "técnico/sysadmin e estudante de Sistemas de Informação",
+    "role": "operador principal do Kryonix",
+    "permission_level": "admin_owner",
+    "can_execute_readonly": True,
+    "can_request_admin_actions": True,
+    "can_access_private_memory": True,
+    "requires_sudo_for_admin": True,
     "main_project": "Kryonix",
-    "preferences": [
-        "PT-BR",
-        "respostas diretas, técnicas e práticas",
-        "NixOS declarativo com Flakes",
-        "comandos prontos",
-        "segurança antes de automação"
-    ],
-    "interests": [
-        "Linux avançado",
-        "NixOS",
-        "Proxmox",
-        "OPNsense",
-        "IA local",
-        "Ollama",
-        "RAG",
-        "LightRAG",
-        "Neo4j",
-        "Obsidian",
-        "Rust",
-        "Python"
-    ]
+    "interests": ["NixOS", "Linux", "IA local", "RAG", "Neo4j", "Rust", "Python"]
 }
+
+KNOWN_USER_TEMPLATE = {
+    "id": "known_user",
+    "display_name": "Usuário Conhecido",
+    "permission_level": "trusted_guest",
+    "can_execute_readonly": False,
+    "can_request_admin_actions": False,
+    "can_access_private_memory": False,
+}
+
+UNKNOWN_PROFILE = {
+    "id": "unknown",
+    "display_name": "Visitante",
+    "full_name": "Visitante Desconhecido",
+    "unix_user": "unknown",
+    "role": "visitante",
+    "permission_level": "guest",
+    "can_execute_readonly": False,
+    "can_request_admin_actions": False,
+    "can_access_private_memory": False,
+}
+
+# ── Detecção e Resolução ─────────────────────────────────────────
 
 def detect_runtime_identity() -> Dict[str, Any]:
     """
@@ -67,22 +76,33 @@ def detect_runtime_identity() -> Dict[str, Any]:
         "user": os.environ.get("USER") or os.environ.get("LOGNAME") or "unknown",
         "hostname": os.uname().nodename,
         "ssh": "SSH_CONNECTION" in os.environ,
+        "tty": os.isatty(0) if hasattr(os, "isatty") else False,
         "timestamp": datetime.now().isoformat()
     }
 
-def get_known_user_profile(user: str) -> Optional[Dict[str, Any]]:
+def resolve_identity(runtime: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Retorna o perfil do usuário se ele for reconhecido.
-    Tenta:
-    1. Mapeamento estático (Ragton)
-    2. Cache em JSON em PROFILE_CACHE_DIR
-    3. Perfil no Vault (Markdown/JSON)
+    Resolve a identidade baseada no contexto de execução e perfis conhecidos.
     """
-    # 1. Mapeamento estático prioritário
+    user = runtime.get("user")
+    
+    # 1. Caso especial: Ragton (rocha)
     if user == "rocha":
         return RAGTON_PROFILE
     
-    # 2. Tenta carregar do cache JSON
+    # 2. Tenta carregar do Vault/Cache
+    profile = get_known_user_profile(user)
+    if profile:
+        return profile
+    
+    # 3. Fallback: Desconhecido
+    return UNKNOWN_PROFILE
+
+def get_known_user_profile(user: str) -> Optional[Dict[str, Any]]:
+    """
+    Tenta carregar o perfil do usuário do Cache ou Vault.
+    """
+    # Tenta Cache
     PROFILE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cache_file = PROFILE_CACHE_DIR / f"{user}.json"
     if cache_file.exists():
@@ -92,96 +112,40 @@ def get_known_user_profile(user: str) -> Optional[Dict[str, Any]]:
         except Exception as e:
             logger.error(f"Erro ao ler cache de perfil para {user}: {e}")
 
-    # 3. Tenta carregar do Vault
+    # Tenta Vault
     vault_file = VAULT_USER_DIR / f"{user}.md"
     if vault_file.exists():
-        # Por enquanto, uma lógica simples de parsing de metadados se existir
-        # Futuramente: usar um parser de frontmatter real
         try:
             with open(vault_file, "r") as f:
                 content = f.read()
-                # Tenta extrair display_name: "Valor"
                 display_match = re.search(r"display_name:\s*\"?([^\"]+)\"?", content)
-                full_name_match = re.search(r"full_name:\s*\"?([^\"]+)\"?", content)
+                permission_match = re.search(r"permission_level:\s*\"?([^\"]+)\"?", content)
                 if display_match:
-                    return {
+                    profile = KNOWN_USER_TEMPLATE.copy()
+                    profile.update({
+                        "id": user,
                         "display_name": display_match.group(1),
-                        "full_name": full_name_match.group(1) if full_name_match else user,
                         "unix_user": user,
-                        "role": "Usuário Kryonix",
-                        "preferences": ["PT-BR"],
-                        "interests": []
-                    }
+                        "permission_level": permission_match.group(1) if permission_match else "trusted_guest"
+                    })
+                    return profile
         except Exception as e:
             logger.error(f"Erro ao ler perfil no Vault para {user}: {e}")
 
     return None
 
-def is_known_admin(user: str) -> bool:
-    """
-    Verifica se o usuário é um administrador conhecido (Ragton).
-    """
-    return user == "rocha"
+# ── Checagem de Permissões ───────────────────────────────────────
 
-def should_greet(session_id: str, user: str) -> bool:
-    """
-    Verifica se devemos saudar o usuário nesta sessão.
-    Usa persistência em disco para sobreviver a restarts do processo.
-    """
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-    session_file = SESSIONS_DIR / f"{session_id}.json"
-    
-    if not session_file.exists():
-        # Nova sessão
-        save_session_state(session_id, user, greeted=True)
-        return True
-    
-    try:
-        with open(session_file, "r") as f:
-            state = json.load(f)
-            if state.get("user") != user:
-                # Mudou o usuário na mesma sessão? Saudar novamente.
-                save_session_state(session_id, user, greeted=True)
-                return True
-            return not state.get("greeted", False)
-    except Exception as e:
-        logger.error(f"Erro ao ler estado da sessão: {e}")
-        return True
+def can_execute_commands(profile: Dict[str, Any]) -> bool:
+    return profile.get("can_execute_readonly", False) or profile.get("permission_level") == "admin_owner"
 
-def save_session_state(session_id: str, user: str, greeted: bool):
-    """
-    Salva o estado da sessão.
-    """
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-    session_file = SESSIONS_DIR / f"{session_id}.json"
-    state = {
-        "session_id": session_id,
-        "user": user,
-        "greeted": greeted,
-        "last_seen": datetime.now().isoformat()
-    }
-    try:
-        with open(session_file, "w") as f:
-            json.dump(state, f, indent=2)
-    except Exception as e:
-        logger.error(f"Erro ao salvar estado da sessão: {e}")
+def can_request_admin_actions(profile: Dict[str, Any]) -> bool:
+    return profile.get("can_request_admin_actions", False)
 
-def get_greeting(profile: Optional[Dict[str, Any]]) -> str:
-    """
-    Gera uma saudação amigável baseada no horário e perfil.
-    """
-    now = datetime.now()
-    if 5 <= now.hour < 12:
-        base = "Bom dia"
-    elif 12 <= now.hour < 18:
-        base = "Boa tarde"
-    else:
-        base = "Boa noite"
-    
-    name = profile.get("display_name") if profile else None
-    if name:
-        return f"{base}, {name}."
-    return f"{base}!"
+def can_access_private_memory(profile: Dict[str, Any]) -> bool:
+    return profile.get("can_access_private_memory", False)
+
+# ── Interceptação de Query ───────────────────────────────────────
 
 def is_identity_query(message: str) -> bool:
     """
@@ -189,7 +153,6 @@ def is_identity_query(message: str) -> bool:
     """
     message_lower = message.lower()
     
-    # Se perguntar quem é a Kora, NÃO interceptar (deixar o LLM responder)
     if re.search(r"quem (é você|vc é|é a kora)", message_lower):
         return False
 
@@ -200,8 +163,7 @@ def is_identity_query(message: str) -> bool:
         r"o que (você )?(sabe|lembra) de mim",
         r"qual (é )?meu perfil",
         r"você me conhece",
-        r"me identifique",
-        r"quem está digitando"
+        r"quem está (digitando|falando)"
     ]
     for p in patterns:
         if re.search(p, message_lower):
@@ -212,12 +174,20 @@ def get_identity_response(profile: Dict[str, Any]) -> str:
     """
     Gera a resposta determinística para perguntas de identidade.
     """
-    greeting = get_greeting(profile)
-    interests = ", ".join(profile.get("interests", []))
-    
-    return (
-        f"{greeting}\n\n"
-        f"Sim. Você é {profile['full_name']}, usa o usuário `{profile['unix_user']}` no Kryonix "
-        f"e está construindo o Kryonix como sua plataforma NixOS local.\n\n"
-        f"Eu lembro que seu foco principal é {profile.get('main_project', 'o Kryonix')} e você tem interesse em: {interests}."
-    )
+    if profile["id"] == "ragton":
+        interests = ", ".join(profile.get("interests", []))
+        return (
+            f"Bom dia, Ragton.\n\n"
+            f"Sim. Você é {profile['full_name']}, operador principal do Kryonix. "
+            f"Seu foco é NixOS com Flakes, Linux avançado, infraestrutura, Proxmox, OPNsense, "
+            f"IA local, RAG, LightRAG, Neo4j, Ollama, Obsidian, Rust e Python.\n\n"
+            f"Eu reconheço esta sessão como autorizada, mas ações administrativas ainda exigem confirmação e autenticação local."
+        )
+    elif profile["id"] == "unknown":
+        return (
+            "Olá.\n\n"
+            "Ainda não reconheci sua identidade. Posso responder perguntas gerais, "
+            "mas não posso acessar memórias privadas nem executar comandos do sistema."
+        )
+    else:
+        return f"Olá, {profile.get('display_name', 'usuário')}. Eu reconheço você como um convidado autorizado do Kryonix."

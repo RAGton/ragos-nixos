@@ -11,6 +11,7 @@ import sys
 from typing import Any
 
 from .client import KoraClient, KoraClientError
+from .voice import devices, recorder, stt, tts, pipeline, daemon
 
 
 def print_json(data: Any) -> None:
@@ -119,6 +120,55 @@ def handle_memory_search(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
+def handle_voice_devices(args: argparse.Namespace) -> None:
+    print("\n--- Dispositivos de Entrada ---")
+    for d in devices.list_input_devices():
+        print(f"  {d}")
+    print("\n--- Dispositivos de Saída ---")
+    for d in devices.list_output_devices():
+        print(f"  {d}")
+
+
+def handle_voice_test_mic(args: argparse.Namespace) -> None:
+    rec = recorder.KoraRecorder()
+    path = rec.record_to_file("test_mic.wav", seconds=args.seconds)
+    print(f"Gravado em: {path}")
+
+
+def handle_voice_transcribe(args: argparse.Namespace) -> None:
+    rec = recorder.KoraRecorder()
+    path = rec.record_to_file("temp_transcribe.wav", seconds=args.seconds)
+    text = stt.transcribe_audio(path)
+    print(f"Transcrição: {text}")
+
+
+def handle_voice_speak(args: argparse.Namespace) -> None:
+    tts.speak_text(args.text)
+
+
+def handle_listen(args: argparse.Namespace) -> None:
+    # Run the async pipeline
+    import asyncio
+    asyncio.run(pipeline.listen_and_respond(push_to_talk=args.push_to_talk))
+
+
+def handle_voice_daemon(args: argparse.Namespace) -> None:
+    if args.voice_daemon_command == "status":
+        # Note: In a real implementation, this would query a running service
+        # or check a PID/socket. For now, we show foundation status.
+        print_json({
+            "status": "foundation",
+            "ready": False,
+            "note": "Daemon is currently in foundation mode. Use 'kora listen' for PTT."
+        })
+    elif args.voice_daemon_command == "start":
+        print("Starting Kora Voice Daemon (Foundation)...")
+        import asyncio
+        asyncio.run(daemon.run_daemon())
+    elif args.voice_daemon_command == "stop":
+        print("Stopping Kora Voice Daemon... (Not yet implemented via CLI control)")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Kora Personal Assistant CLI")
     parser.add_argument("--url", help="Override KORA_API_URL")
@@ -153,6 +203,32 @@ def main() -> None:
     search_parser.add_argument("query", help="Search query")
     search_parser.add_argument("--mode", choices=["hybrid", "naive", "local", "global"], default="hybrid", help="Search mode")
 
+    # voice
+    voice_parser = subparsers.add_parser("voice", help="Voice and audio operations")
+    voice_subparsers = voice_parser.add_subparsers(dest="voice_command", required=True)
+
+    voice_subparsers.add_parser("devices", help="List audio devices")
+    
+    mic_parser = voice_subparsers.add_parser("test-mic", help="Test microphone recording")
+    mic_parser.add_argument("--seconds", type=int, default=5)
+    
+    stt_parser = voice_subparsers.add_parser("transcribe", help="Transcribe audio to text")
+    stt_parser.add_argument("--seconds", type=int, default=5)
+    
+    speak_parser = voice_subparsers.add_parser("speak", help="Speak text using TTS")
+    speak_parser.add_argument("text", help="Text to speak")
+
+    # voice daemon
+    daemon_parser = voice_subparsers.add_parser("daemon", help="Manage voice listener daemon")
+    daemon_subparsers = daemon_parser.add_subparsers(dest="voice_daemon_command", required=True)
+    daemon_subparsers.add_parser("start", help="Start the daemon")
+    daemon_subparsers.add_parser("stop", help="Stop the daemon")
+    daemon_subparsers.add_parser("status", help="Get daemon status")
+
+    # listen
+    listen_parser = subparsers.add_parser("listen", help="Listen and respond (Voice Mode)")
+    listen_parser.add_argument("--push-to-talk", action="store_true", default=True, help="Use push-to-talk mode")
+
     args = parser.parse_args()
 
     if args.command == "health":
@@ -168,6 +244,19 @@ def main() -> None:
     elif args.command == "memory":
         if args.memory_command == "search":
             handle_memory_search(args)
+    elif args.command == "voice":
+        if args.voice_command == "devices":
+            handle_voice_devices(args)
+        elif args.voice_command == "test-mic":
+            handle_voice_test_mic(args)
+        elif args.voice_command == "transcribe":
+            handle_voice_transcribe(args)
+        elif args.voice_command == "speak":
+            handle_voice_speak(args)
+        elif args.voice_command == "daemon":
+            handle_voice_daemon(args)
+    elif args.command == "listen":
+        handle_listen(args)
 
 
 if __name__ == "__main__":
