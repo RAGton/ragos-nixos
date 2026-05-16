@@ -1,18 +1,26 @@
 {
   lib,
-  stdenvNoCC,
+  python3Packages,
 }:
 
-stdenvNoCC.mkDerivation {
+python3Packages.buildPythonApplication {
   pname = "kora";
   version = "0.1.0";
+  pyproject = true;
 
   src = ../packages/kora;
 
-  installPhase = ''
-    mkdir -p $out
-    cp -r . $out/
-  '';
+  build-system = with python3Packages; [
+    hatchling
+  ];
+
+  dependencies = with python3Packages; [
+    fastapi
+    uvicorn
+    httpx
+    pydantic
+    python-dotenv
+  ];
 
   meta = {
     description = "Kora — Kryonix Personal Assistant (gateway/orchestrator)";
