@@ -148,6 +148,33 @@ kora_stream() {
   curl "${curl_args[@]}" "$url$path"
 }
 
+# ── Animação de Pensamento ──────────────────────────────────────
+# Mostra uma animação minimalista enquanto a Kora processa.
+# Uso: show_thinking_animation <start_time> <label>
+show_thinking_animation() {
+  local start_time="$1"
+  local label="${2:-pensando localmente}"
+  local frames=("◜" "◠" "◝" "◞" "◡" "◟")
+  local i=0
+  
+  # Garante que a animação pare se o processo pai morrer
+  trap "tput el; exit" SIGINT SIGTERM
+  
+  while true; do
+    local now
+    now=$(date +%s.%N)
+    local elapsed
+    elapsed=$(echo "$now - $start_time" | bc 2>/dev/null || echo "0")
+    
+    # Formata para uma casa decimal
+    printf "\r\e[K" # Limpa a linha
+    printf "\e[1;36mKORA\e[0m  \e[33m%s\e[0m  %s  \e[2m%.1fs\e[0m" "${frames[$i]}" "$label" "$elapsed" >&2
+    
+    i=$(( (i + 1) % ${#frames[@]} ))
+    sleep 0.1
+  done
+}
+
 kryonix_kora_health() {
   kora_curl GET /health | jq .
 }
@@ -163,12 +190,19 @@ kryonix_kora_capabilities() {
 kryonix_kora_ask() {
   local mode="auto"
   local query=""
+  local profile=0
+  local start_time
+  start_time=$(date +%s.%N)
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --mode)
         mode="$2"
         shift 2
+        ;;
+      --profile)
+        profile=1
+        shift
         ;;
       *)
         query="$1"
@@ -178,37 +212,87 @@ kryonix_kora_ask() {
   done
 
   if [[ -z "$query" ]]; then
-    printf 'Uso: kryonix kora ask "pergunta" [--mode direct|rag|auto]\n' >&2
+    printf 'Uso: kryonix kora ask "pergunta" [--mode direct|rag|auto] [--profile]\n' >&2
     return 1
   fi
 
-  local payload
-  payload="$(jq -n --arg question "$query" '{question:$question}')"
+  # Variáveis para profiling
+  local first_token_time=""
+  local endpoint="/chat"
+  
+  # Se stdout for TTY, mostra animação
+  local anim_pid=""
+  if [[ -t 1 ]]; then
+    local label="pensando localmente"
+    [[ "$mode" == "rag" || "$mode" == "auto" ]] && label="consultando memória"
+    show_thinking_animation "$start_time" "$label" &
+    anim_pid=$!
+  fi
 
-  if [[ "$mode" == "direct" ]]; then
-    payload="$(jq -n --arg message "$query" --arg mode "$mode" '{message:$message, mode:$mode}')"
-    kora_stream POST /chat/stream "$payload" | python3 -c '
-import sys, json
-for line in sys.stdin:
-    if line.startswith("data: "):
-        try:
-            data = json.loads(line[6:])
-            if "chunk" in data:
-                sys.stdout.write(data["chunk"])
-                sys.stdout.flush()
-        except Exception:
-            pass
-print()
-'
-  elif [[ "$mode" != "auto" ]]; then
-    payload="$(jq -n --arg message "$query" --arg mode "$mode" '{message:$message, mode:$mode}')"
-    local resp
-    resp="$(kora_curl POST /chat "$payload")" || return $?
-    printf '%s\n' "$resp" | jq -r '.answer // "Erro ao obter resposta."'
+  # Payload base
+  local payload
+  payload="$(jq -n --arg question "$query" --arg message "$query" --arg mode "$mode" '{question:$question, message:$message, mode:$mode}')"
+
+  # Stream se modo direct e TTY (ou explicitamente solicitado no futuro)
+  if [[ "$mode" == "direct" && -t 1 ]]; then
+    endpoint="/chat/stream"
+    local first=1
+    
+    # Stream handler
+    kora_stream POST "$endpoint" "$payload" | while read -r line; do
+      if [[ "$line" == data:\ * ]]; then
+        # Limpa animação no primeiro token
+        if [[ $first -eq 1 ]]; then
+          [[ -n "$anim_pid" ]] && kill "$anim_pid" 2>/dev/null && wait "$anim_pid" 2>/dev/null
+          printf "\r\e[K" >&2
+          printf "\e[1;36mKora:\e[0m\n"
+          first=0
+          first_token_time=$(date +%s.%N)
+        fi
+        
+        local chunk
+        chunk=$(echo "$line" | sed 's/^data: //')
+        # Tenta extrair o chunk do JSON
+        local text
+        text=$(echo "$chunk" | jq -r '.chunk // empty')
+        [[ -n "$text" ]] && printf "%s" "$text"
+      fi
+    done
+    printf "\n"
   else
+    # Fallback ou modo non-direct (RAG/Auto por enquanto via block chat)
     local resp
-    resp="$(kora_curl POST /ask "$payload")" || return $?
-    printf '%s\n' "$resp" | jq -r '.answer // "Erro ao obter resposta."'
+    resp="$(kora_curl POST "$endpoint" "$payload")"
+    local status=$?
+    
+    # Limpa animação
+    [[ -n "$anim_pid" ]] && kill "$anim_pid" 2>/dev/null && wait "$anim_pid" 2>/dev/null
+    printf "\r\e[K" >&2
+
+    if [[ $status -ne 0 ]]; then
+      return $status
+    fi
+
+    printf "\e[1;36mKora:\e[0m\n"
+    printf "%s\n" "$resp" | jq -r '.answer // "Erro ao obter resposta."'
+  fi
+
+  if [[ $profile -eq 1 ]]; then
+    local end_time
+    end_time=$(date +%s.%N)
+    local total_elapsed
+    total_elapsed=$(echo "$end_time - $start_time" | bc 2>/dev/null || echo "0")
+    
+    printf "\n\e[2m--- Kora Profile ---\e[0m\n"
+    printf "\e[2m- total:      %.2fs\e[0m\n" "$total_elapsed"
+    if [[ -n "$first_token_time" ]]; then
+      local ft_elapsed
+      ft_elapsed=$(echo "$first_token_time - $start_time" | bc 2>/dev/null || echo "0")
+      printf "\e[2m- first_token: %.2fs\e[0m\n" "$ft_elapsed"
+    fi
+    printf "\e[2m- mode:       %s\e[0m\n" "$mode"
+    printf "\e[2m- endpoint:   %s\e[0m\n" "$endpoint"
+    printf "\e[2m--------------------\e[0m\n"
   fi
 }
 
@@ -273,6 +357,21 @@ kryonix_kora_login() {
   printf '    Permissões: %s\n' "$(stat -c "%a" "$local_env")"
 }
 
+kryonix_kora_latency() {
+  printf 'Executando diagnóstico de latência da Kora...\n'
+  
+  printf '\n1. Health Check:\n'
+  time kora_curl GET /health >/dev/null
+  
+  printf '\n2. Chat Direct (Curto):\n'
+  time kora_curl POST /chat '{"message":"oi","mode":"direct"}' >/dev/null
+  
+  printf '\n3. Chat Direct (Médio):\n'
+  time kora_curl POST /chat '{"message":"Me explique o que é NixOS em 1 parágrafo.","mode":"direct"}' >/dev/null
+  
+  printf '\nDiagnóstico concluído.\n'
+}
+
 kryonix_kora_tunnel() {
   if [[ "$(map_runtime_host)" == "glacier" ]]; then
     printf 'INFO: O túnel não é necessário no Glacier, a Kora roda nativamente no localhost.\n' >&2
@@ -325,8 +424,11 @@ kryonix_kora() {
     login)
       kryonix_kora_login
       ;;
+    latency|doctor-latency)
+      kryonix_kora_latency
+      ;;
     *)
-      printf 'Uso: kryonix kora <health|status|capabilities|ask|chat|memory search|tunnel|login>\n' >&2
+      printf 'Uso: kryonix kora <health|status|capabilities|ask|chat|memory search|tunnel|login|latency>\n' >&2
       return 1
       ;;
   esac
