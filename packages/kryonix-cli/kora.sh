@@ -540,8 +540,10 @@ kryonix_kora() {
       elif [[ "$1" == "status" ]]; then
         kryonix_kora_memory_status
       elif [[ "$1" == "recent" ]]; then
+        shift
         kryonix_kora_memory_recent "$@"
       elif [[ "$1" == "flush" ]]; then
+        shift
         kryonix_kora_memory_flush
       elif [[ "$1" == "index" ]]; then
         shift

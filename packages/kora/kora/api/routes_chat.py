@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 from ..core.orchestrator import process_message, confirm_pending_action, process_message_stream
 from ..integrations import brain as brain_adapter
-from ..memory import MemorySearch, MemoryQueue, MemoryWorker
+from ..memory import MemorySearch, MemoryQueue, MemoryWorker, MemoryIndexer
 
 logger = logging.getLogger("kora.api.routes_chat")
 
