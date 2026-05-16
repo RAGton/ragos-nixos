@@ -39,3 +39,31 @@ class MemoryWorker:
                 time.sleep(interval)
         except KeyboardInterrupt:
             logger.info("Memory worker stopped")
+
+
+if __name__ == "__main__":
+    import os
+    import sys
+    
+    # Configure logging to stdout for systemd
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        stream=sys.stdout
+    )
+    
+    # Use environment variables or defaults
+    queue_path = os.getenv("KORA_MEMORY_QUEUE")
+    vault_dir = os.getenv("KORA_VAULT_DIR")
+    
+    worker = MemoryWorker(queue_path=queue_path, vault_dir=vault_dir)
+    
+    # Check if we should run once or loop
+    if "--once" in sys.argv:
+        processed = worker.run_once()
+        print(f"Processed {processed} items.")
+    else:
+        # Loop mode (default for systemd if not using timer, but we have a timer)
+        # Actually, the systemd service uses uv run python -m kora.memory.worker
+        # If we use a timer, we should probably use --once
+        worker.run_once()

@@ -132,6 +132,29 @@ in
       default = "/etc/kryonix/packages/kora";
       description = "Diretório do pacote Python kora (usado pelo uv run).";
     };
+
+    memory = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Ativa o Kora Memory Worker para persistência no Obsidian.";
+      };
+      queuePath = mkOption {
+        type = types.path;
+        default = "/var/lib/kryonix/kora/memory/queue.jsonl";
+        description = "Caminho da fila JSONL de memórias pendentes.";
+      };
+      vaultDir = mkOption {
+        type = types.path;
+        default = "/var/lib/kryonix/vault";
+        description = "Diretório do Obsidian Vault canônico.";
+      };
+      interval = mkOption {
+        type = types.str;
+        default = "5min";
+        description = "Intervalo de execução do memory worker.";
+      };
+    };
   };
 
   config = mkIf cfg.enable {
@@ -173,11 +196,46 @@ in
       };
     };
 
+    # ── kora-memory-worker.service (Flush Queue to Obsidian) ──
+    systemd.services.kora-memory-worker = mkIf cfg.memory.enable {
+      description = "Kora Memory Worker (Flush Queue to Obsidian)";
+      after = [ "kora.service" ];
+      environment = {
+        KORA_MEMORY_QUEUE = cfg.memory.queuePath;
+        KORA_VAULT_DIR = cfg.memory.vaultDir;
+        KORA_DATA_DIR = cfg.dataDir;
+        UV_PROJECT_ENVIRONMENT = "${cfg.dataDir}/.venv";
+      };
+      serviceConfig = {
+        ExecStart = "${pkgs.uv}/bin/uv run --locked python -m kora.memory.worker";
+        WorkingDirectory = cfg.packageDir;
+        EnvironmentFile = [
+          "-${cfg.environmentFile}"
+          "-${cfg.brainEnvironmentFile}"
+        ];
+        Restart = "on-failure";
+        RestartSec = "30";
+        User = cfg.user;
+        Group = cfg.group;
+      };
+    };
+
+    systemd.timers.kora-memory-worker = mkIf cfg.memory.enable {
+      description = "Timer for Kora Memory Worker";
+      timerConfig = {
+        OnBootSec = "2min";
+        OnUnitActiveSec = cfg.memory.interval;
+        Persistent = true;
+      };
+      wantedBy = [ "timers.target" ];
+    };
+
     # ── Diretórios de runtime ────────────────────────────────────
     systemd.tmpfiles.rules = [
       "d ${cfg.dataDir} 0770 ${cfg.user} ${cfg.group} -"
       "d ${cfg.dataDir}/sessions 0770 ${cfg.user} ${cfg.group} -"
       "d ${cfg.dataDir}/audit 0770 ${cfg.user} ${cfg.group} -"
+      "d ${cfg.dataDir}/memory 0770 ${cfg.user} ${cfg.group} -"
     ];
 
     # ── Firewall por interface ───────────────────────────────────

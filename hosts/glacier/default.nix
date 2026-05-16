@@ -76,6 +76,7 @@
     # restringe explicitamente o acesso às interfaces tailscale0 e br0.
     host = "0.0.0.0";
     port = 8787;
+    memory.enable = true;
   };
 
   # =========================
