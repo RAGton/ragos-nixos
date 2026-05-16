@@ -65,8 +65,12 @@ async def _prepare_session_and_context(
         if old_meta.get("user") != user or old_meta.get("speaker") != speaker:
             SESSION_METADATA[session_id] = {"user": user, "speaker": speaker, "timestamp": t0}
 
-    runtime_id = detect_runtime_identity()
-    profile = resolve_identity(runtime_id)
+    # Identidade baseada no usuário passado ou detectado
+    runtime_info = detect_runtime_identity()
+    if user and user != "unknown":
+        runtime_info["user"] = user
+
+    profile = resolve_identity(runtime_info)
 
     greeting = ""
     if should_greet(profile):
@@ -204,8 +208,10 @@ async def process_message(
 
     # Detecção determinística de identidade
     if is_identity_query(message):
-        runtime_id = detect_runtime_identity()
-        profile = resolve_identity(runtime_id)
+        runtime_info = detect_runtime_identity()
+        if user and user != "unknown":
+            runtime_info["user"] = user
+        profile = resolve_identity(runtime_info)
         if profile:
             answer = get_identity_response(profile)
             asyncio.create_task(_process_background_memory(message, answer, user))
@@ -255,8 +261,10 @@ async def process_message_stream(
 
     # Detecção determinística de identidade
     if is_identity_query(message):
-        runtime_id = detect_runtime_identity()
-        profile = resolve_identity(runtime_id)
+        runtime_info = detect_runtime_identity()
+        if user and user != "unknown":
+            runtime_info["user"] = user
+        profile = resolve_identity(runtime_info)
         if profile:
             yield f"data: {json.dumps({'type': 'meta', 'mode': 'deterministic', 'session_id': session_id})}\n\n"
             answer = get_identity_response(profile)
