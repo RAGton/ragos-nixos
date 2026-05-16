@@ -33,6 +33,7 @@ print_usage() {
     [graph]="🕸️  Graph"
     [mcp]="🔌 MCP"
     [vault]="📖 Vault"
+    [kora]="🤖 Kora"
     [utils]="⚡ Utilidades"
   )
 
@@ -174,7 +175,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --help|-h)
       if [[ "$subcommand" == "home" || "$subcommand" == "graph" || "$subcommand" == "brain" || "$subcommand" == "mcp" || \
-            "$subcommand" == "vault" || "$subcommand" == "remote" || "$subcommand" == "switch" || "$subcommand" == "boot" || \
+            "$subcommand" == "vault" || "$subcommand" == "kora" || "$subcommand" == "remote" || "$subcommand" == "switch" || "$subcommand" == "boot" || \
             "$subcommand" == "ollama" || "$subcommand" == "ai" || "$subcommand" == "rgb" || "$subcommand" == "all" || \
             "$subcommand" == "install" || "$subcommand" == "hardware" || "$subcommand" == "disk" ]]; then
         extra_args+=("$1")
@@ -317,7 +318,7 @@ case "$subcommand" in
     exit 0
     ;;
 
-  clean|vm|git-status|pull|deploy|sync|brain|graph|mcp|vault|rgb|ollama|ai|remote|install|hardware|disk)
+  clean|vm|git-status|pull|deploy|sync|brain|graph|mcp|vault|kora|rgb|ollama|ai|remote|install|hardware|disk)
     needs_flake=0
     ;;
 
@@ -740,6 +741,10 @@ case "$subcommand" in
         exit 1
         ;;
     esac
+    ;;
+
+  kora)
+    kryonix_kora "${extra_args[@]}"
     ;;
 
   ollama)

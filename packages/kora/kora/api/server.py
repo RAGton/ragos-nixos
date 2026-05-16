@@ -40,6 +40,7 @@ from ..core.config import (
 from ..integrations import brain as brain_adapter
 from ..llm import ollama as ollama_adapter
 from .routes_chat import router as chat_router
+from .routes_stream import router as stream_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("kora.api.server")
@@ -76,6 +77,12 @@ app = FastAPI(
 # Protected chat routes
 app.include_router(
     chat_router,
+    dependencies=[Depends(verify_api_key)],
+)
+
+# Protected stream routes
+app.include_router(
+    stream_router,
     dependencies=[Depends(verify_api_key)],
 )
 

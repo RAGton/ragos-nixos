@@ -1,6 +1,6 @@
 # Kora — Roadmap
 
-## Fase 1 — Core API (EM EXECUÇÃO)
+## Fase 1 — Core API (CONCLUÍDA)
 
 **Objetivo:** Fundação mínima funcional.
 
@@ -24,13 +24,12 @@ curl -fsS http://127.0.0.1:8787/health | jq .
 
 ---
 
-## Fase 2 — CLI + Ollama aprofundado
+## Fase 2 — CLI + Streaming Foundation (CONCLUÍDA)
 
-- [ ] CLI `kora ask`, `kora status`, `kora memory search`
-- [ ] Integração `kryonix kora` na CLI Kryonix
-- [ ] Streaming de resposta (SSE ou chunked)
-- [ ] Seleção dinâmica de modelo
-- [ ] Histórico de sessão (em memória)
+- [x] Integração `kryonix kora` na CLI Kryonix
+- [x] Streaming de resposta base via Ollama
+- [x] CLI Python e FastAPI SSE streaming foundation
+- [ ] Otimizações adicionais (histórico e seleção de modelos passarão para Fase 3)
 
 ---
 

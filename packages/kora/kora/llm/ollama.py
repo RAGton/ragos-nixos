@@ -127,3 +127,52 @@ async def chat(
             "provider": "ollama",
             "error": str(e),
         }
+async def generate_stream(
+    prompt: str,
+    system_prompt: str | None = None,
+    context: str | None = None,
+    model: str | None = None,
+    temperature: float = 0.7,
+):
+    """
+    Generate a streaming response from Ollama.
+    Yields string chunks as they arrive.
+    """
+    model = model or OLLAMA_MODEL
+
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+
+    final_prompt = prompt
+    if context:
+        final_prompt = f"Contexto:\n{context}\n\nPergunta:\n{prompt}"
+
+    messages.append({"role": "user", "content": final_prompt})
+
+    payload = {
+        "model": model,
+        "messages": messages,
+        "stream": True,
+        "options": {
+            "temperature": temperature,
+        },
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(OLLAMA_TIMEOUT_CHAT, read=None)) as client:
+            async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json=payload) as resp:
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    if not line:
+                        continue
+                    import json
+                    try:
+                        data = json.loads(line)
+                        if "message" in data and "content" in data["message"]:
+                            yield data["message"]["content"]
+                    except json.JSONDecodeError:
+                        continue
+    except Exception as e:
+        logger.error(f"Ollama stream error: {e}")
+        yield f"\n[Erro na geração: {e}]"

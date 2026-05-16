@@ -73,6 +73,7 @@ let
       + builtins.readFile ./kryonix-cli/remote.sh
       + builtins.readFile ./kryonix-cli/home.sh
       + builtins.readFile ./kryonix-cli/installer.sh
+      + builtins.readFile ./kryonix-cli/kora.sh
       + builtins.readFile ./kryonix-cli/main.sh;
   };
 in
