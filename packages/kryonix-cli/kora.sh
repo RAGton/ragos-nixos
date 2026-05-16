@@ -106,6 +106,32 @@ kora_curl() {
   return 0
 }
 
+kora_stream() {
+  local method="$1"
+  local path="$2"
+  local data="${3:-}"
+  local url
+  local -a curl_args
+  local api_key
+
+  export_kora_env
+  url="$(kora_api_url)"
+  api_key="${KORA_API_KEY:-}"
+
+  curl_args=(--no-buffer --connect-timeout 5 --max-time 300 -sS -X "$method" -H "Accept: text/event-stream")
+
+  if [[ -n "$data" ]] || [[ "$method" == "POST" ]]; then
+    curl_args+=(-H "Content-Type: application/json")
+    curl_args+=(--data "$data")
+  fi
+
+  if [[ -n "$api_key" ]]; then
+    curl_args+=(-H "X-API-Key: $api_key")
+  fi
+
+  curl "${curl_args[@]}" "$url$path"
+}
+
 kryonix_kora_health() {
   kora_curl GET /health | jq .
 }
@@ -143,7 +169,22 @@ kryonix_kora_ask() {
   local payload
   payload="$(jq -n --arg question "$query" '{question:$question}')"
 
-  if [[ "$mode" != "auto" ]]; then
+  if [[ "$mode" == "direct" ]]; then
+    payload="$(jq -n --arg message "$query" --arg mode "$mode" '{message:$message, mode:$mode}')"
+    kora_stream POST /chat/stream "$payload" | python3 -c '
+import sys, json
+for line in sys.stdin:
+    if line.startswith("data: "):
+        try:
+            data = json.loads(line[6:])
+            if "chunk" in data:
+                sys.stdout.write(data["chunk"])
+                sys.stdout.flush()
+        except Exception:
+            pass
+print()
+'
+  elif [[ "$mode" != "auto" ]]; then
     payload="$(jq -n --arg message "$query" --arg mode "$mode" '{message:$message, mode:$mode}')"
     local resp
     resp="$(kora_curl POST /chat "$payload")" || return $?
