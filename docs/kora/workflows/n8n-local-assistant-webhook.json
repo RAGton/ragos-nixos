@@ -1,90 +1,59 @@
 {
-  "name": "Kora Internal Webhook Test",
   "nodes": [
     {
       "parameters": {
+        "httpMethod": "POST",
         "path": "kora-task",
-        "authentication": "headerAuth",
-        "responseMode": "lastNode",
         "options": {}
       },
-      "id": "2b31f08e-1f7c-47fc-8f78-fc29e55a0248",
+      "id": "e0d0d0d0-d0d0-d0d0-d0d0-d0d0d0d0d0d0",
       "name": "Webhook Kora",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        250,
-        300
+        200,
+        200
       ],
-      "webhookId": "kora-task-webhook-id",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "YOUR_CREDENTIAL_ID",
-          "name": "Kora Token"
-        }
-      }
+      "webhookId": "kora-task-trigger"
     },
     {
       "parameters": {
-        "content": "## Webhook Interno Kora\nEsse fluxo é disparado apenas internamente via API da Kora em 127.0.0.1.\nA saída deste nó é retornada para a Kora."
+        "content": "## Kora Task Executor\nEste workflow recebe comandos da Kora e os encaminha para os serviços corretos."
       },
-      "id": "e9b216cd-a657-41fb-99e5-948f936fba72",
+      "id": "f0f0f0f0-f0f0-f0f0-f0f0-f0f0f0f0f0f0",
       "name": "Sticky Note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        180,
-        180
+        400,
+        150
       ]
     },
     {
       "parameters": {
-        "values": {
-          "string": [
-            {
-              "name": "status",
-              "value": "sucesso"
-            },
-            {
-              "name": "mensagem",
-              "value": "A automação visual foi executada no n8n local!"
-            }
-          ]
-        },
         "options": {}
       },
-      "id": "d04ec950-8919-4b1f-9988-db0eef31ba79",
-      "name": "Mock Response",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 2,
+      "id": "g0g0g0g0-g0g0-g0g0-g0g0-g0g0g0g0g0g0",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
       "position": [
-        460,
-        300
+        800,
+        200
       ]
     }
   ],
-  "pinData": {},
   "connections": {
     "Webhook Kora": {
       "main": [
         [
           {
-            "node": "Mock Response",
+            "node": "Respond to Webhook",
             "type": "main",
             "index": 0
           }
         ]
       ]
     }
-  },
-  "active": false,
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "versionId": "f7efebcf-38bb-4b92-9a00-1c5c7d0315ce",
-  "id": "m11X5G8y8z7A9b3B",
-  "meta": {
-    "instanceId": "local-kryonix-n8n"
-  },
-  "tags": []
+  }
 }

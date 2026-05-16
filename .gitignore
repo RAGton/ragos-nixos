@@ -47,3 +47,4 @@ packages/kryonix-home/target/
 # Local MCP runtime config
 .mcp.json
 .mcp.*.json
+kora.env
