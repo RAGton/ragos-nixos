@@ -83,18 +83,18 @@ Se a intenção for `command_execute`:
 1. Identifique o comando shell necessário.
 2. Classifique o risco (READ_ONLY, LOW, MEDIUM, HIGH).
 3. Se for READ_ONLY e útil para a resposta, você pode sugerir e explicar.
-4. Se for MEDIUM ou HIGH, você DEVE gerar um bloco JSON de proposta e pedir confirmação.
+4. Se for MEDIUM ou HIGH, você **DEVE** incluir obrigatoriamente um bloco JSON de proposta no final da sua resposta. Sem este bloco, o comando não poderá ser confirmado.
 
-Formato da proposta (JSON block):
+**Obrigatório para execução (JSON block):**
 ```json
 {
   "intent": "command_execute",
   "command": "comando aqui",
   "risk": "medium",
-  "reason": "justificativa técnica"
+  "reason": "justificativa técnica curta"
 }
 ```
-Instrução para o usuário: "Confirme com: kora confirmar"
+Após o bloco, instrua o usuário: "Confirme com: kora confirmar"
 
 ## Política de ações
 
