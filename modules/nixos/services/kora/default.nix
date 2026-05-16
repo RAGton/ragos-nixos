@@ -42,7 +42,7 @@ let
     set -euo pipefail
     cd "${cfg.packageDir}"
     export LD_LIBRARY_PATH="${runtimeLibPath}:''${LD_LIBRARY_PATH:-}"
-    exec ${pkgs.uv}/bin/uv run python -m kora.api.server
+    exec ${pkgs.uv}/bin/uv run --locked python -m kora.api.server
   '';
 
 in
@@ -143,6 +143,7 @@ in
       ];
       # Soft dependencies — Kora funciona degradada sem estes serviços
       wants = [
+        "network-online.target"
         "ollama.service"
         "kryonix-brain-api.service"
       ];
