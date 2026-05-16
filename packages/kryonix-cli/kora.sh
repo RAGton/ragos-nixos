@@ -164,6 +164,7 @@ kora_supports_animation() {
 kora_think_start() {
   kora_supports_animation || return 0
   local start_time="$1"
+  local frames=("${KORA_THINK_FRAMES[@]}")
   
   (
     local i=0
@@ -177,13 +178,14 @@ kora_think_start() {
       elapsed=$(echo "$now - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
       
       printf "\r\e[2m\e[K" >&2
-      LC_NUMERIC=C printf "\e[1;36mKORA\e[0m  \e[33m%s\e[0m  \e[2m%.1fs\e[0m" "${KORA_THINK_FRAMES[$((i % ${#KORA_THINK_FRAMES[@]}))]}" "$elapsed" >&2
+      LC_NUMERIC=C printf "\e[1;36mKORA\e[0m  \e[33m%s\e[0m  \e[2m%.1fs\e[0m" "${frames[$((i % ${#frames[@]}))]}" "$elapsed" >&2
       
       i=$((i + 1))
       sleep 0.12
     done
   ) &
   KORA_THINK_PID=$!
+  return 0
 }
 
 kora_think_stop() {
@@ -191,7 +193,10 @@ kora_think_stop() {
     kill "$KORA_THINK_PID" 2>/dev/null && wait "$KORA_THINK_PID" 2>/dev/null
     unset KORA_THINK_PID
   fi
-  kora_supports_animation && printf "\r\e[K" >&2
+  if kora_supports_animation; then
+    printf "\r\e[K" >&2
+  fi
+  return 0
 }
 
 kora_print_timing() {
