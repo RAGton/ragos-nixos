@@ -245,6 +245,10 @@ kryonix_kora_ask() {
         mode="$2"
         shift 2
         ;;
+      --model)
+        model="$2"
+        shift 2
+        ;;
       --profile)
         profile=1
         shift
@@ -277,7 +281,13 @@ kryonix_kora_ask() {
   local payload
   local current_user
   current_user="$(whoami)"
-  payload="$(jq -n --arg question "$query" --arg message "$query" --arg mode "$mode" --arg user "$current_user" '{question:$question, message:$message, mode:$mode, user:$user}')"
+  payload="$(jq -n \
+    --arg question "$query" \
+    --arg message "$query" \
+    --arg mode "$mode" \
+    --arg user "$current_user" \
+    --arg model "${model:-}" \
+    '{question:$question, message:$message, mode:$mode, user:$user, model:(if $model != "" then $model else null end)}')"
 
   # Stream if mode is auto or direct and TTY
   if [[ ("$mode" == "direct" || "$mode" == "auto") && -t 1 && "${KORA_JSON}" != "1" ]]; then
