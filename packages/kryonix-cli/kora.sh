@@ -215,7 +215,21 @@ kryonix_kora_health() {
 }
 
 kryonix_kora_status() {
-  kora_curl GET /status | jq .
+  printf "Kora System Status:\n"
+  kora_curl GET /status | jq -r '"Health: \(.health) (\(.status))"' || echo "API Indisponível"
+  printf "\nMemory Status:\n"
+  local mem
+  mem=$(kora_curl GET /memory/status)
+  if [[ -n "$mem" ]]; then
+    echo "$mem" | jq -r '
+      "  Queue:    \(.queue_size) items",
+      "  Vault:    \(.vault_dir)",
+      "  Stats:    \(.stats.total_notes) notes, \(.stats.total_memories) memories",
+      "  Index:    \(.index_status.indexed_files) files indexed"
+    '
+  else
+    echo "  Falha ao obter status de memória."
+  fi
 }
 
 kryonix_kora_capabilities() {
@@ -224,20 +238,11 @@ kryonix_kora_capabilities() {
 
 kryonix_kora_ask() {
   local mode="auto"
-  local query=""
+  local model=""
   local profile="${KORA_PROFILE:-0}"
   local start_time
   start_time=$(date +%s.%N)
-
-  # Se houver múltiplos argumentos e o primeiro não for uma flag, junta tudo na query
-  if [[ $# -gt 0 ]]; then
-    local first_arg="$1"
-    if [[ "$first_arg" != --* ]]; then
-      query="$*"
-      # Limpa os argumentos posicionais para não processar novamente no loop
-      set --
-    fi
-  fi
+  local query_parts=()
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -253,18 +258,24 @@ kryonix_kora_ask() {
         profile=1
         shift
         ;;
+      --*)
+        # Unknown flag, treat as part of query or skip?
+        # For safety, treat unknown -- flags as potential query parts if they are not known,
+        # but here we follow the standard: if it's a flag, it's a param.
+        shift
+        ;;
       *)
-        # Se a query já foi capturada, ignora outros posicionais
-        if [[ -z "$query" ]]; then
-          query="$1"
-        fi
+        query_parts+=("$1")
         shift
         ;;
     esac
   done
 
+  local query="${query_parts[*]}"
+
   if [[ -z "$query" ]]; then
-    printf 'Uso: kryonix kora ask "pergunta" [--mode direct|rag|auto] [--profile]\n' >&2
+    printf 'Erro: Você precisa fornecer uma pergunta ou comando.\n' >&2
+    printf 'Uso: kryonix kora [ask] <pergunta> [--mode auto|direct|rag] [--model <modelo>]\n' >&2
     return 1
   fi
 
