@@ -165,21 +165,21 @@ kora_think_start() {
   kora_supports_animation || return 0
   local start_time="$1"
   local frames=("${KORA_THINK_FRAMES[@]}")
-  
+
   (
     local i=0
     # Garante limpeza se o subshell for morto
     trap "tput el; exit" SIGINT SIGTERM
-    
+
     while true; do
       local now
       now=$(date +%s.%N)
       local elapsed
       elapsed=$(echo "$now - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
-      
+
       printf "\r\e[2m\e[K" >&2
       LC_NUMERIC=C printf "\e[1;36mKORA\e[0m  \e[33m%s\e[0m  \e[2m%.1fs\e[0m" "${frames[$((i % ${#frames[@]}))]}" "$elapsed" >&2
-      
+
       i=$((i + 1))
       sleep 0.12
     done
@@ -204,7 +204,7 @@ kora_print_timing() {
   local first_token="$2"
   local mode="$3"
   local endpoint="$4"
-  
+
   printf "\n\e[2mtiming: total=%.2fs" "$total"
   [[ -n "$first_token" ]] && printf " first_token=%.2fs" "$first_token"
   printf " endpoint=%s mode=%s\e[0m\n" "$endpoint" "$mode"
@@ -217,19 +217,19 @@ kryonix_kora_health() {
 kryonix_kora_status() {
   printf "Kora System Status:\n"
   kora_curl GET /health | jq -r '"Health: \(.status) (v\(.version))"' || echo "API Indisponível"
-  
+
   printf "\nMemory Status:\n"
   local mem index
   mem=$(kora_curl GET /memory/status)
   index=$(kora_curl GET /memory/index/status)
-  
+
   if [[ -n "$mem" ]]; then
     echo "$mem" | jq -r '
       "  Queue:    \(.queue.pending_items) items",
       "  Vault:    \(.vault.path) (exists: \(.vault.exists))"
     '
   fi
-  
+
   if [[ -n "$index" ]]; then
     echo "$index" | jq -r '
       "  Index:    \(.indexed_files)/\(.total_files_in_manifest) files (\(.status))",
@@ -287,7 +287,7 @@ kryonix_kora_ask() {
 
   # Configuração de contexto para animação
   export KORA_JSON="${KORA_JSON:-0}"
-  
+
   # Inicia animação se suportado
   kora_think_start "$start_time"
   trap 'kora_think_stop' EXIT INT TERM
@@ -310,13 +310,13 @@ kryonix_kora_ask() {
   if [[ ("$mode" == "direct" || "$mode" == "auto") && -t 1 && "${KORA_JSON}" != "1" ]]; then
     endpoint="/chat/stream"
     local first=1
-    
+
     while read -r line; do
       if [[ "$line" == data:\ * ]]; then
         local chunk_data="${line#data: }"
         local type
         type=$(echo "$chunk_data" | jq -r '.type // empty')
-        
+
         if [[ "$type" == "meta" ]]; then
             # Metadata can be ignored or used for profile
             continue
@@ -350,7 +350,7 @@ kryonix_kora_ask() {
     local resp
     resp="$(kora_curl POST "$endpoint" "$payload")"
     local status=$?
-    
+
     kora_think_stop
 
     if [[ $status -ne 0 ]]; then
@@ -362,7 +362,7 @@ kryonix_kora_ask() {
     else
       printf "\e[1;36mKora:\e[0m\n"
       printf "%s\n" "$resp" | jq -r '.answer // "Erro ao obter resposta."'
-      
+
       local action
       action=$(printf "%s\n" "$resp" | jq -r '.action // empty')
       if [[ -n "$action" && "$action" != "null" ]]; then
@@ -380,12 +380,12 @@ kryonix_kora_ask() {
     end_time=$(date +%s.%N)
     local total_elapsed
     total_elapsed=$(echo "$end_time - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
-    
+
     local ft_elapsed=""
     if [[ -n "$first_token_time" ]]; then
       ft_elapsed=$(echo "$first_token_time - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
     fi
-    
+
     LC_NUMERIC=C kora_print_timing "$total_elapsed" "$ft_elapsed" "$mode" "$endpoint"
   fi
 }
@@ -508,7 +508,7 @@ kryonix_kora_login() {
   chmod 700 "$local_config_dir"
 
   printf 'Sincronizando Kora API Key do Glacier (%s)...\n' "$ssh_target"
-  
+
   # Busca a chave via SSH e salva direto no arquivo local com permissão restrita
   # Redireciona a saída do SSH para o arquivo local diretamente para evitar prints no terminal
   if ! ssh -p "$ssh_port" "$ssh_target" "sudo grep '^KORA_API_KEY=' $remote_env" > "$local_env" 2>/dev/null; then
@@ -518,7 +518,7 @@ kryonix_kora_login() {
   fi
 
   chmod 600 "$local_env"
-  
+
   # Valida se a chave foi capturada (sem mostrar o valor)
   if ! grep -q "KORA_API_KEY=" "$local_env"; then
     printf 'ERRO: Arquivo de chave obtido está vazio ou inválido.\n' >&2
@@ -537,27 +537,27 @@ kryonix_kora_login() {
 
 kryonix_kora_latency() {
   printf "Kora Latency Diagnostics:\n"
-  
+
   printf "1. Direct (Stream)...\n"
   KORA_PROFILE=1 kryonix_kora_ask "explique NixOS em uma frase" --mode direct
-  
+
   printf "\n2. Auto (Smart Routing)...\n"
   KORA_PROFILE=1 kryonix_kora_ask "quem é você?" --mode auto
-  
+
   printf "\n3. RAG (Knowledge)...\n"
   KORA_PROFILE=1 kryonix_kora_ask "arquitetura do Glacier" --mode rag
-  
+
   printf "\nRecomendação:\n"
   printf "- Default diário: direct_stream (via modo auto smart)\n"
   printf "- Usar RAG só para Kryonix/docs/memória\n"
-  
+
   printf '\n4. Ollama Status:\n'
   if command -v ollama >/dev/null 2>&1; then
     ollama ps
   else
     printf 'Ollama CLI não encontrado localmente.\n'
   fi
-  
+
   printf '\n\e[1;32mDiagnóstico concluído.\e[0m\n'
 }
 
@@ -656,6 +656,10 @@ kryonix_kora() {
     listen)
       kryonix_kora_listen "$@"
       ;;
+    user)
+      shift
+      kora user "$@"
+      ;;
     audit|benchmark)
       kryonix_kora_audit "$@"
       ;;
@@ -668,18 +672,18 @@ kryonix_kora() {
 
 kryonix_kora_confirm() {
   printf 'Confirmando ação pendente via Kora API...\n'
-  
+
   local resp
   resp=$(kora_curl POST /confirm)
   local status=$?
-  
+
   if [[ $status -ne 0 ]]; then
     return $status
   fi
-  
+
   local run_status
   run_status=$(echo "$resp" | jq -r '.status')
-  
+
   if [[ "$run_status" == "success" ]]; then
     printf '\e[1;32mOK: Comando executado com sucesso no servidor.\e[0m\n'
     echo "$resp" | jq -r '.stdout'

@@ -1,38 +1,26 @@
-# Kora Voice Identity — Política e Segurança
+# Kora — Voice Identity & Enrollment
 
-Este documento define as diretrizes para o uso de reconhecimento de voz na assistente Kora.
+A identificação de voz na Kora está em estágio de **fundação**. Ela é projetada para personalização, não para autenticação forte.
 
-## 1. Princípios Fundamentais
+## Princípios
 
-1. **Privacidade**: O áudio bruto capturado para comandos não é salvo permanentemente por padrão. Arquivos temporários são excluídos após o processamento.
-2. **Consentimento**: O cadastro de biometria de voz (voiceprint) exige consentimento explícito do usuário.
-3. **Local-First**: Todo o processamento de STT (Speech-to-Text) e TTS (Text-to-Speech) é feito localmente no hardware do Kryonix (Glacier).
-4. **Segurança Multinível**: A voz reconhecida é usada para **personalização**, não como fator único de autenticação para ações críticas.
+1. **Privacidade Primeiro**: Áudio bruto nunca é salvo. Apenas embeddings anonimizados (voiceprints) são armazenados.
+2. **Consentimento Obrigatório**: O cadastro (`kora voice enroll`) exige confirmação explícita do usuário.
+3. **Limite de Segurança**: Ações críticas do sistema sempre exigem confirmação secundária ou autenticação via terminal, mesmo que a voz seja reconhecida.
 
-## 2. Níveis de Autorização por Voz
+## Estado de Desenvolvimento
 
-| Identidade Detectada | Permissão de Conversa | Permissão de Comandos | Ações Admin |
-|----------------------|-----------------------|-----------------------|-------------|
-| **Ragton** (Confirmado) | Total | Read-only + Propostas | Exige Sudo/Confirmação |
-| **Usuário Conhecido** | Limitada | Bloqueado | Bloqueado |
-| **Desconhecido** | Geral (Público) | Bloqueado | Bloqueado |
+- **Voice Enrollment**: Foundation. Coleta de metadados e consentimento implementada.
+- **Speaker ID**: Pendente (Extração de embeddings e comparação biométrica).
+- **Wake-word**: Target "Kora". Modelo customizado real pendente de validação (V2.6).
 
-## 3. Fluxo de Confirmação
+## Enrollment Workflow
 
-Para ações de risco Médio ou Alto, mesmo que a voz seja reconhecida, a Kora deve:
-1. Emitir uma proposta de ação visual/textual.
-2. Pedir confirmação vocal ("Kora, confirmar").
-3. Validar a intenção antes da execução.
+1. Execute `kora voice identity enroll <user_id>`.
+2. Revise a política de privacidade.
+3. Confirme com `CONFIRMO`.
+4. Grave 5 frases de exemplo.
 
-## 4. Voiceprint e Dados Biométricos
+## Voice Profiles
 
-- Os embeddings de voz são armazenados em `/var/lib/kryonix/kora/voice/profiles/`.
-- O usuário pode excluir seu perfil de voz a qualquer momento via comando `kora voice identity delete`.
-- Nenhum dado biométrico é enviado para nuvem.
-
-## 5. Roadmap
-
-- **V1**: Push-to-Talk + STT/TTS local (Atual).
-- **V2**: Wake-word "Kora" (sempre ouvindo localmente).
-- **V3**: Identificação de orador (Speaker ID) integrada ao Identity Router.
-- **V4**: Autenticação vocal para ações de baixo risco (ex: luzes, música).
+Armazenados em `/var/lib/kryonix/kora/voice/profiles/<user_id>.json`.

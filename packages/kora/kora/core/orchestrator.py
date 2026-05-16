@@ -32,11 +32,10 @@ from .grounding import requires_rag, validate_command_hallucination
 from .tool_registry import get_registry_summary, find_tool
 from .identity import (
     detect_runtime_identity,
-    get_known_user_profile,
+    resolve_identity,
     should_greet,
-    get_greeting,
-    is_identity_query,
-    get_identity_response
+    get_identity_response,
+    is_identity_query
 )
 
 logger = logging.getLogger("kora.core.orchestrator")
@@ -58,7 +57,7 @@ async def _prepare_session_and_context(
     """Unified helper to handle session state, routing, and context retrieval."""
     t0 = time.monotonic()
     is_new_session = session_id not in SESSION_METADATA
-    
+
     if is_new_session:
         SESSION_METADATA[session_id] = {"user": user, "speaker": speaker, "timestamp": t0}
     else:
@@ -67,14 +66,14 @@ async def _prepare_session_and_context(
             SESSION_METADATA[session_id] = {"user": user, "speaker": speaker, "timestamp": t0}
 
     runtime_id = detect_runtime_identity()
-    profile = get_known_user_profile(user)
-    
+    profile = resolve_identity(runtime_id)
+
     greeting = ""
-    if should_greet(session_id, user):
-        greeting = get_greeting(profile)
+    if should_greet(profile):
+        greeting = get_identity_response(profile)
 
     system_prompt = load_system_prompt()
-    
+
     # Injetar informações de perfil se disponível
     if profile:
         profile_context = (
@@ -97,14 +96,14 @@ async def _prepare_session_and_context(
         identity_context += "- Autorização: Administrador Kryonix (Local)\n"
     else:
         identity_context += "- Autorização: Usuário não privilegiado (Restrito)\n"
-    
+
     if greeting:
         identity_context += f"- Saudação sugerida: {greeting}\n"
-    
+
     system_prompt += identity_context
     registry_summary = get_registry_summary()
     system_prompt += f"\n\n## Ferramentas Disponíveis (Tool Registry)\n{registry_summary}"
-    
+
     active_mode = mode
     if mode == "auto":
         active_mode = "rag" if requires_rag(message) else "direct"
@@ -135,33 +134,33 @@ async def _handle_action_proposal(answer: str, user: str, session_id: str) -> tu
 
     json_text = match.group(1)
     cleaned_answer = answer[:match.start()].strip() + "\n" + answer[match.end():].strip()
-    
+
     try:
         proposal = json.loads(json_text)
         action_type = proposal.get("action")
-        
+
         # Validation
         if action_type == "command_execute":
             command = proposal.get("command")
             if not command:
                 return cleaned_answer, {"error": "Comando não especificado na proposta."}
-            
+
             # Grounding check
             hallucination_error = validate_command_hallucination(command)
             if hallucination_error:
                 return cleaned_answer + f"\n\n⚠️ {hallucination_error}", None
-            
+
             # Policy check
             ctx = PolicyContext(user=user)
             risk = classify_command(command, context=ctx)
             proposal["risk"] = risk.value
-            
+
             # Save as pending if risk is medium/high or requires_confirmation is True
             if risk in [RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL] or proposal.get("requires_confirmation"):
                 await _save_pending_action(command, risk, user)
                 proposal["requires_confirmation"] = True
                 return cleaned_answer, proposal
-            
+
             return cleaned_answer, proposal
 
         elif action_type == "n8n_workflow":
@@ -181,7 +180,7 @@ async def _save_pending_action(command: str, risk: RiskLevel, user: str):
     state_dir = Path.home() / ".local/state/kryonix/kora"
     state_dir.mkdir(parents=True, exist_ok=True)
     state_file = state_dir / "pending_action.json"
-    
+
     data = {
         "command": command,
         "risk": risk.value,
@@ -202,10 +201,11 @@ async def process_message(
 ) -> dict[str, Any]:
     """Process an incoming message (Non-streaming)."""
     ctx = await _prepare_session_and_context(message, session_id, user, speaker, is_voice, mode)
-    
+
     # Detecção determinística de identidade
     if is_identity_query(message):
-        profile = get_known_user_profile(user)
+        runtime_id = detect_runtime_identity()
+        profile = resolve_identity(runtime_id)
         if profile:
             answer = get_identity_response(profile)
             asyncio.create_task(_process_background_memory(message, answer, user))
@@ -217,16 +217,16 @@ async def process_message(
                 "elapsed_sec": time.monotonic() - ctx["start_time"],
                 "model": "identity-module",
             }
-    
+
     llm_result = await ollama_adapter.generate_completion(
         prompt=message,
         system_prompt=ctx["system_prompt"],
         context=ctx["context_text"]
     )
-    
+
     raw_answer = llm_result.get("answer", "Erro interno.")
     answer, action = await _handle_action_proposal(raw_answer, user, session_id)
-    
+
     asyncio.create_task(_process_background_memory(message, answer, user))
 
     return {
@@ -248,14 +248,15 @@ async def process_message_stream(
 ) -> AsyncGenerator[str, None]:
     """Process an incoming message and yield a stream of chunks."""
     ctx = await _prepare_session_and_context(message, session_id, user, speaker, is_voice, mode)
-    
+
     # Se tiver saudação pendente, yield ela primeiro
     if ctx.get("greeting"):
         yield f"data: {json.dumps({'type': 'content', 'chunk': ctx['greeting'] + '\n\n'})}\n\n"
-    
+
     # Detecção determinística de identidade
     if is_identity_query(message):
-        profile = get_known_user_profile(user)
+        runtime_id = detect_runtime_identity()
+        profile = resolve_identity(runtime_id)
         if profile:
             yield f"data: {json.dumps({'type': 'meta', 'mode': 'deterministic', 'session_id': session_id})}\n\n"
             answer = get_identity_response(profile)
@@ -263,13 +264,13 @@ async def process_message_stream(
             for chunk in [answer[i:i+40] for i in range(0, len(answer), 40)]:
                 yield f"data: {json.dumps({'type': 'content', 'chunk': chunk})}\n\n"
                 await asyncio.sleep(0.01)
-            
+
             asyncio.create_task(_process_background_memory(message, answer, user))
             yield f"data: {json.dumps({'type': 'stats', 'elapsed_sec': time.monotonic() - ctx['start_time']})}\n\n"
             return
 
     yield f"data: {json.dumps({'type': 'meta', 'mode': ctx['active_mode'], 'session_id': session_id})}\n\n"
-    
+
     full_answer = ""
     async for chunk in ollama_adapter.generate_stream(
         prompt=message,
@@ -278,12 +279,12 @@ async def process_message_stream(
     ):
         full_answer += chunk
         yield f"data: {json.dumps({'type': 'content', 'chunk': chunk})}\n\n"
-    
+
     # Post-processing for actions
     answer, action = await _handle_action_proposal(full_answer, user, session_id)
     if action:
         yield f"data: {json.dumps({'type': 'action', 'proposal': action})}\n\n"
-    
+
     asyncio.create_task(_process_background_memory(message, answer, user))
     yield f"data: {json.dumps({'type': 'stats', 'elapsed_sec': time.monotonic() - ctx['start_time']})}\n\n"
 
@@ -293,7 +294,7 @@ async def _process_background_memory(message: str, answer: str, user: str):
         # Note: Internal imports to avoid circular dependency
         from kora.memory import MemoryClassifier, MemoryQueue
         from kora.llm.ollama import OllamaAdapter
-        
+
         # We can use the default model for memory extraction
         llm = OllamaAdapter()
         classifier = MemoryClassifier(llm_provider=llm)
@@ -315,7 +316,7 @@ async def confirm_pending_action(session_id: str = "default") -> dict[str, Any]:
         with open(state_file, "r") as f:
             data = json.load(f)
         command = data.get("command")
-        
+
         if command.startswith("n8n:"):
             # Handle n8n trigger
             path = command.split(":", 1)[1]

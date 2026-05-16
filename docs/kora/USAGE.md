@@ -40,6 +40,20 @@ kryonix kora memory flush    # Força o processamento manual da fila
 kryonix kora memory search "termo" # Busca na base de conhecimento
 ```
 
+### Gestão de Usuários:
+```bash
+kryonix kora user init       # Inicializa usuários padrão (Ragton, Nicoly)
+kryonix kora user list       # Lista usuários cadastrados
+kryonix kora user show <id>  # Mostra detalhes de um usuário
+```
+
+### Voz e Identidade:
+```bash
+kryonix kora voice status    # Status do motor de voz (STT, TTS, Wake-word)
+kryonix kora voice identity enroll <id> # Inicia cadastro de voz
+kryonix kora voice daemon start # Inicia o listener de voz em background
+```
+
 ### Acesso Remoto
 
 Se você está no **Inspiron** (cliente) e a Kora está rodando no **Glacier** (servidor), é necessário abrir o túnel SSH antes de interagir com ela:

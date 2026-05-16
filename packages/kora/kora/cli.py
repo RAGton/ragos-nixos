@@ -11,7 +11,8 @@ import sys
 from typing import Any
 
 from .client import KoraClient, KoraClientError
-from .voice import devices, recorder, stt, tts, pipeline, daemon
+from .voice import devices, recorder, stt, tts, pipeline, daemon, identity, wakeword
+from .core import users
 
 
 def print_json(data: Any) -> None:
@@ -169,6 +170,79 @@ def handle_voice_daemon(args: argparse.Namespace) -> None:
         print("Stopping Kora Voice Daemon... (Not yet implemented via CLI control)")
 
 
+def handle_user(args: argparse.Namespace) -> None:
+    registry = users.UserRegistry()
+
+    if args.user_command == "init":
+        # Create initial users
+        ragton = users.KoraUser(
+            id="ragton",
+            display_name="Ragton",
+            full_name="Gabriel Aguiar Rocha",
+            linux_user="rocha",
+            github_user="RAGton",
+            role="owner",
+            permission_level="admin_owner",
+            can_access_private_memory=True,
+            can_request_commands=True,
+            can_request_admin_actions=True
+        )
+        nicoly = users.KoraUser(
+            id="nicoly",
+            display_name="Nicoly",
+            linux_user="nina",
+            role="trusted_partner",
+            permission_level="trusted_user"
+        )
+        registry.save_user(ragton)
+        registry.save_user(nicoly)
+        print("Initial users created: ragton, nicoly")
+
+    elif args.user_command == "add":
+        user = users.KoraUser(
+            id=args.id,
+            display_name=args.display_name,
+            full_name=args.full_name,
+            linux_user=args.linux_user,
+            github_user=args.github,
+            role=args.role,
+            permission_level="admin_owner" if args.role == "owner" else "trusted_user"
+        )
+        registry.save_user(user)
+        print(f"User {args.id} added.")
+
+    elif args.user_command == "list":
+        usrs = registry.list_users()
+        data = {u.id: {"display": u.display_name, "role": u.role, "level": u.permission_level} for u in usrs}
+        print_json(data)
+
+    elif args.user_command == "show":
+        user = registry.get_user(args.id)
+        if user:
+            print_json(user.to_dict())
+        else:
+            print(f"User {args.id} not found.")
+
+    elif args.user_command == "remove":
+        registry.delete_user(args.id)
+        print(f"User {args.id} removed.")
+
+
+def handle_voice_identity(args: argparse.Namespace) -> None:
+    manager = identity.VoiceIdentityManager()
+
+    if args.voice_identity_command == "status":
+        print_json(identity.get_voice_identity_status())
+    elif args.voice_identity_command == "enroll":
+        manager.enroll(args.user_id)
+    elif args.voice_identity_command == "identify":
+        print_json(manager.identify())
+
+
+def handle_voice_wakeword_status(args: argparse.Namespace) -> None:
+    print_json(wakeword.get_wakeword_status())
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Kora Personal Assistant CLI")
     parser.add_argument("--url", help="Override KORA_API_URL")
@@ -208,13 +282,13 @@ def main() -> None:
     voice_subparsers = voice_parser.add_subparsers(dest="voice_command", required=True)
 
     voice_subparsers.add_parser("devices", help="List audio devices")
-    
+
     mic_parser = voice_subparsers.add_parser("test-mic", help="Test microphone recording")
     mic_parser.add_argument("--seconds", type=int, default=5)
-    
+
     stt_parser = voice_subparsers.add_parser("transcribe", help="Transcribe audio to text")
     stt_parser.add_argument("--seconds", type=int, default=5)
-    
+
     speak_parser = voice_subparsers.add_parser("speak", help="Speak text using TTS")
     speak_parser.add_argument("text", help="Text to speak")
 
@@ -225,9 +299,42 @@ def main() -> None:
     daemon_subparsers.add_parser("stop", help="Stop the daemon")
     daemon_subparsers.add_parser("status", help="Get daemon status")
 
+    # voice identity
+    identity_parser = voice_subparsers.add_parser("identity", help="Manage voice identity")
+    identity_subparsers = identity_parser.add_subparsers(dest="voice_identity_command", required=True)
+    identity_subparsers.add_parser("status", help="Get identity engine status")
+    enroll_parser = identity_subparsers.add_parser("enroll", help="Enroll a user's voice")
+    enroll_parser.add_argument("user_id", help="User ID to enroll")
+    identity_subparsers.add_parser("identify", help="Identify the current speaker")
+
+    # voice wake-word
+    ww_parser = voice_subparsers.add_parser("wake-word", help="Manage wake-word engine")
+    ww_subparsers = ww_parser.add_subparsers(dest="voice_ww_command", required=True)
+    ww_subparsers.add_parser("status", help="Get wake-word engine status")
+
     # listen
     listen_parser = subparsers.add_parser("listen", help="Listen and respond (Voice Mode)")
     listen_parser.add_argument("--push-to-talk", action="store_true", default=True, help="Use push-to-talk mode")
+
+    # user
+    user_parser = subparsers.add_parser("user", help="Manage Kora users")
+    user_subparsers = user_parser.add_subparsers(dest="user_command", required=True)
+    user_subparsers.add_parser("init", help="Initialize default users")
+    user_add_parser = user_subparsers.add_parser("add", help="Add a new user")
+    user_add_parser.add_argument("--id", required=True)
+    user_add_parser.add_argument("--display-name", required=True)
+    user_add_parser.add_argument("--full-name")
+    user_add_parser.add_argument("--linux-user")
+    user_add_parser.add_argument("--github")
+    user_add_parser.add_argument("--role", default="trusted_partner")
+
+    user_subparsers.add_parser("list", help="List all users")
+
+    user_show_parser = user_subparsers.add_parser("show", help="Show user details")
+    user_show_parser.add_argument("id")
+
+    user_remove_parser = user_subparsers.add_parser("remove", help="Remove a user")
+    user_remove_parser.add_argument("id")
 
     args = parser.parse_args()
 
@@ -255,8 +362,15 @@ def main() -> None:
             handle_voice_speak(args)
         elif args.voice_command == "daemon":
             handle_voice_daemon(args)
+        elif args.voice_command == "identity":
+            handle_voice_identity(args)
+        elif args.voice_command == "wake-word":
+            if args.voice_ww_command == "status":
+                handle_voice_wakeword_status(args)
     elif args.command == "listen":
         handle_listen(args)
+    elif args.command == "user":
+        handle_user(args)
 
 
 if __name__ == "__main__":
