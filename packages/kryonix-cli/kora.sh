@@ -251,7 +251,7 @@ kryonix_kora_ask() {
         fi
         
         local chunk
-        chunk=$(echo "$line" | sed 's/^data: //')
+        chunk="${line#data: }"
         # Tenta extrair o chunk do JSON
         local text
         text=$(echo "$chunk" | jq -r '.chunk // empty')
