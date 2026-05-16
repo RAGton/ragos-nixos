@@ -190,7 +190,7 @@ kryonix_kora_capabilities() {
 kryonix_kora_ask() {
   local mode="auto"
   local query=""
-  local profile=0
+  local profile="${KORA_PROFILE:-0}"
   local start_time
   start_time=$(date +%s.%N)
 
@@ -357,18 +357,26 @@ kryonix_kora_login() {
 }
 
 kryonix_kora_latency() {
-  printf 'Executando diagnóstico de latência da Kora...\n'
+  printf '\e[1;36mDiagnóstico de Latência Kora\e[0m\n'
+  printf '\e[2m----------------------------------------\e[0m\n'
   
-  printf '\n1. Health Check:\n'
+  printf '1. Health Check:\n'
   time kora_curl GET /health >/dev/null
   
   printf '\n2. Chat Direct (Curto):\n'
-  time kora_curl POST /chat '{"message":"oi","mode":"direct"}' >/dev/null
+  KORA_PROFILE=1 kryonix_kora_ask "oi" --mode direct
   
   printf '\n3. Chat Direct (Médio):\n'
-  time kora_curl POST /chat '{"message":"Me explique o que é NixOS em 1 parágrafo.","mode":"direct"}' >/dev/null
+  KORA_PROFILE=1 kryonix_kora_ask "Explique o conceito de pureza funcional do Nix em 3 frases." --mode direct
   
-  printf '\nDiagnóstico concluído.\n'
+  printf '\n4. Ollama Status:\n'
+  if command -v ollama >/dev/null 2>&1; then
+    ollama ps
+  else
+    printf 'Ollama CLI não encontrado localmente.\n'
+  fi
+  
+  printf '\n\e[1;32mDiagnóstico concluído.\e[0m\n'
 }
 
 kryonix_kora_tunnel() {
