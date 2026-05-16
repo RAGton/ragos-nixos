@@ -226,6 +226,9 @@ async def process_message_stream(
 async def _process_background_memory(message: str, answer: str, user: str):
     """Extract and queue memories from the conversation exchange."""
     try:
+        # Note: Internal imports to avoid circular dependency
+        from kora.memory import MemoryClassifier, MemoryQueue
+        
         classifier = MemoryClassifier()
         candidates = await classifier.classify(message, answer, user=user)
         if candidates:
