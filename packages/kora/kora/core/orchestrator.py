@@ -159,15 +159,3 @@ async def process_message(
         "error": llm_result.get("error"),
     }
 
-
-def _log_audit(metadata: dict[str, Any]) -> None:
-    """
-    Legacy compatibility wrapper for log_event.
-    Used by streaming routes until fully migrated.
-    """
-    log_event(
-        event_type="audit",
-        description="Kora Legacy Audit",
-        metadata=metadata,
-        risk="read_only",
-    )

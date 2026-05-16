@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from ..core.orchestrator import _log_audit
+from ..audit.events import log_event
 from ..llm import ollama as ollama_adapter
 
 logger = logging.getLogger("kora.api.routes_stream")
@@ -61,14 +61,18 @@ async def chat_stream(req: StreamRequest) -> StreamingResponse:
             yield f"data: {json.dumps({'done': True})}\n\n"
 
             # Audit log (post-generation)
-            _log_audit({
-                "endpoint": "/chat/stream",
-                "session_id": req.session_id,
-                "message": req.message,
-                "mode": req.mode,
-                "answer_length": len(full_text),
-                "provider": "ollama",
-            })
+            log_event(
+                event_type="chat_stream",
+                description="Stream generation completed",
+                metadata={
+                    "endpoint": "/chat/stream",
+                    "session_id": req.session_id,
+                    "mode": req.mode,
+                    "answer_length": len(full_text),
+                    "provider": "ollama",
+                },
+                risk="read_only",
+            )
 
         except Exception as e:
             logger.error(f"Stream error: {e}")

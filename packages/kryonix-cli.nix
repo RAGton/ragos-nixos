@@ -76,10 +76,18 @@ let
       + builtins.readFile ./kryonix-cli/kora.sh
       + builtins.readFile ./kryonix-cli/main.sh;
   };
+
+  koraWrapper = writeShellApplication {
+    name = "kora";
+    text = "exec kryonix kora \"$@\"";
+  };
 in
 symlinkJoin {
   name = "kryonix";
-  paths = [ kryonixBase ];
+  paths = [
+    kryonixBase
+    koraWrapper
+  ];
   nativeBuildInputs = [ installShellFiles ];
   postBuild = ''
     installShellCompletion --cmd kryonix \
