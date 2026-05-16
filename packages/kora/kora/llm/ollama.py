@@ -200,3 +200,28 @@ async def generate_stream(
     except Exception as e:
         logger.error(f"Ollama stream error: {e}")
         yield f"\n[Erro na geração: {e}]"
+
+
+class OllamaAdapter:
+    """Class-based interface for Ollama provider."""
+    
+    def __init__(self, model: str | None = None):
+        self.model = model
+
+    async def generate(self, prompt: str, system_prompt: str | None = None, context: str | None = None) -> str:
+        res = await generate_completion(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            context=context,
+            model=self.model
+        )
+        return res.get("answer", "")
+
+    async def generate_stream(self, prompt: str, system_prompt: str | None = None, context: str | None = None):
+        async for chunk in generate_stream(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            context=context,
+            model=self.model
+        ):
+            yield chunk
