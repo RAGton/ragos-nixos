@@ -154,8 +154,10 @@ kora_stream() {
 show_thinking_animation() {
   local start_time="$1"
   local label="${2:-pensando localmente}"
-  local frames=("◜" "◠" "◝" "◞" "◡" "◟")
-  local i=0
+  local messages=("pensando localmente" "alinhando contexto" "consultando memória" "raciocinando" "gerando resposta")
+  local msg_idx=0
+  local frame_idx=0
+  local step=0
   
   # Garante que a animação pare se o processo pai morrer
   trap "tput el; exit" SIGINT SIGTERM
@@ -166,11 +168,17 @@ show_thinking_animation() {
     local elapsed
     elapsed=$(echo "$now - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
     
+    # Troca mensagem a cada 1.5 segundos
+    if [[ $((step % 15)) -eq 0 && $step -gt 0 ]]; then
+      msg_idx=$(( (msg_idx + 1) % ${#messages[@]} ))
+    fi
+
     # Formata para uma casa decimal
     printf "\r\e[K" # Limpa a linha
-    LC_NUMERIC=C printf "\e[1;36mKORA\e[0m  \e[33m%s\e[0m  %s  \e[2m%.1fs\e[0m" "${frames[$i]}" "$label" "$elapsed" >&2
+    LC_NUMERIC=C printf "\e[1;36mKORA\e[0m  \e[33m%s\e[0m  %s  \e[2m%.1fs\e[0m" "${frames[$frame_idx]}" "${messages[$msg_idx]}" "$elapsed" >&2
     
-    i=$(( (i + 1) % ${#frames[@]} ))
+    frame_idx=$(( (frame_idx + 1) % ${#frames[@]} ))
+    step=$((step + 1))
     sleep 0.1
   done
 }
