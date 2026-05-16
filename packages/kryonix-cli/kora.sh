@@ -239,7 +239,7 @@ kryonix_kora_ask() {
     local first=1
     
     # Stream handler
-    kora_stream POST "$endpoint" "$payload" | while read -r line; do
+    while read -r line; do
       if [[ "$line" == data:\ * ]]; then
         # Limpa animação no primeiro token
         if [[ $first -eq 1 ]]; then
@@ -250,14 +250,13 @@ kryonix_kora_ask() {
           first_token_time=$(date +%s.%N)
         fi
         
-        local chunk
-        chunk="${line#data: }"
+        local chunk="${line#data: }"
         # Tenta extrair o chunk do JSON
         local text
         text=$(echo "$chunk" | jq -r '.chunk // empty')
         [[ -n "$text" ]] && printf "%s" "$text"
       fi
-    done
+    done < <(kora_stream POST "$endpoint" "$payload")
     printf "\n"
   else
     # Fallback ou modo non-direct (RAG/Auto por enquanto via block chat)
