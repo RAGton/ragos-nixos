@@ -164,7 +164,7 @@ show_thinking_animation() {
     local now
     now=$(date +%s.%N)
     local elapsed
-    elapsed=$(echo "$now - $start_time" | bc 2>/dev/null || echo "0")
+    elapsed=$(echo "$now - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
     
     # Formata para uma casa decimal
     printf "\r\e[K" # Limpa a linha
@@ -280,13 +280,13 @@ kryonix_kora_ask() {
     local end_time
     end_time=$(date +%s.%N)
     local total_elapsed
-    total_elapsed=$(echo "$end_time - $start_time" | bc 2>/dev/null || echo "0")
+    total_elapsed=$(echo "$end_time - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
     
     printf "\n\e[2m--- Kora Profile ---\e[0m\n"
     LC_NUMERIC=C printf "\e[2m- total:      %.2fs\e[0m\n" "$total_elapsed"
     if [[ -n "$first_token_time" ]]; then
       local ft_elapsed
-      ft_elapsed=$(echo "$first_token_time - $start_time" | bc 2>/dev/null || echo "0")
+      ft_elapsed=$(echo "$first_token_time - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
       LC_NUMERIC=C printf "\e[2m- first_token: %.2fs\e[0m\n" "$ft_elapsed"
     fi
     printf "\e[2m- mode:       %s\e[0m\n" "$mode"
