@@ -568,11 +568,31 @@ kryonix_kora_tunnel() {
   ssh -p "$ssh_port" -N -L 18787:127.0.0.1:8787 "$ssh_target"
 }
 
+kryonix_kora_help() {
+  printf 'Kryonix Kora CLI\n'
+  printf 'Uso: kryonix kora [comando] [argumentos]\n\n'
+  printf 'Comandos:\n'
+  printf '  ask <pergunta>      Faz uma pergunta à Kora (padrão)\n'
+  printf '  listen              Inicia modo escuta (Voz)\n'
+  printf '  voice <subcomando>  Gerenciamento de voz (devices, test-mic, transcribe, speak)\n'
+  printf '  memory <subcomando> Operações de memória (search, status, recent, flush, index)\n'
+  printf '  audit <subcomando>  Auditoria e benchmarks (benchmark, grounding)\n'
+  printf '  status              Mostra o status geral do sistema\n'
+  printf '  health              Verifica a saúde da API e serviços\n'
+  printf '  capabilities        Lista as capacidades ativas\n'
+  printf '  tunnel              Abre túnel SSH para o Glacier\n'
+  printf '  login               Sincroniza KORA_API_KEY do Glacier\n'
+  printf '  help                Mostra esta mensagem de ajuda\n'
+}
+
 kryonix_kora() {
   local sub="${1:-help}"
   shift || true
 
   case "$sub" in
+    help|--help|-h)
+      kryonix_kora_help
+      ;;
     health)
       kryonix_kora_health "$@"
       ;;
