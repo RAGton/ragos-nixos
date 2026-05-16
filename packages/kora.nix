@@ -1,6 +1,10 @@
 {
   lib,
   python3Packages,
+  whisper-cpp,
+  piper-tts,
+  alsa-utils,
+  makeWrapper,
 }:
 
 python3Packages.buildPythonApplication {
@@ -14,13 +18,22 @@ python3Packages.buildPythonApplication {
     hatchling
   ];
 
+  nativeBuildInputs = [ makeWrapper ];
+
   dependencies = with python3Packages; [
     fastapi
     uvicorn
     httpx
     pydantic
     python-dotenv
+    pyaudio
+    pyopen-wakeword
   ];
+
+  postInstall = ''
+    wrapProgram $out/bin/kora \
+      --prefix PATH : ${lib.makeBinPath [ whisper-cpp piper-tts alsa-utils ]}
+  '';
 
   meta = {
     description = "Kora — Kryonix Personal Assistant (gateway/orchestrator)";
