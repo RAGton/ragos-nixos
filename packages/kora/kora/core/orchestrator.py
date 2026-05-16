@@ -204,7 +204,7 @@ async def process_message_stream(
 ) -> AsyncGenerator[str, None]:
     """Process an incoming message and yield a stream of chunks."""
     ctx = await _prepare_session_and_context(message, session_id, user, speaker, is_voice, mode)
-    yield json.dumps({"type": "meta", "mode": ctx["active_mode"], "session_id": session_id}) + "\n"
+    yield f"data: {json.dumps({'type': 'meta', 'mode': ctx['active_mode'], 'session_id': session_id})}\n\n"
     
     full_answer = ""
     async for chunk in ollama_adapter.generate_stream(
@@ -213,18 +213,15 @@ async def process_message_stream(
         context=ctx["context_text"]
     ):
         full_answer += chunk
-        # Note: We stream everything, cleaning happens in the final summary or UI logic
-        # However, for true UX we might want to buffer the JSON block.
-        # For now, we stream text and handle the action at the end.
-        yield json.dumps({"type": "content", "chunk": chunk}) + "\n"
+        yield f"data: {json.dumps({'type': 'content', 'chunk': chunk})}\n\n"
     
     # Post-processing for actions
     answer, action = await _handle_action_proposal(full_answer, user, session_id)
     if action:
-        yield json.dumps({"type": "action", "proposal": action}) + "\n"
+        yield f"data: {json.dumps({'type': 'action', 'proposal': action})}\n\n"
     
     asyncio.create_task(_process_background_memory(message, answer, user))
-    yield json.dumps({"type": "stats", "elapsed_sec": time.monotonic() - ctx["start_time"]}) + "\n"
+    yield f"data: {json.dumps({'type': 'stats', 'elapsed_sec': time.monotonic() - ctx['start_time']})}\n\n"
 
 async def _process_background_memory(message: str, answer: str, user: str):
     """Extract and queue memories from the conversation exchange."""
