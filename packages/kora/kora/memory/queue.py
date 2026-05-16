@@ -53,12 +53,23 @@ class MemoryQueue:
     def get_status(self) -> dict:
         """Get queue stats."""
         count = 0
-        if self.queue_path.exists():
-            with open(self.queue_path, "r") as f:
-                count = sum(1 for line in f if line.strip())
+        exists = self.queue_path.exists()
+        
+        if exists:
+            try:
+                with open(self.queue_path, "r") as f:
+                    count = sum(1 for line in f if line.strip())
+            except Exception:
+                return {
+                    "state": "error",
+                    "pending_items": 0,
+                    "queue_path": str(self.queue_path)
+                }
+
+        state = "pending" if count > 0 else ("empty" if exists else "missing")
         
         return {
-            "path": str(self.queue_path),
+            "state": state,
             "pending_items": count,
-            "exists": self.queue_path.exists()
+            "queue_path": str(self.queue_path)
         }

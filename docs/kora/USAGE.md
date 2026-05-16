@@ -26,9 +26,12 @@ Com modo explícito:
 kryonix kora ask --mode direct "Traduza 'hello' para português"
 ```
 
-**Busca na Memória (Brain RAG):**
+**Gestão de Memória:**
 ```bash
-kryonix kora memory search "arquitetura do projeto"
+kryonix kora memory status   # Mostra o estado da fila e do Vault
+kryonix kora memory recent   # Lista as memórias capturadas recentemente
+kryonix kora memory flush    # Força o processamento manual da fila
+kryonix kora memory search "termo" # Busca na base de conhecimento
 ```
 
 ### Acesso Remoto

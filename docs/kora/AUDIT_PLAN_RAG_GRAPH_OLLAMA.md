@@ -77,11 +77,11 @@ Garantir que memórias são salvas corretamente e sem segredos.
 3. **Directory Integrity**:
    - Verificar permissões 0770 em `/var/lib/kryonix/kora/memory`.
 
-### Checklist de Memória:
-- [ ] `kora memory status` mostra fila limpa após processamento.
-- [ ] `kora memory recent` mostra as decisões/ideias das últimas conversas.
-- [ ] Teste de segredo: `kora minha senha é XYZ` -> Verificar se a memória foi bloqueada.
-- [ ] Crescimento do Vault: Monitorar tamanho de `var/lib/kryonix/vault/Kora`.
+### Checklist de Memória (Fase M2 Validada):
+- [x] `kora memory status` mostra fila limpa após processamento.
+- [x] `kora memory recent` mostra as decisões/ideias das últimas conversas.
+- [x] Teste de segredo: `kora minha senha é XYZ` -> Bloqueio validado deterministicamente.
+- [x] Crescimento do Vault: Monitorar tamanho de `var/lib/kryonix/vault/Kora`.
 
 ## Próximos Passos
 1.  Executar benchmark inicial.
