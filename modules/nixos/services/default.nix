@@ -21,6 +21,8 @@
     ./llama-cpp.nix
     ./kryonix-state.nix
     ./kora
+    ./n8n
+    ./home-assistant
   ];
 
   services.udisks2.enable = true;

@@ -79,6 +79,20 @@
   };
 
   # =========================
+  # N8N — Motor de automação visual (gateway/orchestrator)
+  # =========================
+  kryonix.services.n8n = {
+    enable = true;
+  };
+
+  # =========================
+  # Home Assistant — Automação residencial
+  # =========================
+  kryonix.services.home-assistant = {
+    enable = true;
+  };
+
+  # =========================
   # TAILSCALE (RVE-specific, não genérico)
   # =========================
   # authKeyFile e extraUpFlags são identidade deste host — ficam aqui.
