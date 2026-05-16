@@ -20,6 +20,7 @@
     ./neo4j.nix
     ./llama-cpp.nix
     ./kryonix-state.nix
+    ./kora
   ];
 
   services.udisks2.enable = true;

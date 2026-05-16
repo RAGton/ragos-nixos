@@ -1,0 +1,129 @@
+# =============================================================================
+# Kora — Ollama Adapter
+#
+# Cliente async para o runtime Ollama via httpx.
+# Tolerante a falhas: nunca crash se Ollama offline.
+#
+# Usa HTTP direto em vez do SDK ollama-python para:
+# - Menos dependências
+# - Mais controle sobre timeouts e retry
+# - Streaming futuro via httpx
+# =============================================================================
+
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+import httpx
+
+from ..core.config import (
+    OLLAMA_MODEL,
+    OLLAMA_TIMEOUT_CHAT,
+    OLLAMA_TIMEOUT_HEALTH,
+    OLLAMA_URL,
+)
+
+logger = logging.getLogger("kora.llm.ollama")
+
+
+async def health() -> dict[str, Any]:
+    """Check Ollama availability. Returns status dict, never raises."""
+    try:
+        async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT_HEALTH) as client:
+            resp = await client.get(f"{OLLAMA_URL}/api/tags")
+            if resp.status_code == 200:
+                data = resp.json()
+                models = [m.get("name", "?") for m in data.get("models", [])]
+                return {
+                    "status": "ok",
+                    "url": OLLAMA_URL,
+                    "models_loaded": len(models),
+                    "models": models[:10],  # cap for readability
+                }
+            return {
+                "status": "warn",
+                "url": OLLAMA_URL,
+                "error": f"HTTP {resp.status_code}",
+            }
+    except httpx.ConnectError:
+        return {"status": "fail", "url": OLLAMA_URL, "error": "connection refused"}
+    except httpx.TimeoutException:
+        return {"status": "fail", "url": OLLAMA_URL, "error": "timeout"}
+    except Exception as e:
+        return {"status": "fail", "url": OLLAMA_URL, "error": str(e)}
+
+
+async def chat(
+    messages: list[dict[str, str]],
+    model: str | None = None,
+    temperature: float = 0.7,
+) -> dict[str, Any]:
+    """
+    Send a chat completion request to Ollama.
+
+    Args:
+        messages: List of {"role": "system"|"user"|"assistant", "content": "..."}.
+        model: Ollama model name. Defaults to config OLLAMA_MODEL.
+        temperature: Sampling temperature.
+
+    Returns:
+        Dict with "answer", "model", "provider" keys, or error info.
+    """
+    model = model or OLLAMA_MODEL
+    payload = {
+        "model": model,
+        "messages": messages,
+        "stream": False,
+        "options": {
+            "temperature": temperature,
+        },
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT_CHAT) as client:
+            resp = await client.post(f"{OLLAMA_URL}/api/chat", json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+
+            answer = data.get("message", {}).get("content", "")
+            return {
+                "answer": answer,
+                "model": model,
+                "provider": "ollama",
+                "eval_count": data.get("eval_count"),
+                "eval_duration": data.get("eval_duration"),
+                "total_duration": data.get("total_duration"),
+            }
+    except httpx.ConnectError:
+        logger.warning("Ollama offline — cannot complete chat request")
+        return {
+            "answer": "Ollama está offline. Não consigo processar a mensagem agora.",
+            "model": model,
+            "provider": "ollama",
+            "error": "connection_refused",
+        }
+    except httpx.TimeoutException:
+        logger.warning("Ollama timeout on chat request")
+        return {
+            "answer": "Ollama não respondeu a tempo. Tente novamente.",
+            "model": model,
+            "provider": "ollama",
+            "error": "timeout",
+        }
+    except httpx.HTTPStatusError as e:
+        logger.error("Ollama HTTP error: %s", e)
+        return {
+            "answer": f"Erro no Ollama: HTTP {e.response.status_code}",
+            "model": model,
+            "provider": "ollama",
+            "error": f"http_{e.response.status_code}",
+        }
+    except Exception as e:
+        logger.error("Unexpected Ollama error: %s", e)
+        return {
+            "answer": f"Erro inesperado ao acessar Ollama: {e}",
+            "model": model,
+            "provider": "ollama",
+            "error": str(e),
+        }

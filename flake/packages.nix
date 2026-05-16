@@ -16,6 +16,7 @@ lib.forAllSystems (
     kryonixDiskPlanner = pkgs.callPackage ../packages/kryonix-disk-planner.nix { };
     kryonixInstaller = pkgs.callPackage ../packages/kryonix-installer.nix { };
     kryonixLlamaCppCuda = pkgs.callPackage ../packages/kryonix-llama-cpp-cuda.nix { };
+    kora = pkgs.callPackage ../packages/kora.nix { };
     kryonixCli = pkgs.callPackage ../packages/kryonix-cli.nix {
       inherit kryonixHome;
       kryonix-hardware-probe = kryonixHardwareProbe;
@@ -33,6 +34,7 @@ lib.forAllSystems (
     kryonix-disk-planner = kryonixDiskPlanner;
     kryonix-installer = kryonixInstaller;
     kryonix-llama-cpp-cuda = kryonixLlamaCppCuda;
+    kora = kora;
     "deno-cache-only" = denoCacheOnly;
   }
 )
