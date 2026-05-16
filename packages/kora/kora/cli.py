@@ -82,12 +82,14 @@ def handle_capabilities(args: argparse.Namespace) -> None:
 
 
 def handle_ask(args: argparse.Namespace) -> None:
+    import os
+    current_user = os.environ.get("USER") or "unknown"
     client = get_client(args)
     try:
         if args.mode:
-            res = client.chat(message=args.question, mode=args.mode)
+            res = client.chat(message=args.question, mode=args.mode, user=current_user)
         else:
-            res = client.ask(question=args.question)
+            res = client.ask(question=args.question, user=current_user)
 
         if args.json:
             print_json(res)

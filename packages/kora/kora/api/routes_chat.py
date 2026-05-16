@@ -57,6 +57,7 @@ class ChatResponse(BaseModel):
 class AskRequest(BaseModel):
     """Quick question request — alias for /chat with mode=auto."""
     question: str = Field(..., description="Question to ask Kora")
+    user: str = Field(default="unknown", description="System user name")
 
 
 class MemorySearchRequest(BaseModel):
@@ -115,6 +116,7 @@ async def ask(req: AskRequest) -> ChatResponse:
     result = await process_message(
         message=req.question,
         session_id="quick",
+        user=req.user,
         mode="auto",
     )
     return ChatResponse(**result)

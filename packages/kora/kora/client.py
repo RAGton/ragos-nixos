@@ -179,18 +179,21 @@ class KoraClient:
         message: str,
         mode: str = "auto",
         session_id: str = "cli",
+        user: str | None = None,
     ) -> dict[str, Any]:
         """POST /chat — requires auth."""
         return self._request("POST", "/chat", {
             "message": message,
             "mode": mode,
             "session_id": session_id,
+            "user": user or "unknown",
         })
 
-    def ask(self, question: str) -> dict[str, Any]:
+    def ask(self, question: str, user: str | None = None) -> dict[str, Any]:
         """POST /ask — requires auth."""
         return self._request("POST", "/ask", {
             "question": question,
+            "user": user or "unknown",
         })
 
     def memory_search(
