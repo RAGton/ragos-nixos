@@ -44,12 +44,11 @@
   # =========================
   kryonix.profiles.glacier-base.enable = true;
   kryonix.profiles.glacier-ai.enable = true;
-  kryonix.profiles.glacier-gamer.enable = true;
 
   # Perfis funcionais
   kryonix.profiles.dev.enable = true;
   kryonix.profiles.ti.enable = true;
-  kryonix.features.remoteDesktop.server.enable = true;
+  kryonix.features.remoteDesktop.server.enable = false;
 
   # =========================
   # EXPERIMENTAL — llama.cpp CUDA Sidecar (A/B Benchmark)
