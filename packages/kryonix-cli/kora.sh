@@ -433,6 +433,55 @@ kryonix_kora_memory_index() {
   fi
 }
 
+kryonix_kora_voice() {
+    local sub="${1:-devices}"
+    shift || true
+
+    case "$sub" in
+        devices)
+            kora voice devices
+            ;;
+        test-mic)
+            kora voice test-mic "$@"
+            ;;
+        transcribe)
+            kora voice transcribe "$@"
+            ;;
+        speak)
+            kora voice speak "$@"
+            ;;
+        identity)
+            kora voice identity "$@"
+            ;;
+        *)
+            printf 'Uso: kryonix kora voice [devices|test-mic|transcribe|speak|identity]\n' >&2
+            return 1
+            ;;
+    esac
+}
+
+kryonix_kora_listen() {
+    kora listen "$@"
+}
+
+kryonix_kora_audit() {
+    local sub="${1:-benchmark}"
+    shift || true
+
+    case "$sub" in
+        benchmark)
+            kora benchmark "$@"
+            ;;
+        grounding)
+            kora audit grounding "$@"
+            ;;
+        *)
+            printf 'Uso: kryonix kora audit [benchmark|grounding]\n' >&2
+            return 1
+            ;;
+    esac
+}
+
 kryonix_kora_login() {
   if [[ "$(map_runtime_host)" == "glacier" ]]; then
     printf 'INFO: Você já está no servidor Glacier. A chave em /etc/kryonix/kora.env será usada.\n'
@@ -570,6 +619,15 @@ kryonix_kora() {
       ;;
     confirmar|confirm)
       kryonix_kora_confirm "$@"
+      ;;
+    voice)
+      kryonix_kora_voice "$@"
+      ;;
+    listen)
+      kryonix_kora_listen "$@"
+      ;;
+    audit|benchmark)
+      kryonix_kora_audit "$@"
       ;;
     *)
       # Se não for um subcomando conhecido, trata como pergunta natural
