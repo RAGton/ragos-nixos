@@ -26,6 +26,7 @@
   kryonix-hardware-probe,
   kryonix-disk-planner,
   kryonix-installer,
+  kora,
   installShellFiles,
   symlinkJoin,
 }:
@@ -60,6 +61,7 @@ let
       kryonix-hardware-probe
       kryonix-disk-planner
       kryonix-installer
+      kora
     ];
     text =
       "set -euo pipefail\ntrap 'stty sane opost onlcr echo icanon isig 2>/dev/null || true' EXIT INT TERM\n"
@@ -79,7 +81,7 @@ let
 
   koraWrapper = writeShellApplication {
     name = "kora";
-    text = "exec kryonix kora \"$@\"";
+    text = "exec ${kora}/bin/kora \"$@\"";
   };
 in
 symlinkJoin {

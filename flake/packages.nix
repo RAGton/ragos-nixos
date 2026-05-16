@@ -18,7 +18,7 @@ lib.forAllSystems (
     kryonixLlamaCppCuda = pkgs.callPackage ../packages/kryonix-llama-cpp-cuda.nix { };
     kora = pkgs.callPackage ../packages/kora.nix { };
     kryonixCli = pkgs.callPackage ../packages/kryonix-cli.nix {
-      inherit kryonixHome;
+      inherit kryonixHome kora;
       kryonix-hardware-probe = kryonixHardwareProbe;
       kryonix-disk-planner = kryonixDiskPlanner;
       kryonix-installer = kryonixInstaller;
