@@ -216,19 +216,25 @@ kryonix_kora_health() {
 
 kryonix_kora_status() {
   printf "Kora System Status:\n"
-  kora_curl GET /status | jq -r '"Health: \(.health) (\(.status))"' || echo "API Indisponível"
+  kora_curl GET /health | jq -r '"Health: \(.status) (v\(.version))"' || echo "API Indisponível"
+  
   printf "\nMemory Status:\n"
-  local mem
+  local mem index
   mem=$(kora_curl GET /memory/status)
+  index=$(kora_curl GET /memory/index/status)
+  
   if [[ -n "$mem" ]]; then
     echo "$mem" | jq -r '
-      "  Queue:    \(.queue_size) items",
-      "  Vault:    \(.vault_dir)",
-      "  Stats:    \(.stats.total_notes) notes, \(.stats.total_memories) memories",
-      "  Index:    \(.index_status.indexed_files) files indexed"
+      "  Queue:    \(.queue.pending_items) items",
+      "  Vault:    \(.vault.path) (exists: \(.vault.exists))"
     '
-  else
-    echo "  Falha ao obter status de memória."
+  fi
+  
+  if [[ -n "$index" ]]; then
+    echo "$index" | jq -r '
+      "  Index:    \(.indexed_files)/\(.total_files_in_manifest) files (\(.status))",
+      "  Pending:  \(.pending_approval) propostas"
+    '
   fi
 }
 
