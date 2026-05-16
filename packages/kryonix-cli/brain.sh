@@ -504,15 +504,15 @@ kryonix_brain_doctor() {
       blue_line "WARN: Brain remoto indisponível; runtime depende do Glacier."
       return 0
     fi
-    
+
     local response
     response="$(brain_remote_curl GET /stats)" || return $?
     local cag_response
     cag_response="$(brain_remote_curl GET /cag/status)" || return $?
-    
+
     local project_dir
     project_dir="$(brain_project_dir)" || return 1
-    
+
     printf '%s|%s' "$response" "$cag_response" | uv run --project "$project_dir" python -c '
 import sys, json
 from rich.console import Console
@@ -1106,10 +1106,10 @@ if is_active:
     created_at = data.get("built_at", data.get("created_at", "n/a"))
     freshness = data.get("freshness", "unknown")
     repo_commit = data.get("repo_commit", "n/a")
-    
+
     fresh_label = f"[bold green]{freshness}[/bold green]" if freshness == "OK" else f"[bold yellow]{freshness}[/bold yellow]"
     if freshness == "unknown": fresh_label = "[dim]unknown[/dim]"
-    
+
     console.print(f"  [cyan]Status:[/cyan]      [bold green]Ativo[/bold green]")
     console.print(f"  [cyan]Freshness:[/cyan]   {fresh_label}")
     console.print(f"  [cyan]Ficheiros:[/cyan]   {num_files}")

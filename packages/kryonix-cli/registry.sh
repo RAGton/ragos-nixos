@@ -159,10 +159,10 @@ kryonix_get_registry_json() {
       --arg cat "$cat" \
       --arg st "$status" \
       '.commands += [{
-        group: $g, 
-        name: $c, 
-        subcommand: $s, 
-        description: $d, 
+        group: $g,
+        name: $c,
+        subcommand: $s,
+        description: $d,
         flags: ($f | split(" ") | map(select(length > 0))),
         examples: ($ex | split(";") | map(select(length > 0))),
         risk_level: $r,

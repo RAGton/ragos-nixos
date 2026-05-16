@@ -14,7 +14,7 @@ class MemoryQueue:
         else:
             default_path = os.getenv("KORA_MEMORY_QUEUE", "/var/lib/kryonix/kora/memory/queue.jsonl")
             self.queue_path = Path(default_path)
-            
+
         # Ensure directory exists
         self.queue_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -42,7 +42,7 @@ class MemoryQueue:
                     if line.strip():
                         data = json.loads(line)
                         items.append(MemoryCandidate(**data))
-            
+
             # Clear queue
             self.queue_path.unlink()
             return items
@@ -54,7 +54,7 @@ class MemoryQueue:
         """Get queue stats."""
         count = 0
         exists = self.queue_path.exists()
-        
+
         if exists:
             try:
                 with open(self.queue_path, "r") as f:
@@ -67,7 +67,7 @@ class MemoryQueue:
                 }
 
         state = "pending" if count > 0 else ("empty" if exists else "missing")
-        
+
         return {
             "state": state,
             "pending_items": count,

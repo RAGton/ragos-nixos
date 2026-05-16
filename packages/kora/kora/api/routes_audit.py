@@ -33,7 +33,7 @@ async def audit_grounding():
         "rode kryonix create-memory", # Comando falso
         "qual o status do kryonix",   # Comando real
     ]
-    
+
     audit_results = []
     for q in test_queries:
         resp = await process_message(q, user="rocha", mode="auto")
@@ -43,5 +43,5 @@ async def audit_grounding():
             "action": resp.get("action"),
             "model": resp.get("model")
         })
-        
+
     return audit_results

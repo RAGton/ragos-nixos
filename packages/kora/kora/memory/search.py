@@ -23,14 +23,14 @@ class MemorySearch:
             # Use 'rg' if available, fallback to 'grep'
             cmd = ["rg", "-i", "-l", query, str(self.vault_dir)]
             process = subprocess.run(cmd, capture_output=True, text=True)
-            
+
             if process.returncode == 0:
                 file_paths = process.stdout.strip().split("\n")
                 for path_str in file_paths[:limit]:
                     path = Path(path_str)
                     if path.suffix == ".md":
                         results.append(self._parse_note(path))
-            
+
             return results
         except Exception as e:
             logger.error("Memory search failed: %s", e)
@@ -45,7 +45,7 @@ class MemorySearch:
             # Find all .md files and sort by modification time
             files = list(self.vault_dir.glob("**/*.md"))
             files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
-            
+
             return [self._parse_note(f) for f in files[:limit]]
         except Exception as e:
             logger.error("Failed to get recent memories: %s", e)

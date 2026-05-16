@@ -9,7 +9,7 @@ logger = logging.getLogger("kora.core.benchmark")
 
 class KoraBenchmark:
     """Ferramenta de benchmark para medir performance da Kora e do Brain."""
-    
+
     def __init__(self):
         self.results = []
 
@@ -17,11 +17,11 @@ class KoraBenchmark:
         """Executa uma suite de testes de latência."""
         print(f"🚀 Iniciando Benchmark Kora (Iterações: {iterations})")
         print("-" * 50)
-        
+
         for query in queries:
             query_latencies = []
             print(f"Testando: '{query}'...")
-            
+
             for i in range(iterations):
                 start_time = time.monotonic()
                 try:
@@ -33,11 +33,11 @@ class KoraBenchmark:
                 except Exception as e:
                     logger.error(f"Erro no benchmark: {e}")
                     print(f"  [{i+1}/{iterations}] FALHA: {e}")
-            
+
             if query_latencies:
                 avg = statistics.mean(query_latencies)
                 p95 = statistics.quantiles(query_latencies, n=20)[18] if len(query_latencies) >= 20 else max(query_latencies)
-                
+
                 self.results.append({
                     "query": query,
                     "avg": avg,

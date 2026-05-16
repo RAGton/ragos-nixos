@@ -72,7 +72,7 @@ KRYONIX_TOOLS = [
         kind=ToolKind.KORA,
         risk="low"
     ),
-    
+
     # Kryonix Core
     ToolSpec(
         name="kryonix doctor",
@@ -88,7 +88,7 @@ KRYONIX_TOOLS = [
         kind=ToolKind.KRYONIX,
         risk="read_only"
     ),
-    
+
     # Brain
     ToolSpec(
         name="kryonix brain health",
@@ -111,7 +111,7 @@ KRYONIX_TOOLS = [
         kind=ToolKind.BRAIN,
         risk="read_only"
     ),
-    
+
     # MCP
     ToolSpec(
         name="kryonix mcp check",
@@ -127,7 +127,7 @@ KRYONIX_TOOLS = [
         kind=ToolKind.MCP,
         risk="read_only"
     ),
-    
+
     # System
     ToolSpec(
         name="systemctl status",

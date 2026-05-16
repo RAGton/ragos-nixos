@@ -26,7 +26,7 @@ def transcribe_audio(audio_path: Path) -> str:
             "-l", "pt",
             "--print-colors", "false"
         ], capture_output=True, text=True, check=True)
-        
+
         text = res.stdout.strip()
         logger.info(f"STT: {text}")
         return text

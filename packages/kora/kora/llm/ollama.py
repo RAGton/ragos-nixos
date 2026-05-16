@@ -141,13 +141,13 @@ async def generate_completion(
     messages = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
-    
+
     final_prompt = prompt
     if context:
         final_prompt = f"Contexto:\n{context}\n\nPergunta:\n{prompt}"
-    
+
     messages.append({"role": "user", "content": final_prompt})
-    
+
     return await chat(messages=messages, model=model, temperature=temperature)
 
 
@@ -204,7 +204,7 @@ async def generate_stream(
 
 class OllamaAdapter:
     """Class-based interface for Ollama provider."""
-    
+
     def __init__(self, model: str | None = None):
         self.model = model
 

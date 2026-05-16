@@ -4,7 +4,7 @@
 
 print_banner() {
   if [[ "${json_mode:-0}" -eq 1 ]]; then return 0; fi
-  
+
   if [[ -n "$blue" ]]; then
     printf '%b' "$blue"
     printf '   _  __                         _      \n'
@@ -373,7 +373,7 @@ fi
 case "$subcommand" in
   switch|boot)
     update_flake_if_requested
-    
+
     # OS Switch
     cmd=(nh os "$subcommand" "$flake_ref" -H "$flake_host")
     cmd+=("${verbose_args[@]}" "${dry_args[@]}")
@@ -394,7 +394,7 @@ case "$subcommand" in
   all)
     update_flake_if_requested
     flake_host="$(map_runtime_host)"
-    
+
     # OS Switch
     cmd=(nh os switch "$flake_ref" -H "$flake_host")
     cmd+=("${verbose_args[@]}" "${dry_args[@]}")
@@ -758,7 +758,7 @@ case "$subcommand" in
   remote)
     kryonix_remote "${extra_args[@]}"
     ;;
-  
+
   install)
     kryonix_install "${extra_args[@]}"
     ;;

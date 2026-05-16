@@ -35,7 +35,7 @@ class KoraVoiceDaemon:
         """Handle wake-word detection trigger."""
         self.state = KoraVoiceState.LISTENING
         logger.info("Wake-word triggered! Starting interaction...")
-        
+
         # In a real daemon, we might want to play a small sound here
         try:
             # We call the pipeline, but we need to ensure it doesn't block the daemon forever
@@ -51,13 +51,13 @@ class KoraVoiceDaemon:
         self.running = True
         self.wakeword.start()
         self._loop = asyncio.get_running_loop()
-        
+
         # Audio parameters (openWakeWord likes 16kHz mono 16-bit PCM)
         FORMAT = pyaudio.paInt16
         CHANNELS = 1
         RATE = 16000
         CHUNK = 1280 # ~80ms chunks
-        
+
         try:
             audio = pyaudio.PyAudio()
             stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
@@ -68,7 +68,7 @@ class KoraVoiceDaemon:
             return
 
         logger.info("Kora Voice Daemon: Loop started.")
-        
+
         try:
             while self.running:
                 if self.muted:
@@ -79,17 +79,17 @@ class KoraVoiceDaemon:
                 if self.state == KoraVoiceState.IDLE:
                     # Read audio chunk
                     try:
-                        # Use a separate thread for blocking read if necessary, 
+                        # Use a separate thread for blocking read if necessary,
                         # but for 80ms chunks, it's usually fine in a tight loop
                         data = await self._loop.run_in_executor(None, stream.read, CHUNK, False)
-                        
+
                         if self.wakeword.detect(data):
                             # Trigger!
                             asyncio.create_task(self.handle_trigger())
                     except Exception as e:
                         logger.error(f"Error reading audio stream: {e}")
                         await asyncio.sleep(1)
-                
+
                 await asyncio.sleep(0.01) # Yield to other tasks
         finally:
             stream.stop_stream()
@@ -119,7 +119,7 @@ class KoraVoiceDaemon:
 
 async def run_daemon():
     daemon = KoraVoiceDaemon()
-    
+
     # Handle signals
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):

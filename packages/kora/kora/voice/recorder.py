@@ -18,7 +18,7 @@ class KoraRecorder:
         """Record audio for a fixed duration."""
         output_path = KORA_VOICE_TMP_DIR / filename
         logger.info(f"Recording {seconds} seconds to {output_path}...")
-        
+
         # arecord -d <seconds> -f S16_LE -r 16000 -c 1 <file>
         try:
             subprocess.run([
@@ -38,7 +38,7 @@ class KoraRecorder:
         """Record until user presses Enter (Push-to-Talk)."""
         output_path = KORA_VOICE_TMP_DIR / filename
         print("\n[REC] Gravando... (Pressione Ctrl+C para parar se travar)")
-        
+
         # arecord -f S16_LE -r 16000 -c 1 <file>
         # We start the process and kill it when needed
         process = subprocess.Popen([
@@ -48,11 +48,11 @@ class KoraRecorder:
             "-c", "1",
             str(output_path)
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
+
         try:
             input("Pressione [Enter] para parar de falar...")
         finally:
             process.terminate()
             process.wait()
-            
+
         return output_path

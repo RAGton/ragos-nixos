@@ -19,11 +19,11 @@ DIRECT_KEYWORDS = [
 def requires_rag(message: str) -> bool:
     """Check if the message needs RAG context based on keywords."""
     message_lower = message.lower()
-    
+
     # Priority to direct keywords if they appear with simple questions
     if any(k in message_lower for k in DIRECT_KEYWORDS) and not any(k in message_lower for k in RAG_KEYWORDS):
         return False
-        
+
     return any(k in message_lower for k in RAG_KEYWORDS)
 
 def is_system_state_question(message: str) -> bool:
@@ -51,5 +51,5 @@ def validate_command_hallucination(command: str) -> Optional[str]:
     tool = find_tool(command)
     if tool:
         return None
-    
+
     return f"O comando '{command}' não foi encontrado no registry oficial. Por favor, use comandos documentados ou peça um plano de implementação."

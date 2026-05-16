@@ -18,7 +18,7 @@ class MemoryWorker:
         """Process all pending items in the queue and then index the vault."""
         candidates = self.queue.pop_all()
         processed_count = 0
-        
+
         if candidates:
             for candidate in candidates:
                 try:
@@ -26,11 +26,11 @@ class MemoryWorker:
                     processed_count += 1
                 except Exception as e:
                     logger.error("Worker failed to process candidate %s: %s", candidate.title, e)
-        
+
         if processed_count > 0:
             logger.info("Worker processed %d new items. Starting incremental indexing...", processed_count)
-        
-        # Always run indexer to ensure consistency, even if no new items were popped 
+
+        # Always run indexer to ensure consistency, even if no new items were popped
         # (e.g. manual edits in Vault)
         try:
             indexed_count = await self.indexer.index_all()
@@ -38,7 +38,7 @@ class MemoryWorker:
                 logger.info("Indexer successfully processed %d items.", indexed_count)
         except Exception as e:
             logger.error("Worker failed to run indexer: %s", e)
-        
+
         return processed_count
 
     def run_loop(self, interval: int = 60):
@@ -57,20 +57,20 @@ class MemoryWorker:
 if __name__ == "__main__":
     import os
     import sys
-    
+
     # Configure logging to stdout for systemd
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         stream=sys.stdout
     )
-    
+
     # Use environment variables or defaults
     queue_path = os.getenv("KORA_MEMORY_QUEUE")
     vault_dir = os.getenv("KORA_VAULT_DIR")
-    
+
     worker = MemoryWorker(queue_path=queue_path, vault_dir=vault_dir)
-    
+
     # Check if we should run once or loop
     if "--once" in sys.argv:
         processed = asyncio.run(worker.run_once())

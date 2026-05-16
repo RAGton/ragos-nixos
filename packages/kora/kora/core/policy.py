@@ -120,7 +120,7 @@ def classify_command(command: str, context: Optional[PolicyContext] = None) -> R
     Classify a shell command into a risk level with security in mind.
     """
     ctx = context or PolicyContext()
-    
+
     # 0. Check for coercion/injection in the command string itself
     for p in COERCION_PATTERNS:
         if re.search(p, command.lower()):
@@ -128,7 +128,7 @@ def classify_command(command: str, context: Optional[PolicyContext] = None) -> R
 
     # 1. Normalize and strip prefixes
     cmd = command.strip().lower()
-    
+
     # Remove sudo/doas/env/python prefixes
     clean_cmd = re.sub(r"^(sudo|doas|env|python[0-9]?|bash|sh|run)\s+", "", cmd)
 
@@ -153,7 +153,7 @@ def classify_command(command: str, context: Optional[PolicyContext] = None) -> R
         if re.match(p, clean_cmd):
             is_readonly = True
             break
-    
+
     if is_readonly:
         return RiskLevel.READ_ONLY
 

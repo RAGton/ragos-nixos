@@ -21,7 +21,7 @@ def speak_text(text: str):
             "--model", PIPER_MODEL_PATH,
             "--output_raw"
         ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        
+
         aplay_proc = subprocess.Popen([
             "aplay",
             "-r", "22050", # Piper default
@@ -29,10 +29,10 @@ def speak_text(text: str):
             "-t", "raw",
             "-"
         ], stdin=piper_proc.stdout, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
+
         piper_proc.stdin.write(text.encode("utf-8"))
         piper_proc.stdin.close()
-        
+
         aplay_proc.wait()
     except Exception as e:
         logger.error(f"TTS failed: {e}")

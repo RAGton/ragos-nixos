@@ -61,13 +61,13 @@ class MemoryClassifier:
                 prompt=prompt,
                 system_prompt="Você é um classificador de memória para a Kora. Retorne apenas JSON.",
             )
-            
+
             # Clean possible markdown blocks
             clean_resp = response.strip()
             if clean_resp.startswith("```"):
                 clean_resp = re.sub(r"```json\s*", "", clean_resp)
                 clean_resp = re.sub(r"```\s*", "", clean_resp)
-            
+
             data = json.loads(clean_resp)
             candidates = []
             if isinstance(data, list):

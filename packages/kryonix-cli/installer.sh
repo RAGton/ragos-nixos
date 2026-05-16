@@ -5,7 +5,7 @@
 kryonix_hardware_scan() {
   local json_mode=0
   if [[ "${1:-}" == "--json" ]]; then json_mode=1; fi
-  
+
   if [[ "$json_mode" -eq 1 ]]; then
     kryonix-hardware-probe
   else
@@ -17,7 +17,7 @@ kryonix_hardware_scan() {
 kryonix_disk_list() {
   local json_mode=0
   if [[ "${1:-}" == "--json" ]]; then json_mode=1; fi
-  
+
   if [[ "$json_mode" -eq 1 ]]; then
     lsblk -J -o NAME,MODEL,SIZE,TYPE,MOUNTPOINT,FSTYPE
   else
@@ -35,7 +35,7 @@ kryonix_disk_plan() {
 kryonix_install() {
   local sub="${1:-help}"
   shift || true
-  
+
   case "$sub" in
     server)
       blue_line "Iniciando servidor do instalador (Axum)..."

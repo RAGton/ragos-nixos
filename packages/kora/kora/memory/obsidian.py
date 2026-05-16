@@ -62,7 +62,7 @@ class ObsidianWriter:
     def write(self, candidate: MemoryCandidate) -> str:
         """Write a memory candidate as a Markdown note in Obsidian."""
         category_dir = self._get_category_dir(candidate.type)
-        
+
         # Create filename: date-slug.md
         date_str = candidate.created_at.strftime("%Y-%m-%d")
         slug = self._slugify(candidate.title)
@@ -73,7 +73,7 @@ class ObsidianWriter:
         tags_str = "\n".join([f"  - {tag}" for tag in candidate.tags])
         if tags_str:
             tags_str = f"tags:\n{tags_str}"
-        
+
         frontmatter = f"""---
 type: {candidate.type.value}
 source: {candidate.source}
@@ -96,7 +96,7 @@ status: active
 ## Origem
 {candidate.source}
 """
-        
+
         try:
             with open(file_path, "w") as f:
                 f.write(frontmatter + content)

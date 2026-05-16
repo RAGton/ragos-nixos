@@ -12,7 +12,7 @@ from ..integrations import brain as brain_adapter
 logger = logging.getLogger(__name__)
 
 class MemoryIndexer:
-    def __init__(self, 
+    def __init__(self,
                  vault_dir: str = "/var/lib/kryonix/vault/Kora",
                  manifest_path: str = "/var/lib/kryonix/kora/memory/index_manifest.json"):
         self.vault_dir = Path(vault_dir)
@@ -63,15 +63,15 @@ class MemoryIndexer:
                 if file.endswith(".md"):
                     path = Path(root) / file
                     rel_path = str(path.relative_to(self.vault_dir))
-                    
+
                     mtime = os.path.getmtime(path)
                     current_hash = self._get_file_hash(path)
-                    
+
                     entry = self.manifest.get(rel_path)
-                    
+
                     if not entry or entry.get("sha256") != current_hash:
                         pending.append(path)
-        
+
         return pending
 
     async def index_all(self, auto_approve: bool = True):
@@ -100,7 +100,7 @@ class MemoryIndexer:
                 if res.get("status") == "queued":
                     item_id = res.get("id")
                     logger.info(f"Memory {rel_path} queued for ingestion (ID: {item_id})")
-                    
+
                     # Update manifest
                     self.manifest[rel_path] = {
                         "file": str(path),
@@ -124,7 +124,7 @@ class MemoryIndexer:
         """Return indexing statistics."""
         indexed_count = len([k for k, v in self.manifest.items() if v.get("status") == "indexed" or v.get("status") == "pending_approval"])
         pending_approval = len([k for k, v in self.manifest.items() if v.get("status") == "pending_approval"])
-        
+
         return {
             "vault_dir": str(self.vault_dir),
             "manifest_path": str(self.manifest_path),

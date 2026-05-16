@@ -21,7 +21,7 @@ def get_natural_greeting(user: str = "Ragton") -> str:
         period = "Boa tarde"
     else:
         period = "Boa noite"
-    
+
     if user == "rocha" or user == "Ragton":
         return f"{period}, Ragton. Estou online e pronta para acompanhar você."
     else:
@@ -32,16 +32,16 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
     Complete voice loop: record -> STT -> Kora -> TTS.
     """
     recorder = KoraRecorder()
-    
+
     print("\n" + "=" * 50)
     print(" KORA VOICE — MODO ESCUTA ")
     print("=" * 50)
-    
+
     # Initial greeting
     greeting = get_natural_greeting(user)
     print(f"Kora: {greeting}")
     speak_text(greeting)
-    
+
     try:
         while True:
             if push_to_talk:
@@ -50,25 +50,25 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
             else:
                 # Fixed 5s for now if not PTT
                 audio_path = recorder.record_to_file("last_input.wav", seconds=5)
-            
+
             print("... processando áudio ...")
             text = transcribe_audio(audio_path)
-            
+
             if not text or text.strip() in ["[Erro na transcrição]", ""]:
                 continue
-                
+
             print(f"Você: {text}")
-            
+
             # Send to Kora
             print("... Kora pensando ...")
             resp = await process_message(text, user=user, mode="auto")
             answer = resp.get("answer", "Sem resposta.")
-            
+
             print(f"Kora: {answer}")
-            
+
             # Speak
             speak_text(answer)
-            
+
     except KeyboardInterrupt:
         print("\n[Encerrando modo voz]")
     except Exception as e:
