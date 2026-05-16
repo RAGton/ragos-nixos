@@ -42,17 +42,48 @@ class MemoryClassifier:
 
     async def classify(self, user_msg: str, assistant_resp: str, user: str = "unknown") -> List[MemoryCandidate]:
         """
-        Analyze conversation to find items worth remembering.
+        Analyze conversation to find items worth remembering using LLM.
         """
         # ── Deterministic Guard ──────────────────────────────────────
         if self._contains_secrets(user_msg) or self._contains_secrets(assistant_resp):
             logger.warning("Secret pattern detected in conversation. Blocking memory extraction.")
             return []
 
-        # This is a placeholder for the logic that will be executed.
-        # The orchestrator will likely handle the LLM call and pass the results here
-        # or this module will define the prompt for the orchestrator to use.
-        return []
+        if not self.llm_provider:
+            return []
+
+        try:
+            prompt = self.get_extraction_prompt(user_msg, assistant_resp)
+            response = await self.llm_provider.generate(
+                prompt=prompt,
+                system_prompt="Você é um classificador de memória para a Kora. Retorne apenas JSON.",
+            )
+            
+            # Clean possible markdown blocks
+            clean_resp = response.strip()
+            if clean_resp.startswith("```"):
+                clean_resp = re.sub(r"```json\s*", "", clean_resp)
+                clean_resp = re.sub(r"```\s*", "", clean_resp)
+            
+            data = json.loads(clean_resp)
+            candidates = []
+            if isinstance(data, list):
+                for item in data:
+                    candidates.append(MemoryCandidate(
+                        type=MemoryType(item.get("type", "idea")),
+                        title=item.get("title", "Sem título"),
+                        summary=item.get("summary", ""),
+                        content=item.get("content", ""),
+                        tags=item.get("tags", []),
+                        confidence=item.get("confidence", 0.5),
+                        sensitivity=item.get("sensitivity", "low"),
+                        source_msg=user_msg,
+                        user=user
+                    ))
+            return candidates
+        except Exception as e:
+            logger.error("Failed to extract memories: %s", e)
+            return []
 
     def get_extraction_prompt(self, user_msg: str, assistant_resp: str) -> str:
         """Prompt to extract memories from a conversation exchange."""

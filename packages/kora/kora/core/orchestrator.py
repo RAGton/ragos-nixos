@@ -228,8 +228,11 @@ async def _process_background_memory(message: str, answer: str, user: str):
     try:
         # Note: Internal imports to avoid circular dependency
         from kora.memory import MemoryClassifier, MemoryQueue
+        from kora.llm.ollama import OllamaAdapter
         
-        classifier = MemoryClassifier()
+        # We can use the default model for memory extraction
+        llm = OllamaAdapter()
+        classifier = MemoryClassifier(llm_provider=llm)
         candidates = await classifier.classify(message, answer, user=user)
         if candidates:
             queue = MemoryQueue()
