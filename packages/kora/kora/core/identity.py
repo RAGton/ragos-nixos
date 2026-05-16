@@ -55,6 +55,7 @@ def resolve_identity(runtime: Dict[str, Any]) -> Dict[str, Any]:
         "can_execute_readonly": False,
         "can_request_admin_actions": False,
         "can_access_private_memory": False,
+        "preferences": []
     }
 
 # ── Checagem de Permissões ───────────────────────────────────────
