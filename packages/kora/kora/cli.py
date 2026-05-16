@@ -187,14 +187,16 @@ def handle_user(args: argparse.Namespace) -> None:
             permission_level="admin_owner",
             can_access_private_memory=True,
             can_request_commands=True,
-            can_request_admin_actions=True
+            can_request_admin_actions=True,
+            preferences=["Linux", "NixOS", "IA", "Development"]
         )
         nicoly = users.KoraUser(
             id="nicoly",
             display_name="Nicoly",
             linux_user="nina",
             role="trusted_partner",
-            permission_level="trusted_user"
+            permission_level="trusted_user",
+            preferences=["Culinária", "Design", "Filmes"]
         )
         registry.save_user(ragton)
         registry.save_user(nicoly)

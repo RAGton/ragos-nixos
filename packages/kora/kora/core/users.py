@@ -25,8 +25,13 @@ class KoraUser:
     can_access_private_memory: bool = False
     can_request_commands: bool = False
     can_request_admin_actions: bool = False
+    preferences: list[str] = None
     created_at: str = ""
     updated_at: str = ""
+
+    def __post_init__(self):
+        if self.preferences is None:
+            self.preferences = []
 
     def to_dict(self):
         return asdict(self)
