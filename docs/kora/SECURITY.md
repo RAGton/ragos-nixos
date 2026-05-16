@@ -1,83 +1,47 @@
-# Kora — Segurança
+# Kora Security Policy
 
-## Padrão local-first
+## API Authentication
 
-A Kora opera inteiramente local por padrão:
+Kora uses a shared secret for API authentication. This secret is stored in `/etc/kryonix/kora.env` on the server and must be provided in the `X-API-Key` header for all requests.
 
-| Recurso | Local |
-|---|---|
-| Áudio | Local (futuro) |
-| Imagem | Local (futuro) |
-| LLM | Local via Ollama |
-| Memória | Local |
-| Grafo | Local Neo4j |
-| Vault | Local Obsidian |
-| Automações | LAN/Tailscale |
-| Cloud | Opt-in, nunca padrão |
+### Key Rotation
 
-## Autenticação
+If the `KORA_API_KEY` is exposed in logs, terminals, or shared chats, it must be rotated immediately.
 
-A Kora usa chaves separadas para garantir isolamento:
+#### Rotation Procedure (Secure)
 
-| Chave | Propósito | Arquivo |
-|---|---|---|
-| `KORA_API_KEY` | Protege a API pública da Kora | `/etc/kryonix/kora.env` |
-| `KRYONIX_BRAIN_API_KEY` | Acesso interno Kora → Brain | `/etc/kryonix/brain.env` |
-
-**Por quê separar?** Se o token de interface (Web/Desktop/Mobile) vazar, não compromete automaticamente o acesso direto ao Brain.
-
-### Geração de chave
+Run the following command on the Glacier host:
 
 ```bash
-KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
-tmp="$(mktemp)"
-printf "KORA_API_KEY=%s\n" "$KEY" > "$tmp"
+# Gera nova chave sem imprimir no terminal
+NEW_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+tmp=$(mktemp)
+printf "KORA_API_KEY=%s\n" "$NEW_KEY" > "$tmp"
+# Preserva outras variáveis, se houver
+sudo awk "!/^KORA_API_KEY=/" /etc/kryonix/kora.env >> "$tmp" 2>/dev/null
 sudo install -m 600 -o root -g root "$tmp" /etc/kryonix/kora.env
 rm -f "$tmp"
-unset KEY
+unset NEW_KEY
+sudo systemctl restart kora.service
 ```
 
-## Portas
+After rotation, all clients must run `kora login` again.
 
-| Serviço | Porta | Bind |
-|---|---|---|
-| Kora API | 8787 | `127.0.0.1` (LAN/Tailscale via firewall) |
-| Brain API | 8000 | `127.0.0.1` (LAN/Tailscale via firewall) |
-| Ollama | 11434 | `127.0.0.1` |
-| Neo4j HTTP | 7474 | `127.0.0.1` |
-| Neo4j Bolt | 7687 | `127.0.0.1` |
-| Home Assistant | 8123 | LAN/Tailscale (futuro) |
+## Network Access
 
-Nenhuma porta exposta publicamente por padrão.
+Kora is configured to listen on all interfaces (`0.0.0.0`) to allow access via Tailscale and LAN.
 
-## Secrets
+### Firewall Hardening
 
-Nunca colocar em:
-- Código fonte / Git
-- Derivations Nix / `/nix/store`
-- Logs
-- Stdout de serviços
-- Variáveis inline no systemd
-- README, walkthrough, issues ou commits
+Access is restricted at the firewall level. The port `8787` is ONLY opened for the following interfaces:
+- `tailscale0` (Tailscale VPN)
+- `br0` (Local Bridge/LAN)
 
-## Anti-alucinação
+It remains **closed** for all other interfaces (e.g., `eth0`, `wlan0`).
 
-A Kora implementa grounding obrigatório para:
-- Kryonix (estado do sistema)
-- Comandos NixOS
-- Diagnóstico de serviços
-- Automações físicas
-- Segurança
-- Dados financeiros
-- Saúde
-- Ações destrutivas
+## Client Security
 
-Respostas sem fonte usam: "Não tenho grounding suficiente para afirmar isso."
+The Kora CLI stores the API key in `~/.config/kryonix/kora.env` with `0600` permissions.
 
-## Controle de comandos (futuro shell_guard)
-
-| Nível | Exemplos |
-|---|---|
-| **Livre** | `git status`, `systemctl status`, `df -h`, `nvidia-smi`, `kryonix doctor` |
-| **Confirmação** | `kryonix switch`, `systemctl restart`, firewall, HA automations |
-| **Proibido** | `disko`, `mkfs`, `wipefs`, `rm -rf`, `git reset --hard` |
+- Never share this file.
+- `kora login` uses SSH to fetch the key and never prints the full secret to the terminal.

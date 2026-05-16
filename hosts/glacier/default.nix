@@ -69,11 +69,11 @@
   # Configuração do Brain para usar o backend experimental com fallback automático
   kryonix.services.brain.llmProvider = "auto";
 
-  # =========================
   # KORA — Assistente pessoal local (gateway/orchestrator)
-  # =========================
   kryonix.services.kora = {
     enable = true;
+    # Bind em 0.0.0.0 é seguro aqui porque o firewall do módulo (kryonix.services.kora)
+    # restringe explicitamente o acesso às interfaces tailscale0 e br0.
     host = "0.0.0.0";
     port = 8787;
   };

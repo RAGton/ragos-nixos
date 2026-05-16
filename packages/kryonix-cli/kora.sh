@@ -15,7 +15,8 @@ kora_api_url() {
     else
       # Se estamos no Inspiron (client), a Kora é acessada via rede
       # Tenta DNS (Tailscale) primeiro, fallback para IP local
-      if timeout 0.5 ping -c 1 rve-glacier >/dev/null 2>&1; then
+      # Aumentado timeout para 2.0s devido a possíveis latências de wake-up do Tailscale
+      if timeout 2.0 ping -c 1 rve-glacier >/dev/null 2>&1; then
         url="http://rve-glacier:8787"
       else
         url="http://10.0.0.2:8787"
@@ -26,6 +27,16 @@ kora_api_url() {
 }
 
 export_kora_env() {
+  # 1. Tenta carregar do config local do usuário (preferencial para clientes)
+  local user_config="$HOME/.config/kryonix/kora.env"
+  if [[ -f "$user_config" ]] && [[ -r "$user_config" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$user_config"
+    set +a
+  fi
+
+  # 2. Tenta carregar do config global (preferencial para o servidor)
   if [[ -f "/etc/kryonix/kora.env" ]] && [[ -r "/etc/kryonix/kora.env" ]]; then
     set -a
     # shellcheck disable=SC1091
@@ -221,28 +232,45 @@ kryonix_kora_memory_search() {
 
 kryonix_kora_login() {
   if [[ "$(map_runtime_host)" == "glacier" ]]; then
-    printf 'INFO: Você já está no servidor Glacier.\n'
+    printf 'INFO: Você já está no servidor Glacier. A chave em /etc/kryonix/kora.env será usada.\n'
     return 0
   fi
 
   local ssh_target="${KRYONIX_GLACIER_SSH_TARGET:-rocha@rve-glacier}"
   local ssh_port="${KRYONIX_GLACIER_SSH_PORT:-2224}"
   local remote_env="/etc/kryonix/kora.env"
-  local local_env="/etc/kryonix/kora.env"
+  local local_config_dir="$HOME/.config/kryonix"
+  local local_env="$local_config_dir/kora.env"
 
-  printf 'Sincronizando Kora API Key do Glacier...\n'
+  mkdir -p "$local_config_dir"
+  chmod 700 "$local_config_dir"
+
+  printf 'Sincronizando Kora API Key do Glacier (%s)...\n' "$ssh_target"
   
-  local key
-  key=$(ssh -p "$ssh_port" "$ssh_target" "sudo grep KORA_API_KEY $remote_env | cut -d= -f2" 2>/dev/null)
-  
-  if [[ -z "$key" ]]; then
-    printf 'ERRO: Não foi possível obter a chave via SSH. Verifique o acesso e se o arquivo existe no servidor.\n' >&2
+  # Busca a chave via SSH e salva direto no arquivo local com permissão restrita
+  # Redireciona a saída do SSH para o arquivo local diretamente para evitar prints no terminal
+  if ! ssh -p "$ssh_port" "$ssh_target" "sudo grep '^KORA_API_KEY=' $remote_env" > "$local_env" 2>/dev/null; then
+    printf 'ERRO: Não foi possível obter a chave via SSH. Verifique o acesso.\n' >&2
+    rm -f "$local_env"
     return 1
   fi
 
-  printf 'KORA_API_KEY=%s\n' "$key" | sudo tee "$local_env" >/dev/null
-  sudo chmod 600 "$local_env"
+  chmod 600 "$local_env"
+  
+  # Valida se a chave foi capturada (sem mostrar o valor)
+  if ! grep -q "KORA_API_KEY=" "$local_env"; then
+    printf 'ERRO: Arquivo de chave obtido está vazio ou inválido.\n' >&2
+    rm -f "$local_env"
+    return 1
+  fi
+
+  local key_len fingerprint
+  key_len=$(grep "KORA_API_KEY=" "$local_env" | cut -d= -f2 | tr -d '\n' | wc -c)
+  fingerprint=$(grep "KORA_API_KEY=" "$local_env" | cut -d= -f2 | head -c 8)
+
   printf 'OK: Chave sincronizada e salva em %s\n' "$local_env"
+  printf '    Fingerprint: %s... (tamanho: %s)\n' "$fingerprint" "$key_len"
+  printf '    Permissões: %s\n' "$(stat -c "%a" "$local_env")"
 }
 
 kryonix_kora_tunnel() {
