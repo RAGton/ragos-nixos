@@ -30,6 +30,14 @@ from ..llm import ollama as ollama_adapter
 from ..memory import MemoryCandidate, MemoryClassifier, MemoryQueue, MemoryType
 from .grounding import requires_rag, validate_command_hallucination
 from .tool_registry import get_registry_summary, find_tool
+from .identity import (
+    detect_runtime_identity,
+    get_known_user_profile,
+    should_greet,
+    get_greeting,
+    is_identity_query,
+    get_identity_response
+)
 
 logger = logging.getLogger("kora.core.orchestrator")
 
@@ -58,12 +66,30 @@ async def _prepare_session_and_context(
         if old_meta.get("user") != user or old_meta.get("speaker") != speaker:
             SESSION_METADATA[session_id] = {"user": user, "speaker": speaker, "timestamp": t0}
 
+    runtime_id = detect_runtime_identity()
+    profile = get_known_user_profile(user)
+    
+    greeting = ""
+    if should_greet(session_id, user):
+        greeting = get_greeting(profile)
+
     system_prompt = load_system_prompt()
+    
+    # Injetar informações de perfil se disponível
+    if profile:
+        profile_context = (
+            f"\n\n## Perfil do Usuário Reconhecido\n"
+            f"- Nome: {profile['full_name']} ({profile['display_name']})\n"
+            f"- Papel: {profile['role']}\n"
+            f"- Preferências: {', '.join(profile['preferences'])}\n"
+        )
+        system_prompt += profile_context
+
     identity_context = (
         f"\n\n## Identidade do Usuário Atual\n"
         f"- Usuário do sistema: {user}\n"
         f"- Orígem: {'Voz' if is_voice else 'Terminal/Chat'}\n"
-        f"- Reconhecido como: {speaker if speaker else 'Desconhecido'}\n"
+        f"- Reconhecido como: {profile['display_name'] if profile else 'Desconhecido'}\n"
         f"- Sessão: {session_id}\n"
         f"- Primeira interação na sessão: {'Sim' if is_new_session else 'Não'}\n"
     )
@@ -71,6 +97,9 @@ async def _prepare_session_and_context(
         identity_context += "- Autorização: Administrador Kryonix (Local)\n"
     else:
         identity_context += "- Autorização: Usuário não privilegiado (Restrito)\n"
+    
+    if greeting:
+        identity_context += f"- Saudação sugerida: {greeting}\n"
     
     system_prompt += identity_context
     registry_summary = get_registry_summary()
@@ -174,6 +203,21 @@ async def process_message(
     """Process an incoming message (Non-streaming)."""
     ctx = await _prepare_session_and_context(message, session_id, user, speaker, is_voice, mode)
     
+    # Detecção determinística de identidade
+    if is_identity_query(message):
+        profile = get_known_user_profile(user)
+        if profile:
+            answer = get_identity_response(profile)
+            asyncio.create_task(_process_background_memory(message, answer, user))
+            return {
+                "answer": answer,
+                "action": None,
+                "mode": "deterministic",
+                "brain_used": False,
+                "elapsed_sec": time.monotonic() - ctx["start_time"],
+                "model": "identity-module",
+            }
+    
     llm_result = await ollama_adapter.generate_completion(
         prompt=message,
         system_prompt=ctx["system_prompt"],
@@ -204,6 +248,20 @@ async def process_message_stream(
 ) -> AsyncGenerator[str, None]:
     """Process an incoming message and yield a stream of chunks."""
     ctx = await _prepare_session_and_context(message, session_id, user, speaker, is_voice, mode)
+    
+    # Detecção determinística de identidade
+    if is_identity_query(message):
+        profile = get_known_user_profile(user)
+        if profile:
+            yield f"data: {json.dumps({'type': 'meta', 'mode': 'deterministic', 'session_id': session_id})}\n\n"
+            answer = get_identity_response(profile)
+            for chunk in [answer[i:i+20] for i in range(0, len(answer), 20)]:
+                yield f"data: {json.dumps({'type': 'content', 'chunk': chunk})}\n\n"
+                await asyncio.sleep(0.02)
+            asyncio.create_task(_process_background_memory(message, answer, user))
+            yield f"data: {json.dumps({'type': 'stats', 'elapsed_sec': time.monotonic() - ctx['start_time']})}\n\n"
+            return
+
     yield f"data: {json.dumps({'type': 'meta', 'mode': ctx['active_mode'], 'session_id': session_id})}\n\n"
     
     full_answer = ""

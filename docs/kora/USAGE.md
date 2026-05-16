@@ -11,8 +11,14 @@ Para verificar se a Kora e suas dependências (Brain, Ollama) estão saudáveis:
 ```bash
 kryonix kora health
 kryonix kora status
-kryonix kora capabilities
+kryonix kora login    # Sincroniza a chave API com o Glacier
 ```
+
+### Identidade e Sessões
+
+A Kora reconhece o operador principal e adapta suas respostas:
+- **Identidade:** Pergunte "quem sou eu?" ou "você me conhece?" para validar o reconhecimento.
+- **Sessões:** A Kora saúda o usuário no início de cada nova sessão e mantém o contexto de identidade.
 
 ### Interações (Fase 1 e 2)
 
