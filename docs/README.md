@@ -33,11 +33,17 @@ O projeto **Kryonix** é uma plataforma NixOS declarativa para workstation, gami
 ### Kryonix Brain
 - [Visão Geral Brain](brain/README.md)
 - [LightRAG](brain/lightrag.md)
+- [Embeddings vs Grafos](brain/EMBEDDINGS_VS_GRAPH.md)
+- [GraphRAG Architecture](brain/GRAPH_RAG_ARCHITECTURE.md)
+- [Neo4j Schema](brain/NEO4J_SCHEMA.md)
 - [Model Context Protocol (MCP)](brain/mcp.md)
 - [Vault (Obsidian)](brain/vault.md)
 
-### Agentes
+### Agentes e IA
 - [Guia para Agentes](agents/README.md)
+- [Comandos Operacionais de IA](ai/COMANDOS_OPERACIONAIS_IA.md)
+- [Framework Leda — Agentes Autônomos](ai/AGENT_AUTOMATION_FRAMEWORK_LEDA.md)
+- [Índice de Fontes Sincronizadas](ai/SOURCE_SYNC_INDEX.md)
 
 ---
 Para documentação legada, consulte a pasta `archive/`.
