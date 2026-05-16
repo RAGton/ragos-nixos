@@ -229,6 +229,16 @@ kryonix_kora_ask() {
   local start_time
   start_time=$(date +%s.%N)
 
+  # Se houver múltiplos argumentos e o primeiro não for uma flag, junta tudo na query
+  if [[ $# -gt 0 ]]; then
+    local first_arg="$1"
+    if [[ "$first_arg" != --* ]]; then
+      query="$*"
+      # Limpa os argumentos posicionais para não processar novamente no loop
+      set --
+    fi
+  fi
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --mode)
@@ -240,7 +250,10 @@ kryonix_kora_ask() {
         shift
         ;;
       *)
-        query="$1"
+        # Se a query já foi capturada, ignora outros posicionais
+        if [[ -z "$query" ]]; then
+          query="$1"
+        fi
         shift
         ;;
     esac
@@ -460,9 +473,33 @@ kryonix_kora() {
     latency|doctor-latency)
       kryonix_kora_latency
       ;;
+    confirmar|confirm)
+      kryonix_kora_confirm "$@"
+      ;;
     *)
-      printf 'Uso: kryonix kora <health|status|capabilities|ask|chat|memory search|tunnel|login|latency>\n' >&2
-      return 1
+      # Se não for um subcomando conhecido, trata como pergunta natural
+      kryonix_kora_ask "$sub" "$@"
       ;;
   esac
+}
+
+kryonix_kora_confirm() {
+  local state_file="$HOME/.local/state/kryonix/kora/pending_action.json"
+  if [[ ! -f "$state_file" ]]; then
+    printf 'ERRO: Nenhuma ação pendente para confirmar.\n' >&2
+    return 1
+  fi
+
+  local cmd
+  cmd=$(jq -r '.command' "$state_file")
+  local risk
+  risk=$(jq -r '.risk' "$state_file")
+
+  printf 'Executando comando confirmado (Risco: %s):\n' "$risk"
+  printf '\e[1;33m$ %s\e[0m\n\n' "$cmd"
+  
+  # Remove o estado antes de executar para evitar re-execução acidental
+  rm -f "$state_file"
+  
+  eval "$cmd"
 }

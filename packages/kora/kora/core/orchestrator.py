@@ -24,6 +24,7 @@ import re
 
 from ..audit.events import log_event
 from ..core.config import load_system_prompt
+from ..core.policy import classify_command, RiskLevel
 from ..integrations import brain as brain_adapter
 from ..integrations.n8n import N8nClient
 from ..llm import ollama as ollama_adapter
@@ -122,6 +123,29 @@ async def process_message(
                 
                 # Strip the JSON block from the final answer displayed to the user
                 # answer = answer.replace(json_match.group(0), "").strip()
+            elif tool_call.get("intent") == "command_execute":
+                cmd = tool_call.get("command")
+                reason = tool_call.get("reason", "")
+                risk = classify_command(cmd)
+                
+                logger.info("Command execution proposal detected: %s (Risk: %s)", cmd, risk.value)
+                
+                # Save to pending action state
+                from pathlib import Path
+                state_dir = Path.home() / ".local/state/kryonix/kora"
+                state_dir.mkdir(parents=True, exist_ok=True)
+                
+                state_file = state_dir / "pending_action.json"
+                with open(state_file, "w") as f:
+                    json.dump({
+                        "command": cmd,
+                        "risk": risk.value,
+                        "reason": reason,
+                        "timestamp": time.time()
+                    }, f)
+                
+                tool_executed = True
+                tool_status = f"pending_confirmation:{risk.value}"
         except Exception as e:
             logger.error("Failed to parse or execute tool call: %s", e)
             tool_status = f"error: {str(e)}"
