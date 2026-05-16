@@ -148,39 +148,61 @@ kora_stream() {
   curl "${curl_args[@]}" "$url$path"
 }
 
-# ── Animação de Pensamento ──────────────────────────────────────
-# Mostra uma animação minimalista enquanto a Kora processa.
-# Uso: show_thinking_animation <start_time> <label>
-show_thinking_animation() {
-  local start_time="$1"
-  local label="${2:-pensando localmente}"
-  local messages=("pensando localmente" "alinhando contexto" "consultando memória" "raciocinando" "gerando resposta")
-  local msg_idx=0
-  local frame_idx=0
-  local step=0
-  
-  # Garante que a animação pare se o processo pai morrer
-  trap "tput el; exit" SIGINT SIGTERM
-  
-  while true; do
-    local now
-    now=$(date +%s.%N)
-    local elapsed
-    elapsed=$(echo "$now - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
-    
-    # Troca mensagem a cada 1.5 segundos
-    if [[ $((step % 15)) -eq 0 && $step -gt 0 ]]; then
-      msg_idx=$(( (msg_idx + 1) % ${#messages[@]} ))
-    fi
+# ── Animação de Pensamento (Kora Neural) ────────────────────────
+# Visual minimalista e sofisticado para o CLI.
 
-    # Formata para uma casa decimal
-    printf "\r\e[K" # Limpa a linha
-    LC_NUMERIC=C printf "\e[1;36mKORA\e[0m  \e[33m%s\e[0m  %s  \e[2m%.1fs\e[0m" "${frames[$frame_idx]}" "${messages[$msg_idx]}" "$elapsed" >&2
+KORA_THINK_FRAMES=("⠋⟡" "⠙✦" "⠹✧" "⠸✦" "⠼✧" "⠴✦" "⠦⟡" "⠧✧")
+
+kora_supports_animation() {
+  [[ -t 1 ]] || return 1
+  [[ "${KORA_JSON:-}" == "1" ]] && return 1
+  [[ "${KORA_NO_ANIMATION:-}" == "1" ]] && return 1
+  [[ "${CI:-}" == "true" ]] && return 1
+  return 0
+}
+
+kora_think_start() {
+  kora_supports_animation || return 0
+  local start_time="$1"
+  
+  (
+    local i=0
+    # Garante limpeza se o subshell for morto
+    trap "tput el; exit" SIGINT SIGTERM
     
-    frame_idx=$(( (frame_idx + 1) % ${#frames[@]} ))
-    step=$((step + 1))
-    sleep 0.1
-  done
+    while true; do
+      local now
+      now=$(date +%s.%N)
+      local elapsed
+      elapsed=$(echo "$now - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
+      
+      printf "\r\e[2m\e[K" >&2
+      LC_NUMERIC=C printf "\e[1;36mKORA\e[0m  \e[33m%s\e[0m  \e[2m%.1fs\e[0m" "${KORA_THINK_FRAMES[$((i % ${#KORA_THINK_FRAMES[@]}))]}" "$elapsed" >&2
+      
+      i=$((i + 1))
+      sleep 0.12
+    done
+  ) &
+  KORA_THINK_PID=$!
+}
+
+kora_think_stop() {
+  if [[ -n "${KORA_THINK_PID:-}" ]]; then
+    kill "$KORA_THINK_PID" 2>/dev/null && wait "$KORA_THINK_PID" 2>/dev/null
+    unset KORA_THINK_PID
+  fi
+  kora_supports_animation && printf "\r\e[K" >&2
+}
+
+kora_print_timing() {
+  local total="$1"
+  local first_token="$2"
+  local mode="$3"
+  local endpoint="$4"
+  
+  printf "\n\e[2mtiming: total=%.2fs" "$total"
+  [[ -n "$first_token" ]] && printf " first_token=%.2fs" "$first_token"
+  printf " endpoint=%s mode=%s\e[0m\n" "$endpoint" "$mode"
 }
 
 kryonix_kora_health() {
@@ -224,42 +246,34 @@ kryonix_kora_ask() {
     return 1
   fi
 
+  # Configuração de contexto para animação
+  export KORA_JSON="${KORA_JSON:-0}"
+  
+  # Inicia animação se suportado
+  kora_think_start "$start_time"
+  trap 'kora_think_stop' EXIT INT TERM
+
   # Variáveis para profiling
   local first_token_time=""
   local endpoint="/chat"
-  
-  # Se stdout for TTY, mostra animação
-  local anim_pid=""
-  if [[ -t 1 ]]; then
-    local label="pensando localmente"
-    [[ "$mode" == "rag" || "$mode" == "auto" ]] && label="consultando memória"
-    show_thinking_animation "$start_time" "$label" &
-    anim_pid=$!
-  fi
-
-  # Payload base
   local payload
   payload="$(jq -n --arg question "$query" --arg message "$query" --arg mode "$mode" '{question:$question, message:$message, mode:$mode}')"
 
-  # Stream se modo direct e TTY (ou explicitamente solicitado no futuro)
-  if [[ "$mode" == "direct" && -t 1 ]]; then
+  # Stream se modo direct e TTY
+  if [[ "$mode" == "direct" && -t 1 && "${KORA_JSON}" != "1" ]]; then
     endpoint="/chat/stream"
     local first=1
     
-    # Stream handler
     while read -r line; do
       if [[ "$line" == data:\ * ]]; then
-        # Limpa animação no primeiro token
         if [[ $first -eq 1 ]]; then
-          [[ -n "$anim_pid" ]] && kill "$anim_pid" 2>/dev/null && wait "$anim_pid" 2>/dev/null
-          printf "\r\e[K" >&2
+          kora_think_stop
           printf "\e[1;36mKora:\e[0m\n"
           first=0
           first_token_time=$(date +%s.%N)
         fi
         
         local chunk="${line#data: }"
-        # Tenta extrair o chunk do JSON
         local text
         text=$(echo "$chunk" | jq -r '.chunk // empty')
         [[ -n "$text" ]] && printf "%s" "$text"
@@ -267,39 +281,38 @@ kryonix_kora_ask() {
     done < <(kora_stream POST "$endpoint" "$payload")
     printf "\n"
   else
-    # Fallback ou modo non-direct (RAG/Auto por enquanto via block chat)
+    # Block mode
     local resp
     resp="$(kora_curl POST "$endpoint" "$payload")"
     local status=$?
     
-    # Limpa animação
-    [[ -n "$anim_pid" ]] && kill "$anim_pid" 2>/dev/null && wait "$anim_pid" 2>/dev/null
-    printf "\r\e[K" >&2
+    kora_think_stop
 
     if [[ $status -ne 0 ]]; then
       return $status
     fi
 
-    printf "\e[1;36mKora:\e[0m\n"
-    printf "%s\n" "$resp" | jq -r '.answer // "Erro ao obter resposta."'
+    if [[ "${KORA_JSON}" == "1" ]]; then
+      printf "%s\n" "$resp"
+    else
+      printf "\e[1;36mKora:\e[0m\n"
+      printf "%s\n" "$resp" | jq -r '.answer // "Erro ao obter resposta."'
+    fi
   fi
 
+  # Profile final
   if [[ $profile -eq 1 ]]; then
     local end_time
     end_time=$(date +%s.%N)
     local total_elapsed
     total_elapsed=$(echo "$end_time - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
     
-    printf "\n\e[2m--- Kora Profile ---\e[0m\n"
-    LC_NUMERIC=C printf "\e[2m- total:      %.2fs\e[0m\n" "$total_elapsed"
+    local ft_elapsed=""
     if [[ -n "$first_token_time" ]]; then
-      local ft_elapsed
       ft_elapsed=$(echo "$first_token_time - $start_time" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
-      LC_NUMERIC=C printf "\e[2m- first_token: %.2fs\e[0m\n" "$ft_elapsed"
     fi
-    printf "\e[2m- mode:       %s\e[0m\n" "$mode"
-    printf "\e[2m- endpoint:   %s\e[0m\n" "$endpoint"
-    printf "\e[2m--------------------\e[0m\n"
+    
+    LC_NUMERIC=C kora_print_timing "$total_elapsed" "$ft_elapsed" "$mode" "$endpoint"
   fi
 }
 
