@@ -9,6 +9,19 @@ from .users import UserRegistry, KoraUser
 
 logger = logging.getLogger("kora.core.identity")
 
+from enum import Enum
+
+class IdentityTrust(str, Enum):
+    HINT = "hint"                 # Claimed via environment/session without proof
+    VERIFIED = "verified"         # Authenticated via session token or secure local channel
+    SECURE = "secure"             # Strong MFA, physical key, or biometrics
+
+class PermissionSource(str, Enum):
+    ENVIRONMENT = "environment"   # Inherited from client environment claim (weak)
+    AUTH_TOKEN = "auth_token"     # Cryptographic token verification (medium)
+    BIOMETRICS = "biometrics"     # Speaker ID / Face ID (strong)
+    SUDO_GATE = "sudo_gate"       # Elevating via local Unix polkit / sudo (strongest)
+
 # ── Configuração de Caminhos ─────────────────────────────────────
 
 def _get_base_dir() -> Path:
@@ -36,16 +49,13 @@ def detect_runtime_identity() -> Dict[str, Any]:
 def resolve_identity(runtime: Dict[str, Any]) -> Dict[str, Any]:
     """
     Resolve a identidade baseada no contexto de execução e perfis conhecidos.
+    Retorna um dicionário com trust boundary explícito.
     """
     linux_user = runtime.get("user")
     registry = UserRegistry()
 
-    user = registry.find_by_linux_user(linux_user)
-    if user:
-        return user.to_dict()
-
-    # Fallback to guest profile
-    return {
+    # Identidade padrão para visitantes / desconhecidos
+    guest_profile = {
         "id": "unknown",
         "display_name": "Visitante",
         "full_name": "Visitante Desconhecido",
@@ -56,6 +66,22 @@ def resolve_identity(runtime: Dict[str, Any]) -> Dict[str, Any]:
         "can_request_admin_actions": False,
         "can_access_private_memory": False,
         "preferences": []
+    }
+
+    user = registry.find_by_linux_user(linux_user)
+    if user:
+        return {
+            "client_claimed_user": linux_user,
+            "resolved_identity": user.to_dict(),
+            "identity_trust": IdentityTrust.HINT.value,
+            "permission_source": PermissionSource.ENVIRONMENT.value
+        }
+
+    return {
+        "client_claimed_user": linux_user,
+        "resolved_identity": guest_profile,
+        "identity_trust": IdentityTrust.HINT.value,
+        "permission_source": PermissionSource.ENVIRONMENT.value
     }
 
 # ── Checagem de Permissões ───────────────────────────────────────

@@ -19,10 +19,19 @@ class RiskLevel(Enum):
     UNKNOWN = "unknown"
 
 class PolicyContext:
-    def __init__(self, user: str = "unknown", speaker: Optional[str] = None, is_voice: bool = False):
+    def __init__(
+        self, 
+        user: str = "unknown", 
+        speaker: Optional[str] = None, 
+        is_voice: bool = False,
+        trust: str = "hint",
+        source: str = "environment"
+    ):
         self.user = user
         self.speaker = speaker
         self.is_voice = is_voice
+        self.trust = trust
+        self.source = source
 
 # Authorized administrators
 AUTHORIZED_ADMINS = ["rocha"]
@@ -155,6 +164,10 @@ def classify_command(command: str, context: Optional[PolicyContext] = None) -> R
             break
 
     if is_readonly:
+        # Trust Boundary: If trust is only a HINT, do NOT execute memory searches immediately.
+        # This prevents identity spoofing from leaking private memories via immediate execution.
+        if ctx.trust == "hint" and "memory" in clean_cmd:
+            return RiskLevel.MEDIUM
         return RiskLevel.READ_ONLY
 
     # 6. Identity-based restrictions

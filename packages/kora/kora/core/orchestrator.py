@@ -70,7 +70,9 @@ async def _prepare_session_and_context(
     if user and user != "unknown":
         runtime_info["user"] = user
 
-    profile = resolve_identity(runtime_info)
+    identity_ctx = resolve_identity(runtime_info)
+    profile = identity_ctx["resolved_identity"]
+    identity_trust = identity_ctx["identity_trust"]
 
     greeting = ""
     if should_greet(profile):
@@ -90,11 +92,11 @@ async def _prepare_session_and_context(
 
     identity_context = (
         f"\n\n## Identidade do Usuário Atual\n"
-        f"- Usuário do sistema: {user}\n"
+        f"- Usuário do sistema (Claimed): {user}\n"
+        f"- Nível de Confiança: {identity_trust}\n"
         f"- Orígem: {'Voz' if is_voice else 'Terminal/Chat'}\n"
         f"- Reconhecido como: {profile['display_name'] if profile else 'Desconhecido'}\n"
         f"- Sessão: {session_id}\n"
-        f"- Primeira interação na sessão: {'Sim' if is_new_session else 'Não'}\n"
     )
     if user in AUTHORIZED_ADMINS:
         identity_context += "- Autorização: Administrador Kryonix (Local)\n"
@@ -105,6 +107,16 @@ async def _prepare_session_and_context(
         identity_context += f"- Saudação sugerida: {greeting}\n"
 
     system_prompt += identity_context
+
+    if identity_trust == "hint":
+        system_prompt += (
+            "\n\n## CONSTRANGIMENTOS DE SEGURANÇA (TRUST: HINT)\n"
+            "O usuário atual foi identificado apenas por hint de ambiente/USER (não verificado).\n"
+            "1. Você PODE usar o nome e preferências do usuário para personalizar a conversa e saudação.\n"
+            "2. Você **NÃO DEVE** revelar segredos, senhas, chaves privadas ou dados de alta confidencialidade se solicitados.\n"
+            "3. Você **NÃO DEVE** propor comandos de alto risco silenciosamente. Se o usuário insistir em ações críticas, "
+            "exija que ele confirme no terminal local ou utilize uma sessão verificada.\n"
+        )
     registry_summary = get_registry_summary()
     system_prompt += f"\n\n## Ferramentas Disponíveis (Tool Registry)\n{registry_summary}"
 
@@ -155,7 +167,13 @@ async def _handle_action_proposal(answer: str, user: str, session_id: str) -> tu
                 return cleaned_answer + f"\n\n⚠️ {hallucination_error}", None
 
             # Policy check
-            ctx = PolicyContext(user=user)
+            # Policy check with Identity Trust
+            id_ctx = resolve_identity({"user": user})
+            ctx = PolicyContext(
+                user=user, 
+                trust=id_ctx["identity_trust"],
+                source=id_ctx["permission_source"]
+            )
             risk = classify_command(command, context=ctx)
             proposal["risk"] = risk.value
 
@@ -211,7 +229,8 @@ async def process_message(
         runtime_info = detect_runtime_identity()
         if user and user != "unknown":
             runtime_info["user"] = user
-        profile = resolve_identity(runtime_info)
+        identity_ctx = resolve_identity(runtime_info)
+        profile = identity_ctx["resolved_identity"]
         if profile:
             answer = get_identity_response(profile)
             asyncio.create_task(_process_background_memory(message, answer, user))
@@ -264,7 +283,8 @@ async def process_message_stream(
         runtime_info = detect_runtime_identity()
         if user and user != "unknown":
             runtime_info["user"] = user
-        profile = resolve_identity(runtime_info)
+        identity_ctx = resolve_identity(runtime_info)
+        profile = identity_ctx["resolved_identity"]
         if profile:
             yield f"data: {json.dumps({'type': 'meta', 'mode': 'deterministic', 'session_id': session_id})}\n\n"
             answer = get_identity_response(profile)
