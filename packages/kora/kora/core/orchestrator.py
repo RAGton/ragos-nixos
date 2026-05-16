@@ -130,22 +130,30 @@ async def process_message(
                 
                 logger.info("Command execution proposal detected: %s (Risk: %s)", cmd, risk.value)
                 
-                # Save to pending action state
-                from pathlib import Path
-                state_dir = Path.home() / ".local/state/kryonix/kora"
-                state_dir.mkdir(parents=True, exist_ok=True)
-                
-                state_file = state_dir / "pending_action.json"
-                with open(state_file, "w") as f:
-                    json.dump({
-                        "command": cmd,
-                        "risk": risk.value,
-                        "reason": reason,
-                        "timestamp": time.time()
-                    }, f)
-                
-                tool_executed = True
-                tool_status = f"pending_confirmation:{risk.value}"
+                if risk == RiskLevel.BLOCKED:
+                    answer = f"{answer}\n\n⚠️ **Segurança:** O comando `{cmd}` foi bloqueado por política de segurança."
+                    tool_executed = False
+                    tool_status = "blocked"
+                else:
+                    # Save to pending action state
+                    from pathlib import Path
+                    state_dir = Path.home() / ".local/state/kryonix/kora"
+                    state_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    # UNKNOWN triggers confirmation like MEDIUM
+                    display_risk = risk.value if risk != RiskLevel.UNKNOWN else "unknown (needs review)"
+                    
+                    state_file = state_dir / "pending_action.json"
+                    with open(state_file, "w") as f:
+                        json.dump({
+                            "command": cmd,
+                            "risk": display_risk,
+                            "reason": reason,
+                            "timestamp": time.time()
+                        }, f)
+                    
+                    tool_executed = True
+                    tool_status = f"pending_confirmation:{risk.value}"
         except Exception as e:
             logger.error("Failed to parse or execute tool call: %s", e)
             tool_status = f"error: {str(e)}"
