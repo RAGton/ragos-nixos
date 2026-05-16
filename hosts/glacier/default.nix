@@ -70,6 +70,15 @@
   kryonix.services.brain.llmProvider = "auto";
 
   # =========================
+  # KORA — Assistente pessoal local (gateway/orchestrator)
+  # =========================
+  kryonix.services.kora = {
+    enable = true;
+    host = "127.0.0.1";
+    port = 8787;
+  };
+
+  # =========================
   # TAILSCALE (RVE-specific, não genérico)
   # =========================
   # authKeyFile e extraUpFlags são identidade deste host — ficam aqui.
