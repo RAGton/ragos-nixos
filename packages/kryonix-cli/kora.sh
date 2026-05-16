@@ -13,8 +13,13 @@ kora_api_url() {
     if [[ "$(map_runtime_host)" == "glacier" ]]; then
       url="http://127.0.0.1:8787"
     else
-      # Se estamos no Inspiron (client), a Kora é acessada via túnel
-      url="http://127.0.0.1:18787"
+      # Se estamos no Inspiron (client), a Kora é acessada via rede
+      # Tenta DNS (Tailscale) primeiro, fallback para IP local
+      if timeout 0.5 ping -c 1 rve-glacier >/dev/null 2>&1; then
+        url="http://rve-glacier:8787"
+      else
+        url="http://10.0.0.2:8787"
+      fi
     fi
   fi
   printf '%s\n' "${url%/}"
@@ -214,6 +219,32 @@ kryonix_kora_memory_search() {
   kora_curl POST /memory/search "$payload" | jq .
 }
 
+kryonix_kora_login() {
+  if [[ "$(map_runtime_host)" == "glacier" ]]; then
+    printf 'INFO: Você já está no servidor Glacier.\n'
+    return 0
+  fi
+
+  local ssh_target="${KRYONIX_GLACIER_SSH_TARGET:-rocha@rve-glacier}"
+  local ssh_port="${KRYONIX_GLACIER_SSH_PORT:-2224}"
+  local remote_env="/etc/kryonix/kora.env"
+  local local_env="/etc/kryonix/kora.env"
+
+  printf 'Sincronizando Kora API Key do Glacier...\n'
+  
+  local key
+  key=$(ssh -p "$ssh_port" "$ssh_target" "sudo grep KORA_API_KEY $remote_env | cut -d= -f2" 2>/dev/null)
+  
+  if [[ -z "$key" ]]; then
+    printf 'ERRO: Não foi possível obter a chave via SSH. Verifique o acesso e se o arquivo existe no servidor.\n' >&2
+    return 1
+  fi
+
+  printf 'KORA_API_KEY=%s\n' "$key" | sudo tee "$local_env" >/dev/null
+  sudo chmod 600 "$local_env"
+  printf 'OK: Chave sincronizada e salva em %s\n' "$local_env"
+}
+
 kryonix_kora_tunnel() {
   if [[ "$(map_runtime_host)" == "glacier" ]]; then
     printf 'INFO: O túnel não é necessário no Glacier, a Kora roda nativamente no localhost.\n' >&2
@@ -263,8 +294,11 @@ kryonix_kora() {
     tunnel)
       kryonix_kora_tunnel
       ;;
+    login)
+      kryonix_kora_login
+      ;;
     *)
-      printf 'Uso: kryonix kora <health|status|capabilities|ask|chat|memory search|tunnel>\n' >&2
+      printf 'Uso: kryonix kora <health|status|capabilities|ask|chat|memory search|tunnel|login>\n' >&2
       return 1
       ;;
   esac
