@@ -1,5 +1,6 @@
 import time
 import logging
+import asyncio
 from typing import Optional
 from .queue import MemoryQueue
 from .obsidian import ObsidianWriter
