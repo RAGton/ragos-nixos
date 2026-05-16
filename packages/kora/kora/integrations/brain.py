@@ -118,3 +118,24 @@ async def stats() -> dict[str, Any]:
     except Exception as e:
         logger.warning("Brain stats unavailable: %s", e)
         return {"status": "error", "error": str(e)}
+
+
+async def propose_ingest(content: str, source: str, reason: str = "") -> dict[str, Any]:
+    """Propose content for ingestion into the Brain."""
+    payload = {
+        "content": content,
+        "source": source,
+        "reason": reason
+    }
+    try:
+        async with httpx.AsyncClient(timeout=BRAIN_TIMEOUT) as client:
+            resp = await client.post(
+                f"{BRAIN_URL}/ingest/propose",
+                json=payload,
+                headers=_headers(),
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except Exception as e:
+        logger.error("Brain propose_ingest error: %s", e)
+        return {"status": "error", "error": str(e)}

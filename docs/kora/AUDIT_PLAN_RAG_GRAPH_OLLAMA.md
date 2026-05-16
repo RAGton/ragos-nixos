@@ -83,8 +83,15 @@ Garantir que memórias são salvas corretamente e sem segredos.
 - [x] Teste de segredo: `kora minha senha é XYZ` -> Bloqueio validado deterministicamente.
 - [x] Crescimento do Vault: Monitorar tamanho de `var/lib/kryonix/vault/Kora`.
 
+### Checklist de Indexação (Fase M3):
+- [ ] `kora memory index status` mostra arquivos rastreados.
+- [ ] `kora memory index run` detecta e propõe novos arquivos para o Brain.
+- [ ] Manifest `/var/lib/kryonix/kora/memory/index_manifest.json` contém hashes válidos.
+- [ ] Worker logs mostram a sequência "Processed X items... Starting incremental indexing".
+- [ ] Neo4j (via Brain API) contém nós relativos às memórias recém-indexadas.
+
 ## Próximos Passos
 1.  Executar benchmark inicial.
 2.  Gerar `AUDIT_REPORT_CURRENT.md`.
 3.  Validar o fluxo assíncrono de memória.
-4.  Implementar o indexador incremental para LightRAG/Neo4j.
+4.  Finalizar auditoria da M3 no Glacier.

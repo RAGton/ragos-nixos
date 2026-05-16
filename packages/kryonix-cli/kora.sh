@@ -405,6 +405,17 @@ kryonix_kora_memory_flush() {
   kora_curl POST /memory/flush | jq .
 }
 
+kryonix_kora_memory_index() {
+  if [[ "$1" == "status" ]]; then
+    kora_curl GET /memory/index/status | jq .
+  elif [[ "$1" == "pending" ]]; then
+    kora_curl GET /memory/index/pending | jq .
+  else
+    printf 'Iniciando indexação incremental das memórias no Brain...\n'
+    kora_curl POST /memory/index | jq .
+  fi
+}
+
 kryonix_kora_login() {
   if [[ "$(map_runtime_host)" == "glacier" ]]; then
     printf 'INFO: Você já está no servidor Glacier. A chave em /etc/kryonix/kora.env será usada.\n'
@@ -521,8 +532,11 @@ kryonix_kora() {
         kryonix_kora_memory_recent "$@"
       elif [[ "$1" == "flush" ]]; then
         kryonix_kora_memory_flush
+      elif [[ "$1" == "index" ]]; then
+        shift
+        kryonix_kora_memory_index "$@"
       else
-        printf 'Uso: kryonix kora memory [search|status|recent|flush]\n' >&2
+        printf 'Uso: kryonix kora memory [search|status|recent|flush|index]\n' >&2
         return 1
       fi
       ;;

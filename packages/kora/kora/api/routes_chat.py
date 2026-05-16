@@ -186,3 +186,27 @@ async def flush_memory():
     worker = MemoryWorker()
     count = worker.run_once()
     return {"status": "success", "processed_items": count}
+
+
+# ── Indexing Endpoints ────────────────────────────────────────
+
+@router.get("/memory/index/status")
+async def get_index_status():
+    """Get indexing manifest status."""
+    indexer = MemoryIndexer()
+    return indexer.get_status()
+
+
+@router.get("/memory/index/pending")
+async def get_index_pending():
+    """Get list of pending files to index."""
+    indexer = MemoryIndexer()
+    return {"pending": indexer.get_pending()}
+
+
+@router.post("/memory/index")
+async def run_index():
+    """Manually trigger incremental indexing."""
+    indexer = MemoryIndexer()
+    count = await indexer.index_all()
+    return {"status": "success", "indexed_items": count}
