@@ -127,6 +127,30 @@ async def chat(
             "provider": "ollama",
             "error": str(e),
         }
+async def generate_completion(
+    prompt: str,
+    system_prompt: str | None = None,
+    context: str | None = None,
+    model: str | None = None,
+    temperature: float = 0.7,
+) -> dict[str, Any]:
+    """
+    Generate a non-streaming completion from Ollama.
+    Convenience wrapper over chat().
+    """
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    
+    final_prompt = prompt
+    if context:
+        final_prompt = f"Contexto:\n{context}\n\nPergunta:\n{prompt}"
+    
+    messages.append({"role": "user", "content": final_prompt})
+    
+    return await chat(messages=messages, model=model, temperature=temperature)
+
+
 async def generate_stream(
     prompt: str,
     system_prompt: str | None = None,

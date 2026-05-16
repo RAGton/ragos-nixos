@@ -13,10 +13,12 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from ..core.orchestrator import process_message
+from ..core.orchestrator import process_message, confirm_pending_action, process_message_stream
 from ..integrations import brain as brain_adapter
+from ..memory import MemorySearch, MemoryQueue, MemoryWorker
 
 logger = logging.getLogger("kora.api.routes_chat")
 
@@ -29,6 +31,9 @@ class ChatRequest(BaseModel):
     """Chat request to the Kora assistant."""
     message: str = Field(..., description="User message")
     session_id: str = Field(default="default", description="Session identifier")
+    user: str = Field(default="unknown", description="System user name (e.g. rocha)")
+    speaker: str | None = Field(default=None, description="Recognized speaker name for voice")
+    is_voice: bool = Field(default=False, description="Whether the input came from voice")
     mode: str = Field(
         default="auto",
         description="Processing mode: direct (LLM only), rag (with Brain context), auto (try RAG then direct)",
@@ -74,9 +79,31 @@ async def chat(req: ChatRequest) -> ChatResponse:
     result = await process_message(
         message=req.message,
         session_id=req.session_id,
+        user=req.user,
+        speaker=req.speaker,
+        is_voice=req.is_voice,
         mode=req.mode,
     )
     return ChatResponse(**result)
+
+
+@router.post("/chat/stream")
+async def chat_stream(req: ChatRequest):
+    """
+    Streaming version of the main chat endpoint.
+    Uses Server-Sent Events (SSE) to deliver response chunks.
+    """
+    return StreamingResponse(
+        process_message_stream(
+            message=req.message,
+            session_id=req.session_id,
+            user=req.user,
+            speaker=req.speaker,
+            is_voice=req.is_voice,
+            mode=req.mode,
+        ),
+        media_type="text/event-stream"
+    )
 
 
 @router.post("/ask", response_model=ChatResponse)
@@ -93,14 +120,12 @@ async def ask(req: AskRequest) -> ChatResponse:
     return ChatResponse(**result)
 
 
-@router.post("/memory/search")
-async def memory_search(req: MemorySearchRequest) -> dict[str, Any]:
+@router.post("/brain/search")
+async def brain_search(req: MemorySearchRequest) -> dict[str, Any]:
     """
     Search the knowledge base via the Brain API.
 
     This is the Kora-mediated interface to Brain search.
-    In future phases, this will also search session memory, Neo4j graph,
-    and Obsidian notes.
     """
     result = await brain_adapter.search(
         query=req.query,
@@ -112,3 +137,52 @@ async def memory_search(req: MemorySearchRequest) -> dict[str, Any]:
         "mode": req.mode,
         "result": result,
     }
+
+
+@router.post("/confirm")
+async def confirm(session_id: str = "default") -> dict[str, Any]:
+    """
+    Confirm and execute the last pending action proposed by Kora.
+    """
+    result = await confirm_pending_action(session_id=session_id)
+    return result
+
+
+# ── Memory Endpoints ──────────────────────────────────────────
+
+@router.get("/memory/status")
+async def get_memory_status():
+    """Get memory queue and vault status."""
+    queue = MemoryQueue()
+    search = MemorySearch()
+    return {
+        "queue": queue.get_status(),
+        "vault": {
+            "path": str(search.vault_dir),
+            "exists": search.vault_dir.exists()
+        }
+    }
+
+
+@router.post("/memory/search")
+async def search_memory(query: str, limit: int = 5):
+    """Search for memories in the vault."""
+    search = MemorySearch()
+    results = search.search(query, limit=limit)
+    return {"results": results}
+
+
+@router.get("/memory/recent")
+async def get_recent_memory(limit: int = 10):
+    """Get recent memories from the vault."""
+    search = MemorySearch()
+    results = search.get_recent(limit=limit)
+    return {"results": results}
+
+
+@router.post("/memory/flush")
+async def flush_memory():
+    """Manually trigger the memory worker to process the queue."""
+    worker = MemoryWorker()
+    count = worker.run_once()
+    return {"status": "success", "processed_items": count}

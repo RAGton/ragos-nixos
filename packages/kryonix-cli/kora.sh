@@ -275,26 +275,46 @@ kryonix_kora_ask() {
   local first_token_time=""
   local endpoint="/chat"
   local payload
-  payload="$(jq -n --arg question "$query" --arg message "$query" --arg mode "$mode" '{question:$question, message:$message, mode:$mode}')"
+  local current_user
+  current_user="$(whoami)"
+  payload="$(jq -n --arg question "$query" --arg message "$query" --arg mode "$mode" --arg user "$current_user" '{question:$question, message:$message, mode:$mode, user:$user}')"
 
-  # Stream se modo direct e TTY
-  if [[ "$mode" == "direct" && -t 1 && "${KORA_JSON}" != "1" ]]; then
+  # Stream if mode is auto or direct and TTY
+  if [[ ("$mode" == "direct" || "$mode" == "auto") && -t 1 && "${KORA_JSON}" != "1" ]]; then
     endpoint="/chat/stream"
     local first=1
     
     while read -r line; do
       if [[ "$line" == data:\ * ]]; then
-        if [[ $first -eq 1 ]]; then
-          kora_think_stop
-          printf "\e[1;36mKora:\e[0m\n"
-          first=0
-          first_token_time=$(date +%s.%N)
-        fi
+        local chunk_data="${line#data: }"
+        local type
+        type=$(echo "$chunk_data" | jq -r '.type // empty')
         
-        local chunk="${line#data: }"
-        local text
-        text=$(echo "$chunk" | jq -r '.chunk // empty')
-        [[ -n "$text" ]] && printf "%s" "$text"
+        if [[ "$type" == "meta" ]]; then
+            # Metadata can be ignored or used for profile
+            continue
+        fi
+
+        if [[ "$type" == "content" ]]; then
+          if [[ $first -eq 1 ]]; then
+            kora_think_stop
+            printf "\e[1;36mKora:\e[0m\n"
+            first=0
+            first_token_time=$(date +%s.%N)
+          fi
+          local text
+          text=$(echo "$chunk_data" | jq -r '.chunk // empty')
+          [[ -n "$text" ]] && printf "%s" "$text"
+        fi
+
+        if [[ "$type" == "action" ]]; then
+          local proposal
+          proposal=$(echo "$chunk_data" | jq -r '.proposal')
+          printf "\n\n\e[1;33mProposta de Ação:\e[0m %s\n" "$(echo "$proposal" | jq -r '.reason // .command // .action')"
+          if [[ "$(echo "$proposal" | jq -r '.requires_confirmation')" == "true" ]]; then
+              printf "\e[1;33mConfirme com:\e[0m kora confirmar\n"
+          fi
+        fi
       fi
     done < <(kora_stream POST "$endpoint" "$payload")
     printf "\n"
@@ -315,6 +335,15 @@ kryonix_kora_ask() {
     else
       printf "\e[1;36mKora:\e[0m\n"
       printf "%s\n" "$resp" | jq -r '.answer // "Erro ao obter resposta."'
+      
+      local action
+      action=$(printf "%s\n" "$resp" | jq -r '.action // empty')
+      if [[ -n "$action" && "$action" != "null" ]]; then
+          printf "\n\e[1;33mProposta de Ação:\e[0m %s\n" "$(echo "$action" | jq -r '.reason // .command // .action')"
+          if [[ "$(echo "$action" | jq -r '.requires_confirmation')" == "true" ]]; then
+              printf "\e[1;33mConfirme com:\e[0m kora confirmar\n"
+          fi
+      fi
     fi
   fi
 
@@ -350,6 +379,20 @@ kryonix_kora_memory_search() {
   local payload
   payload="$(jq -n --arg query "$query" --arg mode "hybrid" '{query:$query, mode:$mode}')"
   kora_curl POST /memory/search "$payload" | jq .
+}
+
+kryonix_kora_memory_status() {
+  kora_curl GET /memory/status | jq .
+}
+
+kryonix_kora_memory_recent() {
+  local limit="${1:-10}"
+  kora_curl GET "/memory/recent?limit=$limit" | jq .
+}
+
+kryonix_kora_memory_flush() {
+  printf 'Forçando processamento da fila de memória...\n'
+  kora_curl POST /memory/flush | jq .
 }
 
 kryonix_kora_login() {
@@ -396,17 +439,20 @@ kryonix_kora_login() {
 }
 
 kryonix_kora_latency() {
-  printf '\e[1;36mDiagnóstico de Latência Kora\e[0m\n'
-  printf '\e[2m----------------------------------------\e[0m\n'
+  printf "Kora Latency Diagnostics:\n"
   
-  printf '1. Health Check:\n'
-  time kora_curl GET /health >/dev/null
+  printf "1. Direct (Stream)...\n"
+  KORA_PROFILE=1 kryonix_kora_ask "explique NixOS em uma frase" --mode direct
   
-  printf '\n2. Chat Direct (Curto):\n'
-  KORA_PROFILE=1 kryonix_kora_ask "oi" --mode direct
+  printf "\n2. Auto (Smart Routing)...\n"
+  KORA_PROFILE=1 kryonix_kora_ask "quem é você?" --mode auto
   
-  printf '\n3. Chat Direct (Médio):\n'
-  KORA_PROFILE=1 kryonix_kora_ask "Explique o conceito de pureza funcional do Nix em 3 frases." --mode direct
+  printf "\n3. RAG (Knowledge)...\n"
+  KORA_PROFILE=1 kryonix_kora_ask "arquitetura do Glacier" --mode rag
+  
+  printf "\nRecomendação:\n"
+  printf "- Default diário: direct_stream (via modo auto smart)\n"
+  printf "- Usar RAG só para Kryonix/docs/memória\n"
   
   printf '\n4. Ollama Status:\n'
   if command -v ollama >/dev/null 2>&1; then
@@ -459,8 +505,14 @@ kryonix_kora() {
       if [[ "$1" == "search" ]]; then
         shift
         kryonix_kora_memory_search "$@"
+      elif [[ "$1" == "status" ]]; then
+        kryonix_kora_memory_status
+      elif [[ "$1" == "recent" ]]; then
+        kryonix_kora_memory_recent "$@"
+      elif [[ "$1" == "flush" ]]; then
+        kryonix_kora_memory_flush
       else
-        printf 'Uso: kryonix kora memory search "termo"\n' >&2
+        printf 'Uso: kryonix kora memory [search|status|recent|flush]\n' >&2
         return 1
       fi
       ;;
@@ -484,22 +536,26 @@ kryonix_kora() {
 }
 
 kryonix_kora_confirm() {
-  local state_file="$HOME/.local/state/kryonix/kora/pending_action.json"
-  if [[ ! -f "$state_file" ]]; then
-    printf 'ERRO: Nenhuma ação pendente para confirmar.\n' >&2
-    return 1
+  printf 'Confirmando ação pendente via Kora API...\n'
+  
+  local resp
+  resp=$(kora_curl POST /confirm)
+  local status=$?
+  
+  if [[ $status -ne 0 ]]; then
+    return $status
   fi
-
-  local cmd
-  cmd=$(jq -r '.command' "$state_file")
-  local risk
-  risk=$(jq -r '.risk' "$state_file")
-
-  printf 'Executando comando confirmado (Risco: %s):\n' "$risk"
-  printf '\e[1;33m$ %s\e[0m\n\n' "$cmd"
   
-  # Remove o estado antes de executar para evitar re-execução acidental
-  rm -f "$state_file"
+  local run_status
+  run_status=$(echo "$resp" | jq -r '.status')
   
-  eval "$cmd"
+  if [[ "$run_status" == "success" ]]; then
+    printf '\e[1;32mOK: Comando executado com sucesso no servidor.\e[0m\n'
+    echo "$resp" | jq -r '.stdout'
+  elif [[ "$run_status" == "failed" ]]; then
+    printf '\e[1;31mFALHA: O comando retornou erro (code: %s).\e[0m\n' "$(echo "$resp" | jq -r '.returncode')"
+    echo "$resp" | jq -r '.stderr'
+  else
+    printf '\e[1;33mAVISO: %s\e[0m\n' "$(echo "$resp" | jq -r '.message // "Erro desconhecido"') "
+  fi
 }

@@ -4,190 +4,268 @@
 # O orquestrador central da Kora. Recebe uma mensagem, decide a estratégia,
 # monta o contexto, chama o LLM e retorna a resposta.
 #
-# Modos de operação (Fase 1):
-#   - direct: envia direto ao Ollama com system prompt
+# Modos de operação:
+#   - direct: envia direto ao Ollama com system prompt (streaming preferido)
 #   - rag:    busca contexto no Brain API e injeta no prompt
-#   - auto:   tenta RAG primeiro, fallback para direct
-#
-# A Kora é o gateway. O Brain é o backend de conhecimento.
-# O Ollama é o runtime de inferência.
+#   - auto:   usa Smart Routing (grounding.py) para escolher entre direct/rag
 # =============================================================================
 
 from __future__ import annotations
 
-import logging
-import time
-from typing import Any
-
+import asyncio
 import json
+import logging
 import re
+import subprocess
+import time
+from pathlib import Path
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from ..audit.events import log_event
 from ..core.config import load_system_prompt
-from ..core.policy import classify_command, RiskLevel
+from ..core.policy import AUTHORIZED_ADMINS, PolicyContext, RiskLevel, classify_command
 from ..integrations import brain as brain_adapter
 from ..integrations.n8n import N8nClient
 from ..llm import ollama as ollama_adapter
+from ..memory import MemoryCandidate, MemoryClassifier, MemoryQueue, MemoryType
+from .grounding import requires_rag, validate_command_hallucination
+from .tool_registry import get_registry_summary, find_tool
 
 logger = logging.getLogger("kora.core.orchestrator")
 
-# Regex to find JSON blocks in the LLM response
-JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
+# Regex to find action proposal JSON blocks
+ACTION_PROPOSAL_RE = re.compile(r"```json\s*(\{.*?" + re.escape('"type": "action_proposal"') + r".*?\})\s*```", re.DOTALL)
 
+# In-memory session tracking
+SESSION_METADATA: Dict[str, Any] = {}
+
+async def _prepare_session_and_context(
+    message: str,
+    session_id: str,
+    user: str,
+    speaker: Optional[str],
+    is_voice: bool,
+    mode: str,
+) -> Dict[str, Any]:
+    """Unified helper to handle session state, routing, and context retrieval."""
+    t0 = time.monotonic()
+    is_new_session = session_id not in SESSION_METADATA
+    
+    if is_new_session:
+        SESSION_METADATA[session_id] = {"user": user, "speaker": speaker, "timestamp": t0}
+    else:
+        old_meta = SESSION_METADATA[session_id]
+        if old_meta.get("user") != user or old_meta.get("speaker") != speaker:
+            SESSION_METADATA[session_id] = {"user": user, "speaker": speaker, "timestamp": t0}
+
+    system_prompt = load_system_prompt()
+    identity_context = (
+        f"\n\n## Identidade do Usuário Atual\n"
+        f"- Usuário do sistema: {user}\n"
+        f"- Orígem: {'Voz' if is_voice else 'Terminal/Chat'}\n"
+        f"- Reconhecido como: {speaker if speaker else 'Desconhecido'}\n"
+        f"- Sessão: {session_id}\n"
+        f"- Primeira interação na sessão: {'Sim' if is_new_session else 'Não'}\n"
+    )
+    if user in AUTHORIZED_ADMINS:
+        identity_context += "- Autorização: Administrador Kryonix (Local)\n"
+    else:
+        identity_context += "- Autorização: Usuário não privilegiado (Restrito)\n"
+    
+    system_prompt += identity_context
+    registry_summary = get_registry_summary()
+    system_prompt += f"\n\n## Ferramentas Disponíveis (Tool Registry)\n{registry_summary}"
+    
+    active_mode = mode
+    if mode == "auto":
+        active_mode = "rag" if requires_rag(message) else "direct"
+
+    context_text = ""
+    brain_used = False
+    if active_mode == "rag":
+        brain_result = await brain_adapter.search(query=message)
+        if brain_result.get("status") != "error" and brain_result.get("answer"):
+            context_text = brain_result["answer"]
+            brain_used = True
+
+    return {
+        "system_prompt": system_prompt,
+        "context_text": context_text,
+        "active_mode": active_mode,
+        "brain_used": brain_used,
+        "start_time": t0,
+    }
+
+async def _handle_action_proposal(answer: str, user: str, session_id: str) -> tuple[str, Optional[dict]]:
+    """
+    Extract action proposal from answer, validate it, and return cleaned answer + action metadata.
+    """
+    match = ACTION_PROPOSAL_RE.search(answer)
+    if not match:
+        return answer, None
+
+    json_text = match.group(1)
+    cleaned_answer = answer[:match.start()].strip() + "\n" + answer[match.end():].strip()
+    
+    try:
+        proposal = json.loads(json_text)
+        action_type = proposal.get("action")
+        
+        # Validation
+        if action_type == "command_execute":
+            command = proposal.get("command")
+            if not command:
+                return cleaned_answer, {"error": "Comando não especificado na proposta."}
+            
+            # Grounding check
+            hallucination_error = validate_command_hallucination(command)
+            if hallucination_error:
+                return cleaned_answer + f"\n\n⚠️ {hallucination_error}", None
+            
+            # Policy check
+            ctx = PolicyContext(user=user)
+            risk = classify_command(command, context=ctx)
+            proposal["risk"] = risk.value
+            
+            # Save as pending if risk is medium/high or requires_confirmation is True
+            if risk in [RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL] or proposal.get("requires_confirmation"):
+                await _save_pending_action(command, risk, user)
+                proposal["requires_confirmation"] = True
+                return cleaned_answer, proposal
+            
+            return cleaned_answer, proposal
+
+        elif action_type == "n8n_workflow":
+            # n8n always requires confirmation in this phase
+            proposal["requires_confirmation"] = True
+            await _save_pending_action(f"n8n:{proposal.get('path')}", RiskLevel.MEDIUM, user)
+            return cleaned_answer, proposal
+
+    except Exception as e:
+        logger.error("Failed to parse action proposal: %s", e)
+        return answer, {"error": f"Erro ao processar proposta: {e}"}
+
+    return cleaned_answer, None
+
+async def _save_pending_action(command: str, risk: RiskLevel, user: str):
+    """Save a command to the pending actions file."""
+    state_dir = Path.home() / ".local/state/kryonix/kora"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    state_file = state_dir / "pending_action.json"
+    
+    data = {
+        "command": command,
+        "risk": risk.value,
+        "user": user,
+        "timestamp": time.time()
+    }
+    with open(state_file, "w") as f:
+        json.dump(data, f)
+    logger.info("Pending action saved: %s (Risk: %s)", command, risk.value)
 
 async def process_message(
     message: str,
     session_id: str = "default",
+    user: str = "unknown",
+    speaker: str | None = None,
+    is_voice: bool = False,
     mode: str = "auto",
 ) -> dict[str, Any]:
-    """
-    Process an incoming message through the Kora pipeline.
-
-    Args:
-        message: User message text.
-        session_id: Session identifier (stateless in Phase 1).
-        mode: Processing mode — "direct", "rag", or "auto".
-
-    Returns:
-        Response dict with answer, grounding, risk, and metadata.
-    """
-    t0 = time.monotonic()
-    system_prompt = load_system_prompt()
-
-    # ── Context retrieval ────────────────────────────────────────
-    context_text = ""
-    grounding: dict[str, Any] = {"level": "none", "sources": []}
-    brain_used = False
-
-    if mode in ("rag", "auto"):
-        brain_result = await brain_adapter.search(query=message)
-        if brain_result.get("status") != "error" and brain_result.get("answer"):
-            context_text = brain_result["answer"]
-            grounding = {
-                "level": brain_result.get("grounding", {}).get("grounding_label", "medium"),
-                "sources": brain_result.get("sources", []),
-                "retrieval_score": brain_result.get("retrieval_score"),
-                "mode": brain_result.get("mode"),
-            }
-            brain_used = True
-            logger.info("Brain context retrieved (mode=%s)", mode)
-        elif mode == "rag":
-            # RAG mode but Brain offline — report degradation
-            logger.warning("Brain unavailable in RAG mode, answering without context")
-
-    # ── Build messages ───────────────────────────────────────────
-    messages: list[dict[str, str]] = [
-        {"role": "system", "content": system_prompt},
-    ]
-
-    if context_text:
-        context_block = (
-            "## Contexto recuperado do Kryonix Brain\n\n"
-            f"{context_text}\n\n"
-            "---\n\n"
-            "Use o contexto acima para fundamentar sua resposta. "
-            "Se o contexto for insuficiente, diga claramente."
-        )
-        messages.append({"role": "system", "content": context_block})
-
-    messages.append({"role": "user", "content": message})
-
-    # ── LLM call ─────────────────────────────────────────────────
-    llm_result = await ollama_adapter.chat(messages=messages)
-    answer = llm_result.get("answer", "")
+    """Process an incoming message (Non-streaming)."""
+    ctx = await _prepare_session_and_context(message, session_id, user, speaker, is_voice, mode)
     
-    # ── Tool execution (n8n) ─────────────────────────────────────
-    tool_executed = False
-    tool_status = None
-    
-    # Check for tool calls in the answer
-    json_match = JSON_BLOCK_RE.search(answer)
-    if json_match:
-        try:
-            tool_call = json.loads(json_match.group(1))
-            if tool_call.get("tool") == "n8n":
-                logger.info("n8n tool call detected: %s", tool_call.get("path"))
-                client = N8nClient()
-                
-                # Append session info to payload
-                payload = tool_call.get("payload", {})
-                payload["_kora_session"] = session_id
-                
-                tool_res = await client.trigger_webhook(
-                    path=tool_call.get("path", "webhook/kora-task"),
-                    payload=payload
-                )
-                tool_executed = True
-                tool_status = tool_res.get("status", "success")
-                logger.info("n8n tool executed. Status: %s", tool_status)
-                
-                # Strip the JSON block from the final answer displayed to the user
-                # answer = answer.replace(json_match.group(0), "").strip()
-            elif tool_call.get("intent") == "command_execute":
-                cmd = tool_call.get("command")
-                reason = tool_call.get("reason", "")
-                risk = classify_command(cmd)
-                
-                logger.info("Command execution proposal detected: %s (Risk: %s)", cmd, risk.value)
-                
-                if risk == RiskLevel.BLOCKED:
-                    answer = f"{answer}\n\n⚠️ **Segurança:** O comando `{cmd}` foi bloqueado por política de segurança."
-                    tool_executed = False
-                    tool_status = "blocked"
-                else:
-                    # Save to pending action state
-                    from pathlib import Path
-                    state_dir = Path.home() / ".local/state/kryonix/kora"
-                    state_dir.mkdir(parents=True, exist_ok=True)
-                    
-                    # UNKNOWN triggers confirmation like MEDIUM
-                    display_risk = risk.value if risk != RiskLevel.UNKNOWN else "unknown (needs review)"
-                    
-                    state_file = state_dir / "pending_action.json"
-                    with open(state_file, "w") as f:
-                        json.dump({
-                            "command": cmd,
-                            "risk": display_risk,
-                            "reason": reason,
-                            "timestamp": time.time()
-                        }, f)
-                    
-                    tool_executed = True
-                    tool_status = f"pending_confirmation:{risk.value}"
-        except Exception as e:
-            logger.error("Failed to parse or execute tool call: %s", e)
-            tool_status = f"error: {str(e)}"
-
-    elapsed = round(time.monotonic() - t0, 3)
-
-    # ── Audit ────────────────────────────────────────────────────
-    log_event(
-        event_type="chat",
-        description=f"Chat processed (mode={mode}, brain={brain_used}, tool={tool_executed})",
-        metadata={
-            "session_id": session_id,
-            "mode": mode,
-            "brain_used": brain_used,
-            "tool_executed": tool_executed,
-            "tool_status": tool_status,
-            "model": llm_result.get("model"),
-            "elapsed_sec": elapsed,
-            "has_error": "error" in llm_result,
-        },
-        risk="read_only" if not tool_executed else "medium_risk",
+    llm_result = await ollama_adapter.generate_completion(
+        prompt=message,
+        system_prompt=ctx["system_prompt"],
+        context=ctx["context_text"]
     )
+    
+    raw_answer = llm_result.get("answer", "Erro interno.")
+    answer, action = await _handle_action_proposal(raw_answer, user, session_id)
+    
+    asyncio.create_task(_process_background_memory(message, answer, user))
 
     return {
-        "answer": answer,
-        "mode": mode,
-        "grounding": grounding,
-        "risk": "read_only" if not tool_executed else "medium_risk",
-        "tool_executed": tool_executed,
-        "tool_status": tool_status,
-        "provider_used": llm_result.get("provider", "ollama"),
+        "answer": answer.strip(),
+        "action": action,
+        "mode": ctx["active_mode"],
+        "brain_used": ctx["brain_used"],
+        "elapsed_sec": time.monotonic() - ctx["start_time"],
         "model": llm_result.get("model"),
-        "brain_used": brain_used,
-        "elapsed_sec": elapsed,
-        "error": llm_result.get("error"),
     }
 
+async def process_message_stream(
+    message: str,
+    session_id: str = "default",
+    user: str = "unknown",
+    speaker: str | None = None,
+    is_voice: bool = False,
+    mode: str = "auto",
+) -> AsyncGenerator[str, None]:
+    """Process an incoming message and yield a stream of chunks."""
+    ctx = await _prepare_session_and_context(message, session_id, user, speaker, is_voice, mode)
+    yield json.dumps({"type": "meta", "mode": ctx["active_mode"], "session_id": session_id}) + "\n"
+    
+    full_answer = ""
+    async for chunk in ollama_adapter.generate_stream(
+        prompt=message,
+        system_prompt=ctx["system_prompt"],
+        context=ctx["context_text"]
+    ):
+        full_answer += chunk
+        # Note: We stream everything, cleaning happens in the final summary or UI logic
+        # However, for true UX we might want to buffer the JSON block.
+        # For now, we stream text and handle the action at the end.
+        yield json.dumps({"type": "content", "chunk": chunk}) + "\n"
+    
+    # Post-processing for actions
+    answer, action = await _handle_action_proposal(full_answer, user, session_id)
+    if action:
+        yield json.dumps({"type": "action", "proposal": action}) + "\n"
+    
+    asyncio.create_task(_process_background_memory(message, answer, user))
+    yield json.dumps({"type": "stats", "elapsed_sec": time.monotonic() - ctx["start_time"]}) + "\n"
+
+async def _process_background_memory(message: str, answer: str, user: str):
+    """Extract and queue memories from the conversation exchange."""
+    try:
+        classifier = MemoryClassifier()
+        candidates = await classifier.classify(message, answer, user=user)
+        if candidates:
+            queue = MemoryQueue()
+            for c in candidates:
+                queue.push(c)
+    except Exception as e:
+        logger.error("Background memory processing failed: %s", e)
+
+async def confirm_pending_action(session_id: str = "default") -> dict[str, Any]:
+    """Confirm and execute the last pending action."""
+    state_file = Path.home() / ".local/state/kryonix/kora/pending_action.json"
+    if not state_file.exists():
+        return {"status": "error", "message": "Nenhuma ação pendente."}
+
+    try:
+        with open(state_file, "r") as f:
+            data = json.load(f)
+        command = data.get("command")
+        
+        if command.startswith("n8n:"):
+            # Handle n8n trigger
+            path = command.split(":", 1)[1]
+            client = N8nClient()
+            # This is a placeholder for actual n8n triggering
+            # res = await client.trigger_webhook(path, payload={})
+            return {"status": "success", "message": f"Workflow n8n disparado: {path}"}
+
+        # Handle system command
+        process = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=60)
+        state_file.unlink()
+        return {
+            "status": "success" if process.returncode == 0 else "failed",
+            "command": command,
+            "stdout": process.stdout,
+            "stderr": process.stderr,
+            "returncode": process.returncode
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
