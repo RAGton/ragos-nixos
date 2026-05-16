@@ -234,7 +234,7 @@ in
 
     systemdTarget = lib.mkOption {
       type = lib.types.str;
-      default = "hyprland-session.target";
+      default = "graphical-session.target";
       description = "Target systemd-user responsável por iniciar o Caelestia na sessão gráfica.";
     };
 
@@ -302,8 +302,9 @@ in
       serviceConfig = {
         Type = "exec";
         ExecStart = "${effectivePackage}/bin/caelestia-shell";
-        Restart = "on-failure";
-        RestartSec = "5s";
+        Restart = "always";
+        RestartSec = "3s";
+        StartLimitIntervalSec = 0;
         TimeoutStopSec = "5s";
         Slice = "session.slice";
         Environment = [

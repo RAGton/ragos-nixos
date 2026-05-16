@@ -44,6 +44,7 @@
   # =========================
   kryonix.profiles.glacier-base.enable = true;
   kryonix.profiles.glacier-ai.enable = true;
+  kryonix.profiles.glacier-gamer.enable = false;
 
   # Perfis funcionais
   kryonix.profiles.dev.enable = true;
@@ -107,8 +108,8 @@
   kernelZen = {
     enable = true;
     kernel = "zen";
-    forceLocalBuild = lib.mkDefault false;
-    useLLVMStdenv = lib.mkDefault false;
+    forceLocalBuild = lib.mkDefault true;
+    useLLVMStdenv = lib.mkDefault true;
     extraMakeFlags = [ ];
     disableMitigations = lib.mkDefault false;
     extraKernelParams = [ ];
