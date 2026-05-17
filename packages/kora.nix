@@ -29,11 +29,20 @@ python3Packages.buildPythonApplication {
     python-dotenv
     pyaudio
     pyopen-wakeword
+    numpy
+    edge-tts
   ];
 
   postInstall = ''
     wrapProgram $out/bin/kora \
-      --prefix PATH : ${lib.makeBinPath [ whisper-cpp piper-tts alsa-utils ffmpeg ]} \
+      --prefix PATH : ${
+        lib.makeBinPath [
+          whisper-cpp
+          piper-tts
+          alsa-utils
+          ffmpeg
+        ]
+      } \
       --set-default KORA_WHISPER_BIN "whisper-cli"
   '';
 

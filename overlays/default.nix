@@ -283,11 +283,13 @@
     kryonix-hardware-probe = final.callPackage ../packages/kryonix-hardware-probe.nix { };
     kryonix-disk-planner = final.callPackage ../packages/kryonix-disk-planner.nix { };
     kryonix-installer = final.callPackage ../packages/kryonix-installer.nix { };
+    kora = final.callPackage ../packages/kora.nix { };
     kryonix = final.callPackage ../packages/kryonix-cli.nix {
       kryonixHome = final.kryonix-home;
       kryonix-hardware-probe = final.kryonix-hardware-probe;
       kryonix-disk-planner = final.kryonix-disk-planner;
       kryonix-installer = final.kryonix-installer;
+      kora = final.kora;
     };
   };
 }
