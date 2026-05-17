@@ -18,6 +18,8 @@ from pathlib import Path
 from .recorder import KoraRecorder
 from .stt import transcribe_audio
 from .tts import speak_text
+from .vad import record_with_vad
+from .signals import play_wake, play_thinking, play_done, play_error
 from ..core.orchestrator import process_message
 from ..core.conversation import append_turn, detect_followup_complaint
 
@@ -112,11 +114,18 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
     Complete voice loop: record → STT → Kora → TTS.
     Persists conversation turns for context.
     """
+    from .config import KORA_VOICE_TMP_DIR, ensure_voice_dirs
+    ensure_voice_dirs()
+
     recorder = KoraRecorder()
 
     print()
     print(f"\033[35m{'═' * _WIDTH}\033[0m")
     print(f"\033[35m{'':>14}KORA VOICE — MODO ESCUTA\033[0m")
+    if push_to_talk:
+        print(f"\033[2m{'':>16}Push-to-Talk (ENTER)\033[0m")
+    else:
+        print(f"\033[2m{'':>12}VAD — para após 1s silêncio\033[0m")
     print(f"\033[35m{'═' * _WIDTH}\033[0m")
 
     # Initial greeting
@@ -132,8 +141,13 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
                 print("  \033[33m🎙 Gravando... (ENTER para parar)\033[0m")
                 audio_path = recorder.record_until_keypress("last_input.wav")
             else:
-                # Fixed 5s for non-PTT
-                audio_path = recorder.record_to_file("last_input.wav", seconds=5)
+                # VAD mode — records until 1s of silence
+                print(f"\n  \033[2m[Fale a qualquer momento ou Ctrl+C para sair]\033[0m")
+                play_wake()
+                print("  \033[33m🎙 Ouvindo...\033[0m")
+                audio_path, duration = record_with_vad(
+                    KORA_VOICE_TMP_DIR / "last_input.wav"
+                )
 
             print("  \033[2m... processando áudio ...\033[0m")
             text = transcribe_audio(audio_path)
@@ -149,7 +163,8 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
             if detect_followup_complaint(text):
                 logger.info("Followup complaint detected — injecting recovery context")
 
-            # Thinking animation
+            # Thinking animation + signal
+            play_thinking()
             spinner = _ThinkingAnimation()
             spinner.start()
 
@@ -163,6 +178,8 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
             answer = resp.get("answer", "Sem resposta.")
             elapsed = resp.get("elapsed_sec", 0)
             mode_used = resp.get("mode", "?")
+
+            play_done()
 
             # Show Kora response
             _box("Kora", answer, "35")
@@ -184,5 +201,6 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
     except asyncio.CancelledError:
         print(f"\n  \033[2m[Operação cancelada]\033[0m\n")
     except Exception as e:
+        play_error()
         logger.error(f"Pipeline error: {e}")
         print(f"\n  \033[31m[Erro fatal no pipeline de voz: {e}]\033[0m\n")

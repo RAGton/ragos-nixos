@@ -14,6 +14,8 @@ from typing import Any
 
 from .client import KoraClient, KoraClientError
 from .voice import devices, recorder, stt, tts, pipeline, daemon, identity, wakeword
+from .voice import vad as voice_vad
+from .voice import signals as voice_signals
 from .core import users
 
 
@@ -305,8 +307,9 @@ def handle_voice_service(args: argparse.Namespace) -> None:
 def handle_listen(args: argparse.Namespace) -> None:
     # Run the async pipeline
     import asyncio
+    ptt = getattr(args, "push_to_talk", False) or not getattr(args, "vad", False)
     try:
-        asyncio.run(pipeline.listen_and_respond(push_to_talk=args.push_to_talk))
+        asyncio.run(pipeline.listen_and_respond(push_to_talk=ptt))
     except KeyboardInterrupt:
         print("\n[Encerrando modo voz]")
         return
@@ -563,10 +566,25 @@ def main() -> None:
     install_parser = models_subparsers.add_parser("install", help="Install a model (e.g. install whisper base)")
     install_parser.add_argument("model_type", choices=["whisper", "piper"], help="Type of model")
     install_parser.add_argument("model_name", help="Model name (e.g. base, small, faber, cadu)")
+    import_parser = models_subparsers.add_parser("import", help="Import custom Piper voice model from local path")
+    import_parser.add_argument("import_type", choices=["piper"], help="Import type")
+    import_parser.add_argument("import_name", help="Voice name (e.g. kora_ptbr_female)")
+    import_parser.add_argument("--model", required=True, help="Path to .onnx model")
+    import_parser.add_argument("--config", required=True, help="Path to .onnx.json config")
+
+    # voice vad
+    vad_parser = voice_subparsers.add_parser("vad", help="Voice Activity Detection")
+    vad_subparsers = vad_parser.add_subparsers(dest="voice_vad_command", required=True)
+    vad_subparsers.add_parser("test", help="Test VAD (record until silence)")
+
+    # voice signal
+    signal_parser = voice_subparsers.add_parser("signal", help="Play a signal sound")
+    signal_parser.add_argument("signal_name", choices=["wake", "thinking", "error", "done"], help="Signal to play")
 
     # listen
     listen_parser = subparsers.add_parser("listen", help="Listen and respond (Voice Mode)")
-    listen_parser.add_argument("--push-to-talk", action="store_true", default=True, help="Use push-to-talk mode")
+    listen_parser.add_argument("--push-to-talk", action="store_true", default=False, help="Use push-to-talk mode (ENTER to record)")
+    listen_parser.add_argument("--vad", action="store_true", default=False, help="Use VAD mode (stops after 1s silence)")
 
     # user
     user_parser = subparsers.add_parser("user", help="Manage Kora users")
@@ -635,6 +653,14 @@ def main() -> None:
                 handle_voice_models_list(args)
             elif args.voice_models_command == "install":
                 handle_voice_models_install(args)
+            elif args.voice_models_command == "import":
+                from .voice import models as voice_models
+                voice_models.cmd_import_piper(args.import_name, args.model, args.config)
+        elif args.voice_command == "vad":
+            if args.voice_vad_command == "test":
+                voice_vad.cmd_test()
+        elif args.voice_command == "signal":
+            voice_signals.cmd_signal(args.signal_name)
         elif args.voice_command == "wake-word":
             if args.voice_ww_command == "status":
                 handle_voice_wakeword_status(args)

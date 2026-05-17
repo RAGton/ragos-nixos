@@ -21,6 +21,15 @@ VOICE_CONFIG_PATH = Path("/var/lib/kryonix/kora/voice/config.json")
 # Catálogo de presets
 # ---------------------------------------------------------------------------
 VOICE_PRESETS: dict = {
+    "kora_ptbr_female": {
+        "model":        "kora_ptbr_female",
+        "length_scale": 1.18,
+        "noise_scale":  0.48,
+        "noise_w":      0.78,
+        "description":  "voz principal da Kora — feminina PT-BR (requer modelo custom importado)",
+        "gender_note":  "feminina — requer modelo importado via 'kora voice models import piper kora_ptbr_female'",
+        "custom":       True,
+    },
     "default": {
         "model":        "faber",
         "length_scale": 1.18,

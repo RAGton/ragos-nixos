@@ -269,3 +269,50 @@ def cmd_install_piper(voice_name: str) -> None:
     _set_symlink(PIPER_DIR / "current.onnx",      meta["local_model"])
     _set_symlink(PIPER_DIR / "current.onnx.json", meta["local_config"])
     print(f"  ✓ Voz ativa: {voice_name}")
+
+
+def cmd_import_piper(voice_name: str, model_path: str, config_path: str) -> None:
+    """Importa modelo Piper custom de caminho local."""
+    import json
+    import time
+
+    src_model = Path(model_path)
+    src_config = Path(config_path)
+
+    if not src_model.exists():
+        print(f"[ERRO] Modelo não encontrado: {src_model}")
+        sys.exit(1)
+    if not src_config.exists():
+        print(f"[ERRO] Config não encontrada: {src_config}")
+        sys.exit(1)
+
+    dest_dir = PIPER_DIR / voice_name
+    _ensure_dir(dest_dir)
+
+    dest_model = dest_dir / "model.onnx"
+    dest_config = dest_dir / "model.onnx.json"
+    dest_meta = dest_dir / "metadata.json"
+
+    print(f"  → Importando voz '{voice_name}' para {dest_dir}...")
+    shutil.copy2(src_model, dest_model)
+    dest_model.chmod(0o640)
+    shutil.copy2(src_config, dest_config)
+    dest_config.chmod(0o640)
+
+    # Metadata
+    metadata = {
+        "name": voice_name,
+        "source": str(src_model),
+        "imported_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "type": "custom_import",
+    }
+    dest_meta.write_text(json.dumps(metadata, indent=2, ensure_ascii=False))
+
+    # Update symlinks to point to this model
+    _set_symlink(PIPER_DIR / "current.onnx", f"{voice_name}/model.onnx")
+    _set_symlink(PIPER_DIR / "current.onnx.json", f"{voice_name}/model.onnx.json")
+
+    print(f"  ✓ Voz importada: {voice_name}")
+    print(f"  ✓ Symlink ativo: current.onnx → {voice_name}/model.onnx")
+    print(f"  ✓ Para usar: kora voice voices set kora_ptbr_female")
+
