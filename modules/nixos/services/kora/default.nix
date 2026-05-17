@@ -38,13 +38,6 @@ let
     pkgs.openssl
   ];
 
-  koraStartScript = pkgs.writeShellScript "kora-start" ''
-    set -euo pipefail
-    cd "${cfg.packageDir}"
-    export LD_LIBRARY_PATH="${runtimeLibPath}:''${LD_LIBRARY_PATH:-}"
-    exec ${pkgs.uv}/bin/uv run --locked python -m kora.api.server
-  '';
-
 in
 {
   options.kryonix.services.kora = {
@@ -182,11 +175,10 @@ in
         KORA_BRAIN_URL = cfg.brainUrl;
         KORA_NEO4J_URI = cfg.neo4jUri;
         KORA_MODEL = cfg.model;
-        UV_PROJECT_ENVIRONMENT = "${cfg.dataDir}/.venv";
       };
       serviceConfig = {
-        ExecStart = koraStartScript;
-        WorkingDirectory = cfg.packageDir;
+        ExecStart = "${pkgs.kora}/bin/kora-api";
+        WorkingDirectory = cfg.dataDir;
         EnvironmentFile = [
           "-${cfg.environmentFile}"
           "-${cfg.brainEnvironmentFile}"
@@ -227,11 +219,10 @@ in
         KORA_MEMORY_QUEUE = cfg.memory.queuePath;
         KORA_VAULT_DIR = cfg.memory.vaultDir;
         KORA_DATA_DIR = cfg.dataDir;
-        UV_PROJECT_ENVIRONMENT = "${cfg.dataDir}/.venv";
       };
       serviceConfig = {
-        ExecStart = "${pkgs.uv}/bin/uv run --locked python -m kora.memory.worker";
-        WorkingDirectory = cfg.packageDir;
+        ExecStart = "${pkgs.kora}/bin/kora-memory-worker";
+        WorkingDirectory = cfg.dataDir;
         EnvironmentFile = [
           "-${cfg.environmentFile}"
           "-${cfg.brainEnvironmentFile}"

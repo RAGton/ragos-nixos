@@ -54,7 +54,7 @@ class MemoryWorker:
             logger.info("Memory worker stopped")
 
 
-if __name__ == "__main__":
+def main():
     import os
     import sys
 
@@ -76,5 +76,9 @@ if __name__ == "__main__":
         processed = asyncio.run(worker.run_once())
         print(f"Processed {processed} items.")
     else:
-        # Loop mode (default for systemd if not using timer, but we have a timer)
+        # Loop mode
         asyncio.run(worker.run_once())
+
+
+if __name__ == "__main__":
+    main()

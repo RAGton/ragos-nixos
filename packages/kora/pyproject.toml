@@ -18,6 +18,7 @@ dependencies = [
 [project.scripts]
 kora-api = "kora.api.server:main"
 kora = "kora.cli:main"
+kora-memory-worker = "kora.memory.worker:main"
 
 [build-system]
 requires = ["hatchling"]

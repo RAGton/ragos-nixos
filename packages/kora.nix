@@ -34,16 +34,18 @@ python3Packages.buildPythonApplication {
   ];
 
   postInstall = ''
-    wrapProgram $out/bin/kora \
-      --prefix PATH : ${
-        lib.makeBinPath [
-          whisper-cpp
-          piper-tts
-          alsa-utils
-          ffmpeg
-        ]
-      } \
-      --set-default KORA_WHISPER_BIN "whisper-cli"
+    for p in kora kora-api kora-memory-worker; do
+      wrapProgram $out/bin/$p \
+        --prefix PATH : ${
+          lib.makeBinPath [
+            whisper-cpp
+            piper-tts
+            alsa-utils
+            ffmpeg
+          ]
+        } \
+        --set-default KORA_WHISPER_BIN "whisper-cli"
+    done
   '';
 
   meta = {
