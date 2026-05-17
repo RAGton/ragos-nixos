@@ -30,6 +30,7 @@ from ..llm import ollama as ollama_adapter
 from ..memory import MemoryCandidate, MemoryClassifier, MemoryQueue, MemoryType
 from .grounding import requires_rag, validate_command_hallucination
 from .tool_registry import get_registry_summary, find_tool
+from .conversation import format_history_for_prompt, build_followup_context
 from .identity import (
     detect_runtime_identity,
     resolve_identity,
@@ -119,6 +120,24 @@ async def _prepare_session_and_context(
         )
     registry_summary = get_registry_summary()
     system_prompt += f"\n\n## Ferramentas Disponíveis (Tool Registry)\n{registry_summary}"
+
+    # ── Conversation history (voice sessions) ────────────────────────
+    history_ctx = format_history_for_prompt(limit=4)
+    if history_ctx:
+        system_prompt += f"\n\n{history_ctx}"
+
+    followup_ctx = build_followup_context(message)
+    if followup_ctx:
+        system_prompt += followup_ctx
+
+    # ── Multi-part answer instruction ────────────────────────────────
+    system_prompt += (
+        "\n\n## Regra de Resposta Completa\n"
+        "Se a pergunta do usuário contiver múltiplas partes ou sub-perguntas, "
+        "responda CADA parte separadamente, usando tópicos numerados. "
+        "Nunca ignore parte de uma pergunta composta. Se não souber uma parte, "
+        "diga explicitamente que precisa validar aquele ponto específico."
+    )
 
     active_mode = mode
     if mode == "auto":

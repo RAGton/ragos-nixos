@@ -7,7 +7,9 @@
 
 import argparse
 import json
+import logging
 import sys
+from pathlib import Path
 from typing import Any
 
 from .client import KoraClient, KoraClientError
@@ -312,8 +314,6 @@ def handle_listen(args: argparse.Namespace) -> None:
 
 def handle_voice_daemon(args: argparse.Namespace) -> None:
     if args.voice_daemon_command == "status":
-        # Note: In a real implementation, this would query a running service
-        # or check a PID/socket. For now, we show foundation status.
         print_json({
             "status": "foundation",
             "ready": False,
@@ -323,8 +323,62 @@ def handle_voice_daemon(args: argparse.Namespace) -> None:
         print("Starting Kora Voice Daemon (Foundation)...")
         import asyncio
         asyncio.run(daemon.run_daemon())
+    elif args.voice_daemon_command == "run":
+        # Foreground mode for systemd — no output decorations
+        import asyncio
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+        logger = logging.getLogger("kora.voice.daemon")
+        logger.info("Kora Voice Daemon starting in foreground (systemd mode)...")
+        try:
+            asyncio.run(daemon.run_daemon())
+        except KeyboardInterrupt:
+            logger.info("Daemon stopped by signal.")
     elif args.voice_daemon_command == "stop":
         print("Stopping Kora Voice Daemon... (Not yet implemented via CLI control)")
+
+
+def handle_voice_mute(args: argparse.Namespace) -> None:
+    mute_file = Path("/var/lib/kryonix/kora/voice/muted")
+    mute_file.parent.mkdir(parents=True, exist_ok=True)
+    mute_file.touch()
+    print("  \u2713 Microfone silenciado (Kora n\u00e3o processar\u00e1 \u00e1udio).")
+
+
+def handle_voice_unmute(args: argparse.Namespace) -> None:
+    mute_file = Path("/var/lib/kryonix/kora/voice/muted")
+    if mute_file.exists():
+        mute_file.unlink()
+    print("  \u2713 Microfone ativo novamente.")
+
+
+def handle_voice_status(args: argparse.Namespace) -> None:
+    import shutil
+    from pathlib import Path
+    muted = Path("/var/lib/kryonix/kora/voice/muted").exists()
+    session_file = Path("/var/lib/kryonix/kora/sessions/voice-current.json")
+    has_session = session_file.exists()
+
+    whisper_ok = shutil.which("whisper-cli") is not None
+    piper_ok = shutil.which("piper") is not None or shutil.which("piper-tts") is not None
+
+    from .voice import models as voice_models
+    whisper_model = voice_models.resolve_whisper_model()
+    piper_model, _ = voice_models.resolve_piper_model()
+
+    from .voice.voices import get_active_preset_name
+    preset = get_active_preset_name()
+
+    status = {
+        "voice_pipeline": "ready" if (whisper_ok and piper_ok and whisper_model and piper_model) else "incomplete",
+        "stt": "ok" if (whisper_ok and whisper_model) else "missing",
+        "tts": "ok" if (piper_ok and piper_model) else "missing",
+        "microphone_muted": muted,
+        "active_preset": preset,
+        "active_session": has_session,
+        "wake_word_ready": False,
+        "background_service": "use 'kora voice service status' for details",
+    }
+    print_json(status)
 
 
 def handle_user(args: argparse.Namespace) -> None:
@@ -442,6 +496,9 @@ def main() -> None:
 
     voice_subparsers.add_parser("devices", help="List audio devices")
     voice_subparsers.add_parser("doctor", help="Run diagnostics for voice pipeline")
+    voice_subparsers.add_parser("status", help="Show voice pipeline status")
+    voice_subparsers.add_parser("mute",   help="Mute microphone (daemon will ignore audio)")
+    voice_subparsers.add_parser("unmute", help="Unmute microphone")
 
     mic_parser = voice_subparsers.add_parser("test-mic", help="Test microphone recording")
     mic_parser.add_argument("--seconds", type=int, default=5)
@@ -481,7 +538,8 @@ def main() -> None:
     daemon_parser = voice_subparsers.add_parser("daemon", help="Manage voice listener daemon")
     daemon_subparsers = daemon_parser.add_subparsers(dest="voice_daemon_command", required=True)
     daemon_subparsers.add_parser("start", help="Start the daemon")
-    daemon_subparsers.add_parser("stop", help="Stop the daemon")
+    daemon_subparsers.add_parser("run",   help="Run daemon in foreground (for systemd)")
+    daemon_subparsers.add_parser("stop",  help="Stop the daemon")
     daemon_subparsers.add_parser("status", help="Get daemon status")
 
     # voice identity
@@ -548,6 +606,12 @@ def main() -> None:
     elif args.command == "voice":
         if args.voice_command == "devices":
             handle_voice_devices(args)
+        elif args.voice_command == "status":
+            handle_voice_status(args)
+        elif args.voice_command == "mute":
+            handle_voice_mute(args)
+        elif args.voice_command == "unmute":
+            handle_voice_unmute(args)
         elif args.voice_command == "doctor":
             handle_voice_doctor(args)
         elif args.voice_command == "test-mic":
