@@ -43,8 +43,8 @@
   # PROFILES — toda a lógica vive aqui
   # =========================
   kryonix.profiles.glacier-base.enable = true;
-  kryonix.profiles.glacier-ai.enable = true;
-  kryonix.profiles.glacier-gamer.enable = false;
+  kryonix.profiles.glacier-ai.enable = false;
+  kryonix.profiles.glacier-gamer.enable = true;
 
   # Perfis funcionais
   kryonix.profiles.dev.enable = true;
@@ -56,7 +56,7 @@
   # Issue: #48 — Backend experimental llama.cpp/provider auto/fallback
   # =========================
   kryonix.services.llama-cpp = {
-    enable = true;
+    enable = false;
     modelPath = "/var/lib/kryonix/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf";
     gpuLayers = -1; # Todas na GPU RTX 4060
     ctxSize = 16384; # Aumentado de 8k para 16k para suportar RAG denso
@@ -71,7 +71,7 @@
 
   # KORA — Assistente pessoal local (gateway/orchestrator)
   kryonix.services.kora = {
-    enable = true;
+    enable = false;
     # Bind em 0.0.0.0 é seguro aqui porque o firewall do módulo (kryonix.services.kora)
     # restringe explicitamente o acesso às interfaces tailscale0 e br0.
     host = "0.0.0.0";
@@ -83,14 +83,14 @@
   # N8N — Motor de automação visual (gateway/orchestrator)
   # =========================
   kryonix.services.n8n = {
-    enable = true;
+    enable = false;
   };
 
   # =========================
   # Home Assistant — Automação residencial
   # =========================
   kryonix.services.home-assistant = {
-    enable = true;
+    enable = false;
   };
 
   # =========================
