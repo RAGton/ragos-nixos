@@ -32,7 +32,7 @@ in
     services.n8n = {
       enable = true;
       openFirewall = false; # Fundamental: sem exposição externa.
-      
+
       # Variáveis de ambiente configuradas no módulo (declarativas, não-secretas)
       environment = {
         N8N_HOST = "127.0.0.1";
@@ -49,7 +49,7 @@ in
       serviceConfig = {
         EnvironmentFile = [
           # Arquivo que o usuário deve criar contendo N8N_ENCRYPTION_KEY, etc.
-          "-/etc/kryonix/n8n.env" 
+          "-/etc/kryonix/n8n.env"
         ];
       };
     };

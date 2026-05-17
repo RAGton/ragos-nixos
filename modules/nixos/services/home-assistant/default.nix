@@ -24,7 +24,7 @@ in
 {
   options.kryonix.services.home-assistant = {
     enable = lib.mkEnableOption "Serviço local de Home Assistant (Podman)";
-    
+
     port = lib.mkOption {
       type = lib.types.port;
       default = 8123;
@@ -43,18 +43,18 @@ in
       backend = "podman";
       containers.homeassistant = {
         image = "ghcr.io/home-assistant/home-assistant:stable";
-        
+
         # O Home Assistant necessita de network mode host para Auto-Discovery na LAN
         extraOptions = [
           "--network=host"
           "--privileged"
         ];
-        
+
         # O timezone é repassado para manter cronogramas locais consistentes
         environment = {
           TZ = "America/Cuiaba";
         };
-        
+
         # Montagem do volume persistente
         volumes = [
           "/var/lib/kryonix/home-assistant:/config"
