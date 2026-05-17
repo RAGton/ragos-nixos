@@ -205,6 +205,8 @@ in
       "d ${cfg.dataDir}/voice/profiles 0770 ${cfg.user} ${cfg.group} - -"
       "d ${cfg.dataDir}/sessions 0770 ${cfg.user} ${cfg.group} - -"
       "d ${cfg.dataDir}/reports 0770 ${cfg.user} ${cfg.group} - -"
+      "d ${cfg.dataDir}/audit 0770 ${cfg.user} ${cfg.group} - -"
+      "d ${cfg.dataDir}/memory 0770 ${cfg.user} ${cfg.group} - -"
     ];
 
     # ── kora-memory-worker.service (Flush Queue to Obsidian) ──
@@ -241,13 +243,7 @@ in
       wantedBy = [ "timers.target" ];
     };
 
-    # ── Diretórios de runtime ────────────────────────────────────
-    systemd.tmpfiles.rules = [
-      "d ${cfg.dataDir} 0770 ${cfg.user} ${cfg.group} -"
-      "d ${cfg.dataDir}/sessions 0770 ${cfg.user} ${cfg.group} -"
-      "d ${cfg.dataDir}/audit 0770 ${cfg.user} ${cfg.group} -"
-      "d ${cfg.dataDir}/memory 0770 ${cfg.user} ${cfg.group} -"
-    ];
+    # ── Diretórios de runtime resolvidos acima ───────────────────
 
     # ── Firewall por interface ───────────────────────────────────
     # Kora API apenas via Tailscale e LAN (nunca pública).
