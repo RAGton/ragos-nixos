@@ -59,6 +59,20 @@ PIPER_VOICES = {
         "local_model":  "pt_BR-jeff-medium.onnx",
         "local_config": "pt_BR-jeff-medium.onnx.json",
     },
+    "kora_ptbr_female": {
+        "model":        "dii_pt-BR.onnx",
+        "config":       "dii_pt-BR.onnx.json",
+        "local_model":  "dii_pt-BR.onnx",
+        "local_config": "dii_pt-BR.onnx.json",
+        "url_base":     "https://huggingface.co/OpenVoiceOS/pipertts_pt-BR_dii/resolve/main",
+    },
+    "kora_sage": {
+        "model":        "pt_BR-sage_13364-medium.onnx",
+        "config":       "pt_BR-sage_13364-medium.onnx.json",
+        "local_model":  "pt_BR-sage_13364-medium.onnx",
+        "local_config": "pt_BR-sage_13364-medium.onnx.json",
+        "url_base":     "https://huggingface.co/srxz/sage-voice-pt-br/resolve/main",
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -256,15 +270,17 @@ def cmd_install_piper(voice_name: str) -> None:
     model_dest  = PIPER_DIR / meta["local_model"]
     config_dest = PIPER_DIR / meta["local_config"]
 
+    url_base = meta.get("url_base", HF_PIPER_BASE)
+
     if model_dest.exists() and model_dest.stat().st_size > 1_000:
         print(f"  ✓ Modelo já instalado: {model_dest}")
     else:
-        _download_file(f"{HF_PIPER_BASE}/{meta['model']}", model_dest)
+        _download_file(f"{url_base}/{meta['model']}", model_dest)
 
     if config_dest.exists():
         print(f"  ✓ Config já instalada: {config_dest}")
     else:
-        _download_file(f"{HF_PIPER_BASE}/{meta['config']}", config_dest)
+        _download_file(f"{url_base}/{meta['config']}", config_dest)
 
     _set_symlink(PIPER_DIR / "current.onnx",      meta["local_model"])
     _set_symlink(PIPER_DIR / "current.onnx.json", meta["local_config"])

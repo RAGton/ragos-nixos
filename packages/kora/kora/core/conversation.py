@@ -74,15 +74,15 @@ def _save_session(session: dict) -> None:
 def append_turn(
     user_text: str,
     assistant_text: str,
-    speaker: str = "unknown",
+    intent: str = "general_chat",
     metadata: dict | None = None,
 ) -> None:
     """Adiciona um turno à sessão atual de voz."""
     session = _load_session()
-    session["speaker"] = speaker
     turn = {
         "user": user_text,
         "kora": assistant_text,
+        "intent": intent,
         "ts": time.time(),
     }
     if metadata:
@@ -96,18 +96,29 @@ def append_turn(
     _save_session(session)
 
 
-def get_recent_turns(limit: int = 6) -> list[dict]:
+def get_recent_turns(limit: int = 8) -> list[dict]:
     """Retorna os últimos N turnos da sessão."""
     session = _load_session()
     return session["turns"][-limit:]
 
 
-def get_last_user_question() -> str | None:
+def get_last_user_turn() -> str | None:
     """Retorna a última pergunta feita pelo usuário."""
     session = _load_session()
     if session["turns"]:
         return session["turns"][-1].get("user")
     return None
+
+def get_last_assistant_turn() -> str | None:
+    """Retorna a última resposta da Kora."""
+    session = _load_session()
+    if session["turns"]:
+        return session["turns"][-1].get("kora")
+    return None
+
+def get_last_unanswered_or_partial_turn() -> str | None:
+    """Retorna o último turno que provavelmente ficou parcial (fallback to last)."""
+    return get_last_user_turn()
 
 
 def detect_followup_complaint(text: str) -> bool:
@@ -142,7 +153,7 @@ def build_followup_context(current_text: str) -> str:
     if not detect_followup_complaint(current_text):
         return ""
 
-    last_q = get_last_user_question()
+    last_q = get_last_user_turn()
     if not last_q:
         return ""
 
@@ -150,8 +161,8 @@ def build_followup_context(current_text: str) -> str:
         "\n\n## ATENÇÃO — Reclamação de resposta incompleta\n"
         "O usuário está dizendo que a resposta anterior foi incompleta ou ignorou parte da pergunta.\n"
         f"A pergunta anterior do usuário foi:\n\n> {last_q}\n\n"
-        "INSTRUÇÃO: Recupere esta pergunta, reconheça o que faltou e responda de forma completa "
-        "abordando TODAS as partes que o usuário mencionou. Estruture por tópicos se necessário."
+        "INSTRUÇÃO: Recupere esta pergunta, liste as partes dela, explique rapidamente que vai completar "
+        "a resposta e então forneça todas as informações que faltaram."
     )
 
 

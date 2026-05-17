@@ -17,10 +17,12 @@ logger = logging.getLogger("kora.voice.vad")
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-SILENCE_SECONDS = 1.0       # Seconds of silence before stopping
-MAX_RECORD_SECONDS = 20.0   # Safety cap
-MIN_SPEECH_SECONDS = 0.5    # Minimum speech before we accept silence
-RMS_THRESHOLD = 300          # RMS threshold for "speech" (adjust per mic)
+import os
+
+SILENCE_SECONDS = float(os.environ.get("KORA_VAD_SILENCE", "1.8"))       # Seconds of silence before stopping
+MAX_RECORD_SECONDS = float(os.environ.get("KORA_VAD_MAX_DURATION", "20.0"))   # Safety cap
+MIN_SPEECH_SECONDS = float(os.environ.get("KORA_VAD_MIN_SPEECH", "0.5"))    # Minimum speech before we accept silence
+RMS_THRESHOLD = int(os.environ.get("KORA_VAD_THRESHOLD", "150"))          # RMS threshold for "speech" (adjust per mic)
 SAMPLE_RATE = 16000
 CHANNELS = 1
 SAMPLE_WIDTH = 2             # 16-bit PCM → 2 bytes

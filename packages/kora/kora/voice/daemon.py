@@ -36,11 +36,9 @@ class KoraVoiceDaemon:
         self.state = KoraVoiceState.LISTENING
         logger.info("Wake-word triggered! Starting interaction...")
 
-        # In a real daemon, we might want to play a small sound here
         try:
-            # We call the pipeline, but we need to ensure it doesn't block the daemon forever
-            # For now, it will run one interaction loop
-            await listen_and_respond(push_to_talk=False)
+            # We call the pipeline, ensuring it runs one interaction loop
+            await listen_and_respond(push_to_talk=False, single_turn=True)
         except Exception as e:
             logger.error(f"Error in triggered interaction: {e}")
         finally:

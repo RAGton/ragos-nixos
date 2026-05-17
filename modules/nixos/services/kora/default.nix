@@ -176,6 +176,8 @@ in
         KORA_HOST = cfg.host;
         KORA_PORT = toString cfg.port;
         KORA_DATA_DIR = "${cfg.dataDir}";
+        KORA_LEARNING_DIR = "${cfg.dataDir}/learning";
+        KORA_TRAINING_DIR = "${cfg.dataDir}/training";
         KORA_OLLAMA_URL = cfg.ollamaUrl;
         KORA_BRAIN_URL = cfg.brainUrl;
         KORA_NEO4J_URI = cfg.neo4jUri;
@@ -210,6 +212,11 @@ in
       "d ${cfg.dataDir}/reports 0770 ${cfg.user} ${cfg.group} - -"
       "d ${cfg.dataDir}/audit 0770 ${cfg.user} ${cfg.group} - -"
       "d ${cfg.dataDir}/memory 0770 ${cfg.user} ${cfg.group} - -"
+      "d ${cfg.dataDir}/learning 0770 ${cfg.user} ${cfg.group} - -"
+      "d ${cfg.dataDir}/learning/ragton 0770 ${cfg.user} ${cfg.group} - -"
+      "d ${cfg.dataDir}/learning/ragton/daily 0770 ${cfg.user} ${cfg.group} - -"
+      "d ${cfg.dataDir}/training 0770 ${cfg.user} ${cfg.group} - -"
+      "d ${cfg.dataDir}/training/exports 0770 ${cfg.user} ${cfg.group} - -"
     ];
 
     # ── kora-memory-worker.service (Flush Queue to Obsidian) ──

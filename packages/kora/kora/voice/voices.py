@@ -7,6 +7,7 @@
 
 import json
 import logging
+import os
 import shutil
 from pathlib import Path
 
@@ -22,49 +23,73 @@ VOICE_CONFIG_PATH = Path("/var/lib/kryonix/kora/voice/config.json")
 # ---------------------------------------------------------------------------
 VOICE_PRESETS: dict = {
     "kora_ptbr_female": {
+        "provider":     "edge-tts",
+        "voice":        "pt-BR-FranciscaNeural",
         "model":        "kora_ptbr_female",
-        "length_scale": 1.18,
+        "length_scale": 1.15,
+        "noise_scale":  0.667,
+        "noise_w":      0.8,
+        "description":  "voz principal da Kora — feminina Neural Premium (Francisca)",
+        "gender_note":  "feminina — voz neural ultra-realista e profissional (fallback local Dii/OVOS)",
+    },
+    "kora_thalita": {
+        "provider":     "edge-tts",
+        "voice":        "pt-BR-ThalitaNeural",
+        "model":        "kora_ptbr_female",
+        "length_scale": 1.15,
+        "noise_scale":  0.667,
+        "noise_w":      0.8,
+        "description":  "voz doce da Kora — feminina Neural Doce (Thalita)",
+        "gender_note":  "feminina — voz neural extremamente suave e delicada (fallback local Dii/OVOS)",
+    },
+    "kora_sage": {
+        "provider":     "piper",
+        "model":        "kora_sage",
+        "length_scale": 1.32,
         "noise_scale":  0.48,
         "noise_w":      0.78,
-        "description":  "voz principal da Kora — feminina PT-BR (requer modelo custom importado)",
-        "gender_note":  "feminina — requer modelo importado via 'kora voice models import piper kora_ptbr_female'",
-        "custom":       True,
+        "description":  "voz de combate da Kora — feminina PT-BR (Sage/Valorant)",
+        "gender_note":  "feminina — modelo local offline da Sage",
     },
     "default": {
+        "provider":     "piper",
         "model":        "faber",
         "length_scale": 1.18,
         "noise_scale":  0.55,
         "noise_w":      0.65,
         "description":  "voz PT-BR local padrão (faber)",
-        "gender_note":  "masculina/neutra — voz feminina PT-BR local ainda não disponível",
+        "gender_note":  "masculina/neutra — voz local padrão",
     },
     "soft": {
+        "provider":     "piper",
         "model":        "faber",
         "length_scale": 1.28,
         "noise_scale":  0.45,
         "noise_w":      0.80,
         "description":  "mais lenta e suave",
-        "gender_note":  "masculina/neutra — voz feminina PT-BR local ainda não disponível",
+        "gender_note":  "masculina/neutra — mais calma",
     },
     "fast": {
+        "provider":     "piper",
         "model":        "faber",
         "length_scale": 1.00,
         "noise_scale":  0.60,
         "noise_w":      0.70,
         "description":  "mais rápida e direta",
-        "gender_note":  "masculina/neutra — voz feminina PT-BR local ainda não disponível",
+        "gender_note":  "masculina/neutra — mais direta",
     },
     "expressive": {
+        "provider":     "piper",
         "model":        "faber",
         "length_scale": 1.22,
         "noise_scale":  0.70,
         "noise_w":      0.55,
         "description":  "mais expressiva e variada",
-        "gender_note":  "masculina/neutra — voz feminina PT-BR local ainda não disponível",
+        "gender_note":  "masculina/neutra — tom expressivo",
     },
 }
 
-DEFAULT_PRESET = "default"
+DEFAULT_PRESET = os.getenv("KORA_DEFAULT_VOICE_PRESET", "soft")
 
 # ---------------------------------------------------------------------------
 # Persistência
@@ -113,7 +138,10 @@ def cmd_list() -> None:
     for name, preset in VOICE_PRESETS.items():
         flag = "→" if name == active else " "
         model_name = preset["model"]
-        installed = (PIPER_DIR / f"pt_BR-{model_name}-medium.onnx").exists()
+        if model_name in PIPER_VOICES:
+            installed = (PIPER_DIR / PIPER_VOICES[model_name]["local_model"]).exists()
+        else:
+            installed = (PIPER_DIR / f"pt_BR-{model_name}-medium.onnx").exists()
         status = "✓" if installed else "✗ não instalado"
         print(f"  {flag} {name:<12} [{model_name} {status}]  {preset['description']}")
 
@@ -121,13 +149,16 @@ def cmd_list() -> None:
     female_found = False
     for name, info in PIPER_VOICES.items():
         model_file = PIPER_DIR / info["local_model"]
-        # Heurística: nenhum dos modelos rhasspy PT-BR disponíveis é feminino ainda
         if model_file.exists():
             print(f"  {name}: instalado — {info['local_model']}")
+            if name == "kora_ptbr_female":
+                female_found = True
     if not female_found:
         print("  female_ptbr: MISSING")
         print("  ⚠ Voz feminina PT-BR local ainda não disponível via rhasspy/piper-voices.")
         print("    → Usando preset 'soft' no modelo atual para melhor naturalidade.")
+    else:
+        print("  female_ptbr: ✓ OK (Kora Voice rodando com modelo Dii/OVOS premium!)")
     print()
 
 

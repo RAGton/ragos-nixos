@@ -9,7 +9,11 @@ try:
     from openwakeword.model import Model
     OPENWAKEWORD_AVAILABLE = True
 except ImportError:
-    OPENWAKEWORD_AVAILABLE = False
+    try:
+        from pyopen_wakeword import Model
+        OPENWAKEWORD_AVAILABLE = True
+    except ImportError:
+        OPENWAKEWORD_AVAILABLE = False
 
 logger = logging.getLogger("kora.voice.wakeword")
 
@@ -22,14 +26,20 @@ class KoraWakeWord:
 
         if OPENWAKEWORD_AVAILABLE:
             try:
-                # Strictly using 'kora' model.
-                # Note: The model file must exist in openwakeword's search path or be a custom path.
+                # Try to use 'kora' model first.
                 self.oww_model = Model(wakeword_models=[self.model_name])
                 logger.info(f"Wake-word engine initialized (models: {self.oww_model.wakeword_models})")
                 self.ready = True
             except Exception as e:
-                logger.error(f"Failed to initialize openWakeWord Model '{self.model_name}': {e}")
-                logger.info("Wake-word engine falling back to foundation mode (no model found).")
+                logger.warning(f"Failed to initialize openWakeWord Model '{self.model_name}': {e}. Falling back to 'hey_mycroft'.")
+                try:
+                    self.model_name = "hey_mycroft"
+                    self.oww_model = Model(wakeword_models=["hey_mycroft"])
+                    logger.info(f"Wake-word engine initialized with fallback (models: {self.oww_model.wakeword_models})")
+                    self.ready = True
+                except Exception as ex:
+                    logger.error(f"Fallback also failed: {ex}")
+                    logger.info("Wake-word engine falling back to foundation mode (no model found).")
         else:
             logger.warning("openWakeWord library not available. Using foundation stub.")
 
@@ -67,19 +77,24 @@ class KoraWakeWord:
 
 def get_wakeword_status():
     custom_model_present = False
+    active_model = "kora"
     if OPENWAKEWORD_AVAILABLE:
         try:
-            # Test-load to see if 'kora' is actually available in the environment
             temp_model = Model(wakeword_models=["kora"])
             custom_model_present = "kora" in temp_model.wakeword_models
         except:
-            custom_model_present = False
+            try:
+                temp_model = Model(wakeword_models=["hey_mycroft"])
+                custom_model_present = True
+                active_model = "hey_mycroft"
+            except:
+                custom_model_present = False
 
     return {
-        "target_wake_word": "kora",
+        "target_wake_word": active_model,
         "backend": "openWakeWord" if OPENWAKEWORD_AVAILABLE else "foundation (missing lib)",
-        "custom_kora_model": "present" if custom_model_present else "missing",
+        "custom_kora_model": "present" if (custom_model_present and active_model == "kora") else ("fallback" if custom_model_present else "missing"),
         "status": "validated" if custom_model_present else "foundation",
         "ready": OPENWAKEWORD_AVAILABLE and custom_model_present,
-        "note": "Wake-word 'Kora' configurado como alvo. Modelo real pendente se status for foundation."
+        "note": "Wake-word configurado como alvo. Usando fallback se kora não for encontrado."
     }

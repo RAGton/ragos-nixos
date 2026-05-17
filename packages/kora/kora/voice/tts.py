@@ -8,6 +8,7 @@
 import shutil
 import subprocess
 import logging
+import os
 from pathlib import Path
 
 logger = logging.getLogger("kora.voice.tts")
@@ -42,6 +43,67 @@ def _fallback_spd_say(text: str) -> None:
             pass
 
 
+def speak_edge_tts(text: str, voice: str) -> bool:
+    """Tenta sintetizar texto usando edge-tts e reproduzir com aplay/ffmpeg."""
+    try:
+        import sys
+        import tempfile
+        import os
+        import subprocess
+
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
+            temp_path = f.name
+        try:
+            # Run edge-tts in a clean subprocess to avoid event loop conflicts in threads
+            python_code = (
+                "import asyncio\n"
+                "import edge_tts\n"
+                "async def main():\n"
+                f"    communicate = edge_tts.Communicate({repr(text)}, {repr(voice)})\n"
+                f"    await communicate.save({repr(temp_path)})\n"
+                "asyncio.run(main())\n"
+            )
+            subprocess.run([sys.executable, "-c", python_code], check=True, capture_output=True, text=True)
+
+            aplay_bin = shutil.which("aplay")
+            ffmpeg_bin = shutil.which("ffmpeg")
+            if ffmpeg_bin and aplay_bin:
+                # ffmpeg decodifica para PCM S16LE e pipe para aplay
+                ffmpeg_cmd = [
+                    ffmpeg_bin,
+                    "-y",
+                    "-i", temp_path,
+                    "-f", "s16le",
+                    "-acodec", "pcm_s16le",
+                    "-ar", "24000",
+                    "-ac", "1",
+                    "-"
+                ]
+                ffmpeg_proc = subprocess.Popen(
+                    ffmpeg_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL
+                )
+                aplay_proc = subprocess.Popen(
+                    [aplay_bin, "-r", "24000", "-f", "S16_LE", "-c", "1", "-"],
+                    stdin=ffmpeg_proc.stdout,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                aplay_proc.wait()
+                ffmpeg_proc.wait()
+                return True
+            else:
+                logger.warning("ffmpeg ou aplay ausente para reprodução de edge-tts.")
+                return False
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+    except Exception as e:
+        logger.warning(f"edge-tts falhou (provavelmente offline ou sem conexão): {e}")
+        return False
+
+
 def speak_text_with_preset(text: str, preset: dict | None = None) -> None:
     """Sintetiza texto usando parâmetros de um preset de voz."""
     if not text:
@@ -56,6 +118,16 @@ def speak_text_with_preset(text: str, preset: dict | None = None) -> None:
             preset = get_active_preset()
         except Exception:
             preset = {}
+
+    # Cloud TTS is opt-in. Default must remain local-first.
+    if preset.get("provider") == "edge-tts" and preset.get("voice"):
+        if os.getenv("KORA_ENABLE_CLOUD_TTS") == "1":
+            logger.info(f"Tentando síntese neural premium via edge-tts ({preset['voice']})...")
+            if speak_edge_tts(text, preset["voice"]):
+                return
+            logger.info("Falha na síntese neural, recorrendo ao fallback local...")
+        else:
+            logger.info("edge-tts configurado, mas desabilitado por default. Use KORA_ENABLE_CLOUD_TTS=1 para opt-in.")
 
     piper_bin = _find_piper_bin()
     aplay_bin = shutil.which("aplay")
@@ -115,5 +187,4 @@ def speak_text_with_preset(text: str, preset: dict | None = None) -> None:
     except Exception as e:
         logger.error(f"TTS falhou: {e}")
         _fallback_spd_say(text)
-
 

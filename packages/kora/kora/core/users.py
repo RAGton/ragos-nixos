@@ -11,7 +11,7 @@ from typing import List, Optional
 
 logger = logging.getLogger("kora.core.users")
 
-USER_STORAGE_DIR = "/var/lib/kryonix/kora/users"
+USER_STORAGE_DIR = os.environ.get("KORA_USER_STORAGE") or "/var/lib/kryonix/kora/users"
 
 @dataclass
 class KoraUser:

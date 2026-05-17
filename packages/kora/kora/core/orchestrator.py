@@ -1,13 +1,9 @@
 # =============================================================================
-# Kora — Core Orchestrator
+# Kora — Core Orchestrator (Intelligence Core)
 #
-# O orquestrador central da Kora. Recebe uma mensagem, decide a estratégia,
-# monta o contexto, chama o LLM e retorna a resposta.
-#
-# Modos de operação:
-#   - direct: envia direto ao Ollama com system prompt (streaming preferido)
-#   - rag:    busca contexto no Brain API e injeta no prompt
-#   - auto:   usa Smart Routing (grounding.py) para escolher entre direct/rag
+# O orquestrador central da Kora. Recebe uma mensagem, decide a intenção
+# via router, monta o plano, puxa contexto, chama o LLM, e avalia a resposta
+# via quality guard.
 # =============================================================================
 
 from __future__ import annotations
@@ -31,6 +27,7 @@ from ..memory import MemoryCandidate, MemoryClassifier, MemoryQueue, MemoryType
 from .grounding import requires_rag, validate_command_hallucination
 from .tool_registry import get_registry_summary, find_tool
 from .conversation import format_history_for_prompt, build_followup_context
+from .conversation import get_recent_turns
 from .identity import (
     detect_runtime_identity,
     resolve_identity,
@@ -39,12 +36,17 @@ from .identity import (
     is_identity_query
 )
 
+from .router import CognitiveRouter, Intent
+from .capabilities import get_deterministic_capabilities_response
+from .answer_planner import AnswerPlanner
+from .quality import QualityGuard
+from .normalizer import normalize_text
+from ..mind import KoraMind, MindInput
+from ..training import record_interaction
+
 logger = logging.getLogger("kora.core.orchestrator")
 
-# Regex to find action proposal JSON blocks
 ACTION_PROPOSAL_RE = re.compile(r"```json\s*(\{.*?" + re.escape('"type": "action_proposal"') + r".*?\})\s*```", re.DOTALL)
-
-# In-memory session tracking
 SESSION_METADATA: Dict[str, Any] = {}
 
 async def _prepare_session_and_context(
@@ -54,8 +56,8 @@ async def _prepare_session_and_context(
     speaker: Optional[str],
     is_voice: bool,
     mode: str,
+    intent: str = "general_chat"
 ) -> Dict[str, Any]:
-    """Unified helper to handle session state, routing, and context retrieval."""
     t0 = time.monotonic()
     is_new_session = session_id not in SESSION_METADATA
 
@@ -66,7 +68,6 @@ async def _prepare_session_and_context(
         if old_meta.get("user") != user or old_meta.get("speaker") != speaker:
             SESSION_METADATA[session_id] = {"user": user, "speaker": speaker, "timestamp": t0}
 
-    # Identidade baseada no usuário passado ou detectado
     runtime_info = detect_runtime_identity()
     if user and user != "unknown":
         runtime_info["user"] = user
@@ -81,15 +82,66 @@ async def _prepare_session_and_context(
 
     system_prompt = load_system_prompt()
 
-    # Injetar informações de perfil se disponível
+    profile_context = ""
     if profile:
         profile_context = (
             f"\n\n## Perfil do Usuário Reconhecido\n"
             f"- Nome: {profile['full_name']} ({profile['display_name']})\n"
             f"- Papel: {profile['role']}\n"
-            f"- Preferências: {', '.join(profile['preferences'])}\n"
+            f"- Preferências Estáticas: {', '.join(profile['preferences'])}\n"
         )
         system_prompt += profile_context
+
+    # Injeção de aprendizados dinâmicos (Personal Learning Engine)
+    try:
+        from kora.core.learning import LearningEngine
+        learning_engine = LearningEngine()
+        learned_profile = learning_engine.get_profile(user)
+
+        learned_context = f"\n\n## Perfil de Aprendizado Dinâmico (Kora Learning Engine)\n"
+        if learned_profile.get("active_projects"):
+            learned_context += f"- Projetos Ativos: {', '.join(learned_profile['active_projects'])}\n"
+        if learned_profile.get("technical_vocabulary"):
+            learned_context += f"- Vocabulário de Interesse: {', '.join(learned_profile['technical_vocabulary'])}\n"
+        if learned_profile.get("user_preferences"):
+            learned_context += f"- Preferências Aprendidas: {', '.join(learned_profile['user_preferences'])}\n"
+        system_prompt += learned_context
+        profile_context += learned_context
+    except Exception as e:
+        logger.error(f"Erro ao injetar perfil de aprendizado dinâmico: {e}")
+
+    # Injeção de Diretrizes de Estilo de Voz (Voice Style Profile)
+    if user in ["rocha", "ragton"]:
+        style_directive = (
+            "\n\n## 🎙️ Diretrizes de Voz e Tom (Gabriel/Ragton)\n"
+            "- **Tom de Voz**: Responda com naturalidade tecnica, calma e profissional. Sem firula e sem despejar status interno em conversa casual.\n"
+            "- **Estilo Cognitivo**: Seja uma parceira de engenharia técnica. Use termos técnicos avançados do NixOS/Glacier e Linux com precisão.\n"
+            "- **Estrutura de Fala**: Suas respostas devem ser concisas e estruturadas em parágrafos ou tópicos curtos (ideal para leitura TTS fluida, sem blocos de texto massivos).\n"
+            "- **Anti-Programa**: Responda primeiro ao humano, depois ao sistema.\n"
+        )
+    elif user in ["nina", "nicoly"]:
+        style_directive = (
+            "\n\n## 🎙️ Diretrizes de Voz e Tom (Nicoly)\n"
+            "- **Tom de Voz**: Responda com um tom feminino, amigável, educado e prestativo.\n"
+            "- **Estilo Cognitivo**: Ajude com tarefas gerais, mantendo segredo sobre memórias ou privilégios de administrador do Ragton.\n"
+            "- **Estrutura de Fala**: Simples, direta e agradável.\n"
+        )
+    else:
+        style_directive = (
+            "\n\n## 🎙️ Diretrizes de Voz e Tom (Visitante)\n"
+            "- **Tom de Voz**: Responda com um tom feminino, neutro, impessoal e estritamente informativo.\n"
+            "- **Restrição**: Não revele detalhes operacionais ou preferências privadas.\n"
+        )
+    system_prompt += style_directive
+
+    # Injeção de Consciência Operacional (Live System State)
+    try:
+        from kora.core.operational import get_operational_context, format_operational_prompt
+        oper_ctx = get_operational_context()
+        oper_prompt = format_operational_prompt(oper_ctx)
+        system_prompt += f"\n\n{oper_prompt}"
+    except Exception as e:
+        logger.error(f"Erro ao injetar consciência operacional: {e}")
 
     identity_context = (
         f"\n\n## Identidade do Usuário Atual\n"
@@ -114,14 +166,13 @@ async def _prepare_session_and_context(
             "\n\n## CONSTRANGIMENTOS DE SEGURANÇA (TRUST: HINT)\n"
             "O usuário atual foi identificado apenas por hint de ambiente/USER (não verificado).\n"
             "1. Você PODE usar o nome e preferências do usuário para personalizar a conversa e saudação.\n"
-            "2. Você **NÃO DEVE** revelar segredos, senhas, chaves privadas ou dados de alta confidencialidade se solicitados.\n"
-            "3. Você **NÃO DEVE** propor comandos de alto risco silenciosamente. Se o usuário insistir em ações críticas, "
-            "exija que ele confirme no terminal local ou utilize uma sessão verificada.\n"
+            "2. Você **NÃO DEVE** revelar segredos, senhas, chaves privadas ou dados de alta confidencialidade.\n"
+            "3. Você **NÃO DEVE** propor comandos de alto risco silenciosamente.\n"
         )
+
     registry_summary = get_registry_summary()
     system_prompt += f"\n\n## Ferramentas Disponíveis (Tool Registry)\n{registry_summary}"
 
-    # ── Conversation history (voice sessions) ────────────────────────
     history_ctx = format_history_for_prompt(limit=4)
     if history_ctx:
         system_prompt += f"\n\n{history_ctx}"
@@ -130,18 +181,9 @@ async def _prepare_session_and_context(
     if followup_ctx:
         system_prompt += followup_ctx
 
-    # ── Multi-part answer instruction ────────────────────────────────
-    system_prompt += (
-        "\n\n## Regra de Resposta Completa\n"
-        "Se a pergunta do usuário contiver múltiplas partes ou sub-perguntas, "
-        "responda CADA parte separadamente, usando tópicos numerados. "
-        "Nunca ignore parte de uma pergunta composta. Se não souber uma parte, "
-        "diga explicitamente que precisa validar aquele ponto específico."
-    )
-
     active_mode = mode
     if mode == "auto":
-        active_mode = "rag" if requires_rag(message) else "direct"
+        active_mode = "rag" if (requires_rag(message) or intent == Intent.PROJECT_KNOWLEDGE) else "direct"
 
     context_text = ""
     brain_used = False
@@ -151,18 +193,37 @@ async def _prepare_session_and_context(
             context_text = brain_result["answer"]
             brain_used = True
 
+    # Injecting capabilities/status awareness to avoid hallucination
+    # Wake-word false
+    system_prompt += "\n\n## Wake-Word Status\nO wake-word está INATIVO/PENDENTE. Não diga que você já acorda ouvindo seu nome."
+
     return {
         "system_prompt": system_prompt,
         "context_text": context_text,
         "active_mode": active_mode,
         "brain_used": brain_used,
         "start_time": t0,
+        "trust_level": identity_trust,
+        "wake_word_ready": False,
+        "speaker_id_ready": False,
+        "greeting": greeting,
+        "profile_context": profile_context,
+        "identity_trust": identity_trust,
+        "system_state": {
+            "active_mode": active_mode,
+            "brain_used": brain_used,
+            "wake_word_ready": False,
+            "speaker_id_ready": False,
+        },
+        "safety_context": {
+            "voice_never_authorizes_critical_actions": True,
+            "wake_word_ready": False,
+            "speaker_id_ready": False,
+            "identity_trust": identity_trust,
+        },
     }
 
 async def _handle_action_proposal(answer: str, user: str, session_id: str) -> tuple[str, Optional[dict]]:
-    """
-    Extract action proposal from answer, validate it, and return cleaned answer + action metadata.
-    """
     match = ACTION_PROPOSAL_RE.search(answer)
     if not match:
         return answer, None
@@ -174,38 +235,27 @@ async def _handle_action_proposal(answer: str, user: str, session_id: str) -> tu
         proposal = json.loads(json_text)
         action_type = proposal.get("action")
 
-        # Validation
         if action_type == "command_execute":
             command = proposal.get("command")
             if not command:
                 return cleaned_answer, {"error": "Comando não especificado na proposta."}
 
-            # Grounding check
             hallucination_error = validate_command_hallucination(command)
             if hallucination_error:
                 return cleaned_answer + f"\n\n⚠️ {hallucination_error}", None
 
-            # Policy check
-            # Policy check with Identity Trust
             id_ctx = resolve_identity({"user": user})
-            ctx = PolicyContext(
-                user=user, 
-                trust=id_ctx["identity_trust"],
-                source=id_ctx["permission_source"]
-            )
+            ctx = PolicyContext(user=user, trust=id_ctx["identity_trust"], source=id_ctx["permission_source"])
             risk = classify_command(command, context=ctx)
             proposal["risk"] = risk.value
 
-            # Save as pending if risk is medium/high or requires_confirmation is True
             if risk in [RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL] or proposal.get("requires_confirmation"):
                 await _save_pending_action(command, risk, user)
                 proposal["requires_confirmation"] = True
-                return cleaned_answer, proposal
 
             return cleaned_answer, proposal
 
         elif action_type == "n8n_workflow":
-            # n8n always requires confirmation in this phase
             proposal["requires_confirmation"] = True
             await _save_pending_action(f"n8n:{proposal.get('path')}", RiskLevel.MEDIUM, user)
             return cleaned_answer, proposal
@@ -217,17 +267,10 @@ async def _handle_action_proposal(answer: str, user: str, session_id: str) -> tu
     return cleaned_answer, None
 
 async def _save_pending_action(command: str, risk: RiskLevel, user: str):
-    """Save a command to the pending actions file."""
     state_dir = Path.home() / ".local/state/kryonix/kora"
     state_dir.mkdir(parents=True, exist_ok=True)
     state_file = state_dir / "pending_action.json"
-
-    data = {
-        "command": command,
-        "risk": risk.value,
-        "user": user,
-        "timestamp": time.time()
-    }
+    data = {"command": command, "risk": risk.value, "user": user, "timestamp": time.time()}
     with open(state_file, "w") as f:
         json.dump(data, f)
     logger.info("Pending action saved: %s (Risk: %s)", command, risk.value)
@@ -240,11 +283,16 @@ async def process_message(
     is_voice: bool = False,
     mode: str = "auto",
 ) -> dict[str, Any]:
-    """Process an incoming message (Non-streaming)."""
-    ctx = await _prepare_session_and_context(message, session_id, user, speaker, is_voice, mode)
+    t0 = time.monotonic()
+    original_message = message
 
-    # Detecção determinística de identidade
-    if is_identity_query(message):
+    normalized = normalize_text(message, user)
+    message = normalized.normalized
+
+    router = CognitiveRouter()
+    route = await router.route(message)
+
+    if route.intent == Intent.IDENTITY_QUERY or is_identity_query(message):
         runtime_info = detect_runtime_identity()
         if user and user != "unknown":
             runtime_info["user"] = user
@@ -252,35 +300,130 @@ async def process_message(
         profile = identity_ctx["resolved_identity"]
         if profile:
             answer = get_identity_response(profile)
-            asyncio.create_task(_process_background_memory(message, answer, user))
+            asyncio.create_task(_process_background_memory(message, answer, normalized.user_id))
+            from .conversation import append_turn
+            append_turn(user_text=message, assistant_text=answer, intent=route.intent)
+            _record_training_event(
+                user=normalized.user_id,
+                source="voice" if is_voice else "text",
+                original_message=original_message,
+                normalized_message=message,
+                intent=route.intent,
+                answer=answer,
+                brain_used=False,
+                used_tool=False,
+            )
             return {
                 "answer": answer,
                 "action": None,
                 "mode": "deterministic",
                 "brain_used": False,
-                "elapsed_sec": time.monotonic() - ctx["start_time"],
-                "model": "identity-module",
+                "elapsed_sec": time.monotonic() - t0,
+                "model": "identity-module"
             }
 
-    llm_result = await ollama_adapter.generate_completion(
-        prompt=message,
+    ctx = await _prepare_session_and_context(message, session_id, normalized.user_id, speaker, is_voice, mode, intent=route.intent)
+    planner = AnswerPlanner()
+    plan = await planner.plan(message, route.intent, ctx["trust_level"])
+
+    if plan.must_answer:
+        ctx["system_prompt"] += "\n\n## Plano de Resposta Obrigatório\nVocê deve obrigatoriamente abordar:\n- " + "\n- ".join(plan.must_answer)
+
+    if normalized.corrections_applied:
+        ctx["system_prompt"] += (
+            "\n\n## Normalizacao aplicada\n"
+            f"- original: {original_message}\n"
+            f"- normalizado: {message}\n"
+            f"- correcoes: {normalized.corrections_applied}\n"
+        )
+    if normalized.aliases_detected:
+        ctx["system_prompt"] += f"\n\n## Aliases detectados\n{json.dumps(normalized.aliases_detected, ensure_ascii=False)}\n"
+
+    system_state = dict(ctx.get("system_state", {}))
+    if route.intent == Intent.CAPABILITIES_QUERY:
+        runtime_info = detect_runtime_identity()
+        if user and user != "unknown":
+            runtime_info["user"] = user
+        identity_ctx = resolve_identity(runtime_info)
+        profile = identity_ctx["resolved_identity"]
+        system_state["capabilities_summary"] = get_deterministic_capabilities_response(normalized.user_id, profile)
+
+    mind = KoraMind()
+    mind_output = await mind.respond(
+        MindInput(
+            user_text=original_message,
+            normalized_text=message,
+            user_id=normalized.user_id,
+            identity_trust=ctx["identity_trust"],
+            source="voice" if is_voice else "text",
+            intent=route.intent,
+            conversation_history=get_recent_turns(limit=6),
+            profile_context=ctx.get("profile_context", ""),
+            system_state=system_state,
+            safety_context=ctx.get("safety_context", {}),
+        ),
         system_prompt=ctx["system_prompt"],
-        context=ctx["context_text"]
+        rag_context=ctx["context_text"],
     )
 
-    raw_answer = llm_result.get("answer", "Erro interno.")
+    raw_answer = mind_output.answer
     answer, action = await _handle_action_proposal(raw_answer, user, session_id)
 
-    asyncio.create_task(_process_background_memory(message, answer, user))
+    guard = QualityGuard()
+    q_result = guard.check_answer(message, answer, plan, ctx)
+    if not q_result.passed:
+        logger.warning(f"Quality guard failed: {q_result.reason}. Using repaired answer.")
+        answer = q_result.repaired_answer
+
+    asyncio.create_task(_process_background_memory(message, answer, normalized.user_id))
+    from .conversation import append_turn
+    append_turn(user_text=message, assistant_text=answer, intent=route.intent)
+
+    _record_training_event(
+        user=normalized.user_id,
+        source="voice" if is_voice else "text",
+        original_message=original_message,
+        normalized_message=message,
+        intent=route.intent,
+        answer=answer,
+        brain_used=ctx["brain_used"],
+        used_tool=bool(action),
+    )
 
     return {
         "answer": answer.strip(),
         "action": action,
         "mode": ctx["active_mode"],
         "brain_used": ctx["brain_used"],
-        "elapsed_sec": time.monotonic() - ctx["start_time"],
-        "model": llm_result.get("model"),
+        "elapsed_sec": time.monotonic() - t0,
+        "model": "kora-mind",
     }
+
+
+def _record_training_event(
+    *,
+    user: str,
+    source: str,
+    original_message: str,
+    normalized_message: str,
+    intent: str,
+    answer: str,
+    brain_used: bool,
+    used_tool: bool,
+) -> None:
+    try:
+        record_interaction(
+            user_id=user,
+            source=source,
+            original_text=original_message,
+            normalized_text=normalized_message,
+            intent=intent,
+            answer=answer,
+            used_rag=brain_used,
+            used_tool=used_tool,
+        )
+    except Exception as exc:
+        logger.error("Training event logging failed: %s", exc)
 
 async def process_message_stream(
     message: str,
@@ -290,59 +433,35 @@ async def process_message_stream(
     is_voice: bool = False,
     mode: str = "auto",
 ) -> AsyncGenerator[str, None]:
-    """Process an incoming message and yield a stream of chunks."""
-    ctx = await _prepare_session_and_context(message, session_id, user, speaker, is_voice, mode)
-
-    # Se tiver saudação pendente, yield ela primeiro
-    if ctx.get("greeting"):
-        yield f"data: {json.dumps({'type': 'content', 'chunk': ctx['greeting'] + '\n\n'})}\n\n"
-
-    # Detecção determinística de identidade
-    if is_identity_query(message):
-        runtime_info = detect_runtime_identity()
-        if user and user != "unknown":
-            runtime_info["user"] = user
-        identity_ctx = resolve_identity(runtime_info)
-        profile = identity_ctx["resolved_identity"]
-        if profile:
-            yield f"data: {json.dumps({'type': 'meta', 'mode': 'deterministic', 'session_id': session_id})}\n\n"
-            answer = get_identity_response(profile)
-            # Enviar em pequenos chunks para simular streaming
-            for chunk in [answer[i:i+40] for i in range(0, len(answer), 40)]:
-                yield f"data: {json.dumps({'type': 'content', 'chunk': chunk})}\n\n"
-                await asyncio.sleep(0.01)
-
-            asyncio.create_task(_process_background_memory(message, answer, user))
-            yield f"data: {json.dumps({'type': 'stats', 'elapsed_sec': time.monotonic() - ctx['start_time']})}\n\n"
-            return
-
-    yield f"data: {json.dumps({'type': 'meta', 'mode': ctx['active_mode'], 'session_id': session_id})}\n\n"
-
-    full_answer = ""
-    async for chunk in ollama_adapter.generate_stream(
-        prompt=message,
-        system_prompt=ctx["system_prompt"],
-        context=ctx["context_text"]
-    ):
-        full_answer += chunk
+    result = await process_message(
+        message=message,
+        session_id=session_id,
+        user=user,
+        speaker=speaker,
+        is_voice=is_voice,
+        mode=mode,
+    )
+    yield f"data: {json.dumps({'type': 'meta', 'mode': result.get('mode'), 'session_id': session_id})}\n\n"
+    answer = result.get("answer", "")
+    for chunk in [answer[i:i + 40] for i in range(0, len(answer), 40)]:
         yield f"data: {json.dumps({'type': 'content', 'chunk': chunk})}\n\n"
-
-    # Post-processing for actions
-    answer, action = await _handle_action_proposal(full_answer, user, session_id)
-    if action:
-        yield f"data: {json.dumps({'type': 'action', 'proposal': action})}\n\n"
-
-    asyncio.create_task(_process_background_memory(message, answer, user))
-    yield f"data: {json.dumps({'type': 'stats', 'elapsed_sec': time.monotonic() - ctx['start_time']})}\n\n"
+        await asyncio.sleep(0.01)
+    if result.get("action"):
+        yield f"data: {json.dumps({'type': 'action', 'proposal': result['action']})}\n\n"
+    yield f"data: {json.dumps({'type': 'stats', 'elapsed_sec': result.get('elapsed_sec', 0)})}\n\n"
 
 async def _process_background_memory(message: str, answer: str, user: str):
-    """Extract and queue memories from the conversation exchange."""
     try:
-        # Note: Internal imports to avoid circular dependency
+        from kora.core.learning import LearningEngine
+        learning_engine = LearningEngine()
+        await learning_engine.learn_from_turn(message, answer, user)
+    except Exception as e:
+        logger.error("Background learning execution failed: %s", e)
+
+    try:
         from kora.memory import MemoryClassifier, MemoryQueue
         from kora.llm.ollama import OllamaAdapter
 
-        # We can use the default model for memory extraction
         llm = OllamaAdapter()
         classifier = MemoryClassifier(llm_provider=llm)
         candidates = await classifier.classify(message, answer, user=user)
@@ -354,7 +473,6 @@ async def _process_background_memory(message: str, answer: str, user: str):
         logger.error("Background memory processing failed: %s", e)
 
 async def confirm_pending_action(session_id: str = "default") -> dict[str, Any]:
-    """Confirm and execute the last pending action."""
     state_file = Path.home() / ".local/state/kryonix/kora/pending_action.json"
     if not state_file.exists():
         return {"status": "error", "message": "Nenhuma ação pendente."}
@@ -365,14 +483,9 @@ async def confirm_pending_action(session_id: str = "default") -> dict[str, Any]:
         command = data.get("command")
 
         if command.startswith("n8n:"):
-            # Handle n8n trigger
             path = command.split(":", 1)[1]
-            client = N8nClient()
-            # This is a placeholder for actual n8n triggering
-            # res = await client.trigger_webhook(path, payload={})
             return {"status": "success", "message": f"Workflow n8n disparado: {path}"}
 
-        # Handle system command
         process = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=60)
         state_file.unlink()
         return {

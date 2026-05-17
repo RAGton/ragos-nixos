@@ -8,6 +8,7 @@
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -311,8 +312,7 @@ def handle_listen(args: argparse.Namespace) -> None:
     try:
         asyncio.run(pipeline.listen_and_respond(push_to_talk=ptt))
     except KeyboardInterrupt:
-        print("\n[Encerrando modo voz]")
-        return
+        sys.exit(0)
 
 
 def handle_voice_daemon(args: argparse.Namespace) -> None:
@@ -442,6 +442,66 @@ def handle_user(args: argparse.Namespace) -> None:
     elif args.user_command == "remove":
         registry.delete_user(args.id)
         print(f"User {args.id} removed.")
+
+
+def _current_learning_user() -> str:
+    return os.environ.get("KORA_USER_ID") or os.environ.get("USER") or "unknown"
+
+
+def handle_learning(args: argparse.Namespace) -> None:
+    from .learning import LearningEngine
+
+    user = _current_learning_user()
+    engine = LearningEngine()
+    cmd = args.learning_command
+
+    if cmd == "status":
+        print_json({
+            "user": user,
+            "learning_dir": str(engine.learning_dir),
+            "corrections": len(engine.get_corrections(user)),
+            "aliases": len(engine.get_aliases(user)),
+        })
+    elif cmd == "profile":
+        print_json(engine.get_profile(user))
+    elif cmd == "corrections":
+        print_json(engine.get_corrections(user))
+    elif cmd == "aliases":
+        print_json(engine.get_aliases(user))
+    elif cmd == "add-correction":
+        engine.add_correction(user, args.wrong, args.right)
+        print(f"Correção registrada: {args.wrong} -> {args.right}")
+    elif cmd == "add-alias":
+        engine.add_alias(user, args.expression, args.meaning)
+        print(f"Alias registrado: {args.expression} -> {args.meaning}")
+    elif cmd == "daily-summary":
+        print(engine.daily_summary(user))
+
+
+def handle_feedback(args: argparse.Namespace) -> None:
+    from .training import TrainingStore
+
+    store = TrainingStore()
+    if args.feedback_command == "good":
+        event = store.set_feedback("good")
+    else:
+        event = store.set_feedback("bad", args.reason)
+
+    if not event:
+        print("Nenhum evento de conversa encontrado para rotular.", file=sys.stderr)
+        sys.exit(1)
+    print_json({"status": "ok", "feedback": event.get("user_feedback"), "events_path": str(store.events_path)})
+
+
+def handle_training(args: argparse.Namespace) -> None:
+    from .training import TrainingStore
+
+    store = TrainingStore()
+    if args.training_command == "status":
+        print_json(store.status())
+    elif args.training_command == "export":
+        path = store.export_sft() if args.export_format == "sft" else store.export_dpo()
+        print_json({"status": "ok", "path": str(path)})
 
 
 def handle_voice_identity(args: argparse.Namespace) -> None:
@@ -606,6 +666,40 @@ def main() -> None:
     user_remove_parser = user_subparsers.add_parser("remove", help="Remove a user")
     user_remove_parser.add_argument("id")
 
+    # learning
+    learning_parser = subparsers.add_parser("learning", help="Personal learning operations")
+    learning_subparsers = learning_parser.add_subparsers(dest="learning_command", required=True)
+    learning_subparsers.add_parser("status", help="Show learning store status")
+    learning_subparsers.add_parser("profile", help="Show current user learning profile")
+    learning_subparsers.add_parser("corrections", help="Show learned corrections")
+    learning_subparsers.add_parser("aliases", help="Show learned aliases")
+    add_corr_parser = learning_subparsers.add_parser("add-correction", help="Add a speech/text correction")
+    add_corr_parser.add_argument("wrong")
+    add_corr_parser.add_argument("right")
+    add_alias_parser = learning_subparsers.add_parser("add-alias", help="Add an expression alias")
+    add_alias_parser.add_argument("expression")
+    add_alias_parser.add_argument("meaning")
+    learning_subparsers.add_parser("daily-summary", help="Write/show daily learning summary")
+
+    # feedback
+    feedback_parser = subparsers.add_parser("feedback", help="Label last Kora answer")
+    feedback_subparsers = feedback_parser.add_subparsers(dest="feedback_command", required=True)
+    feedback_subparsers.add_parser("good", help="Mark last answer as good")
+    bad_parser = feedback_subparsers.add_parser("bad", help="Mark last answer as bad")
+    bad_parser.add_argument("reason")
+
+    # training
+    training_parser = subparsers.add_parser("training", help="Training dataset operations")
+    training_subparsers = training_parser.add_subparsers(dest="training_command", required=True)
+    training_subparsers.add_parser("status", help="Show training dataset status")
+    export_parser = training_subparsers.add_parser("export", help="Export dataset")
+    export_parser.add_argument("export_format", choices=["sft", "dpo"])
+
+    # benchmark
+    bench_parser = subparsers.add_parser("benchmark", help="Run automated benchmarks")
+    bench_subparsers = bench_parser.add_subparsers(dest="bench_command", required=True)
+    bench_subparsers.add_parser("quality", help="Run quality guard scenario tests")
+
     args = parser.parse_args()
 
     if args.command == "health":
@@ -668,6 +762,16 @@ def main() -> None:
         handle_listen(args)
     elif args.command == "user":
         handle_user(args)
+    elif args.command == "learning":
+        handle_learning(args)
+    elif args.command == "feedback":
+        handle_feedback(args)
+    elif args.command == "training":
+        handle_training(args)
+    elif args.command == "benchmark":
+        if args.bench_command == "quality":
+            from .eval import quality_eval
+            quality_eval.run_benchmarks()
 
 
 if __name__ == "__main__":

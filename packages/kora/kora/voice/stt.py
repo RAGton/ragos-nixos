@@ -30,7 +30,33 @@ def find_whisper_bin() -> str:
         "ou defina KORA_WHISPER_BIN."
     )
 
-def transcribe_audio(audio_path: Path) -> str:
+import re
+
+CLEAN_ANSI_RE = re.compile(
+    r"(?:\x1b|\\x1b|\\033|\\u001b)\[[0-9;?]*[A-Za-z]" # Standard ANSI codes
+    r"|\[[0-9]+(?:;[0-9]+)*m"                        # bracket + color codes (e.g. [0m, [38;5;114m)
+    r"|(?:\b|;)[0-9]+;[0-9]+(?:;[0-9]+)*m"            # color codes with semicolons (e.g. 38;5;114m, ;166m)
+)
+CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+WHISPER_TS_RE = re.compile(r"\[[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}\s*-->\s*[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}\]")
+
+def clean_transcript(text: str) -> str:
+    text = CLEAN_ANSI_RE.sub("", text)
+    text = CONTROL_RE.sub("", text)
+    text = WHISPER_TS_RE.sub("", text)
+    lines = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("whisper_") or line.startswith("system_info"):
+            continue
+        if "processing" in line.lower():
+            continue
+        lines.append(line)
+    return " ".join(lines).strip()
+
+def transcribe_audio(audio_path: Path, user: str = "rocha") -> str:
     """Transcribe audio file using whisper-cli."""
     if not audio_path.exists():
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
@@ -49,19 +75,70 @@ def transcribe_audio(audio_path: Path) -> str:
     try:
         whisper_bin = find_whisper_bin()
         logger.debug(f"STT: usando {whisper_bin} com modelo {model_path}")
-        res = subprocess.run([
+
+        output_base = "/tmp/kora-whisper-output"
+        output_txt = output_base + ".txt"
+
+        # Ensure previous file is removed
+        if os.path.exists(output_txt):
+            os.remove(output_txt)
+
+        # Prime Whisper's vocabulary dynamically using user's active learning profile
+        prompt_words = [
+            "Kora", "Kryonix", "Hyprland", "NixOS", "Inspiron", "Glacier", "Ragton",
+            "terminal", "CLI", "systemd", "Caelestia"
+        ]
+        if user:
+            try:
+                from kora.core.learning import LearningEngine
+                engine = LearningEngine()
+                profile = engine.get_profile(user)
+                if profile.get("technical_vocabulary"):
+                    prompt_words.extend(profile["technical_vocabulary"])
+                if profile.get("active_projects"):
+                    prompt_words.extend(profile["active_projects"])
+                if profile.get("spelling_mappings"):
+                    # Add corrected/target terms to prime Whisper
+                    prompt_words.extend(profile["spelling_mappings"].values())
+            except Exception as pe:
+                logger.warning(f"Erro ao ler perfil para Whisper prompt: {pe}")
+
+        # Deduplicate and format prompt
+        unique_words = []
+        for w in prompt_words:
+            if w and w not in unique_words:
+                unique_words.append(w)
+        prompt_str = ", ".join(unique_words) + "."
+
+        subprocess.run([
             whisper_bin,
             "-m", model_path,
             "-f", str(audio_path),
             "-nt",
             "-l", "pt",
-            "--print-colors", "false"
+            "-t", "6",
+            "-sns",
+            "--prompt", prompt_str,
+            "-otxt",
+            "-of", output_base
         ], capture_output=True, text=True, check=True)
 
-        text = res.stdout.strip()
+        if os.path.exists(output_txt):
+            with open(output_txt, "r", encoding="utf-8") as f:
+                raw_text = f.read()
+            text = clean_transcript(raw_text)
+        else:
+            logger.warning("STT output file not created. Falling back to empty.")
+            text = ""
+
+        try:
+            from kora.core.normalizer import normalize_text
+            text = normalize_text(text, user).normalized
+        except Exception as norm_err:
+            logger.warning("Erro ao normalizar transcricao: %s", norm_err)
+
         logger.info(f"STT: {text}")
         return text
     except Exception as e:
         logger.error(f"STT failed: {e}")
         return "[Erro na transcrição]"
-

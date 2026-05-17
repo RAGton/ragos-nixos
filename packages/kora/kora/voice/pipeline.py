@@ -27,11 +27,25 @@ logger = logging.getLogger("kora.voice.pipeline")
 
 # ── Terminal UX helpers ──────────────────────────────────────────────────────
 
+import re
+
 # Box-drawing characters
 _H = "─"
 _TL, _TR, _BL, _BR = "╭", "╮", "╰", "╯"
 _V = "│"
 _WIDTH = 56
+
+CLEAN_ANSI_RE = re.compile(
+    r"(?:\x1b|\\x1b|\\033|\\u001b)\[[0-9;?]*[A-Za-z]" # Standard ANSI codes
+    r"|\[[0-9]+(?:;[0-9]+)*m"                        # bracket + color codes (e.g. [0m, [38;5;114m)
+    r"|(?:\b|;)[0-9]+;[0-9]+(?:;[0-9]+)*m"            # color codes with semicolons (e.g. 38;5;114m, ;166m)
+)
+CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+def clean_terminal_text(text: str) -> str:
+    text = CLEAN_ANSI_RE.sub("", text)
+    text = CONTROL_RE.sub("", text)
+    return text.strip()
 
 # Thinking animation frames
 _THINK_FRAMES = [
@@ -43,6 +57,7 @@ _THINK_FRAMES = [
 
 def _box(label: str, text: str, color_code: str = "36") -> None:
     """Print text in a styled box."""
+    text = clean_terminal_text(text)
     lines = text.split("\n")
     inner_w = _WIDTH - 4  # padding inside box
 
@@ -109,7 +124,7 @@ def get_natural_greeting(user: str = "Ragton") -> str:
         return "Olá. Ainda não reconheci sua identidade, mas posso conversar de forma limitada."
 
 
-async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
+async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha", single_turn: bool = False):
     """
     Complete voice loop: record → STT → Kora → TTS.
     Persists conversation turns for context.
@@ -128,10 +143,11 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
         print(f"\033[2m{'':>12}VAD — para após 1s silêncio\033[0m")
     print(f"\033[35m{'═' * _WIDTH}\033[0m")
 
-    # Initial greeting
-    greeting = get_natural_greeting(user)
-    _box("Kora", greeting, "35")
-    speak_text(greeting)
+    # Initial greeting only if not single turn (to avoid greeting on every wake-word)
+    if not single_turn:
+        greeting = get_natural_greeting(user)
+        _box("Kora", greeting, "35")
+        speak_text(greeting)
 
     try:
         while True:
@@ -142,7 +158,8 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
                 audio_path = recorder.record_until_keypress("last_input.wav")
             else:
                 # VAD mode — records until 1s of silence
-                print(f"\n  \033[2m[Fale a qualquer momento ou Ctrl+C para sair]\033[0m")
+                if not single_turn:
+                    print(f"\n  \033[2m[Fale a qualquer momento ou Ctrl+C para sair]\033[0m")
                 play_wake()
                 print("  \033[33m🎙 Ouvindo...\033[0m")
                 audio_path, duration = record_with_vad(
@@ -150,10 +167,21 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
                 )
 
             print("  \033[2m... processando áudio ...\033[0m")
-            text = transcribe_audio(audio_path)
+            text = transcribe_audio(audio_path, user=user)
 
-            if not text or text.strip() in ["[Erro na transcrição]", ""]:
-                print("  \033[2m(nenhuma fala detectada)\033[0m")
+            # Apply personal normalization before sending text to KoraMind.
+            try:
+                from kora.core.normalizer import normalize_text
+                text = normalize_text(text, user).normalized
+            except Exception as le_err:
+                logger.warning(f"Erro ao aplicar normalização no pipeline de voz: {le_err}")
+
+            if not text or text.strip() in ["[Erro na transcrição]", ""] or len(text.strip()) < 3:
+                print("  \033[2m(fala não compreendida)\033[0m")
+                _box("Kora", "Não consegui entender bem. Pode repetir?", "35")
+                speak_text("Não consegui entender bem. Pode repetir?")
+                if single_turn:
+                    break
                 continue
 
             # Show user input
@@ -170,7 +198,11 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
 
             try:
                 resp = await process_message(
-                    text, user=user, mode="auto", is_voice=True
+                    text,
+                    session_id="voice-current",
+                    user=user,
+                    mode="auto",
+                    is_voice=True
                 )
             finally:
                 spinner.stop()
@@ -185,19 +217,15 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
             _box("Kora", answer, "35")
             print(f"  \033[2m[{mode_used} | {elapsed:.1f}s]\033[0m")
 
-            # Save conversation turn
-            append_turn(
-                user_text=text.strip(),
-                assistant_text=answer,
-                speaker=user,
-                metadata={"mode": mode_used, "elapsed": elapsed},
-            )
-
             # Speak
             speak_text(answer)
 
+            if single_turn:
+                break
+
     except KeyboardInterrupt:
-        print(f"\n  \033[2m[Encerrando modo voz — até mais, Ragton.]\033[0m\n")
+        print(f"\n  \033[2m[Encerrando modo voz]\033[0m\n")
+        raise
     except asyncio.CancelledError:
         print(f"\n  \033[2m[Operação cancelada]\033[0m\n")
     except Exception as e:

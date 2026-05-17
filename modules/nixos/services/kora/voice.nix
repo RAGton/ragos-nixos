@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -35,7 +40,11 @@ in
       Unit = {
         Description = "Kora Voice Listener Daemon";
         Documentation = "https://github.com/RAGton/kryonix/docs/kora/VOICE_IDENTITY.md";
-        After = [ "pipewire.service" "wireplumber.service" "sound.target" ];
+        After = [
+          "pipewire.service"
+          "wireplumber.service"
+          "sound.target"
+        ];
       };
       Service = {
         Type = "simple";
@@ -54,4 +63,3 @@ in
     };
   };
 }
-

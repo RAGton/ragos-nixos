@@ -69,6 +69,14 @@ WHISPER_MODEL_PATH = _resolve_whisper_model()
 PIPER_MODEL_PATH   = _resolve_piper_model()
 PIPER_CONFIG_PATH  = _resolve_piper_config()
 
+# ---------------------------------------------------------------------------
+# SFX Audio Cues (Phase 3)
+# ---------------------------------------------------------------------------
+KORA_SFX_DIR = KORA_VOICE_DATA_DIR / "sfx"
+SFX_ACTIVATION = KORA_SFX_DIR / "activation.wav"
+SFX_THINKING   = KORA_SFX_DIR / "thinking.wav"
+SFX_ERROR      = KORA_SFX_DIR / "error.wav"
+
 # Safety & Privacy
 KORA_VOICE_SAVE_AUDIO = os.environ.get("KORA_VOICE_SAVE_AUDIO", "0") == "1"
 KORA_VOICE_REQUIRE_CONSENT_FOR_VOICEPRINT = True
@@ -81,3 +89,4 @@ def ensure_voice_dirs():
     (KORA_VOICE_DATA_DIR / "archive").mkdir(parents=True, exist_ok=True)
     (KORA_MODELS_DIR / "whisper").mkdir(parents=True, exist_ok=True)
     (KORA_MODELS_DIR / "piper").mkdir(parents=True, exist_ok=True)
+    KORA_SFX_DIR.mkdir(parents=True, exist_ok=True)
