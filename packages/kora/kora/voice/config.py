@@ -10,13 +10,64 @@ KORA_VOICE_STT_BACKEND = os.environ.get("KORA_VOICE_STT_BACKEND", "whisper_cpp")
 KORA_VOICE_TTS_BACKEND = os.environ.get("KORA_VOICE_TTS_BACKEND", "piper")
 
 # Directories
-KORA_VOICE_TMP_DIR = Path("/tmp/kora-voice")
+KORA_VOICE_TMP_DIR  = Path("/tmp/kora-voice")
 KORA_VOICE_DATA_DIR = Path("/var/lib/kryonix/kora/voice")
+KORA_MODELS_DIR     = KORA_VOICE_DATA_DIR / "models"
 
-# Models (default paths for NixOS packages)
-WHISPER_MODEL_PATH = os.environ.get("WHISPER_MODEL_PATH", "/var/lib/kryonix/kora/models/whisper-base.bin")
-PIPER_MODEL_PATH = os.environ.get("PIPER_MODEL_PATH", "/var/lib/kryonix/kora/models/piper-pt_BR.onnx")
-PIPER_CONFIG_PATH = os.environ.get("PIPER_CONFIG_PATH", "/var/lib/kryonix/kora/models/piper-pt_BR.onnx.json")
+# ---------------------------------------------------------------------------
+# Whisper model — resolved at import time so callers don't need to import models
+# Order: env var → current.bin symlink → ggml-base.bin fallback
+# ---------------------------------------------------------------------------
+def _resolve_whisper_model() -> str:
+    env = os.environ.get("KORA_WHISPER_MODEL")
+    if env and Path(env).exists():
+        return env
+    for candidate in [
+        KORA_MODELS_DIR / "whisper" / "current.bin",
+        KORA_MODELS_DIR / "whisper" / "ggml-base.bin",
+        # legacy path (pre-models-manager)
+        Path("/var/lib/kryonix/kora/models/whisper-base.bin"),
+    ]:
+        if candidate.exists() and candidate.stat().st_size > 1_000_000:
+            return str(candidate)
+    # Return a descriptive path so the error message is meaningful
+    return str(KORA_MODELS_DIR / "whisper" / "ggml-base.bin")
+
+# ---------------------------------------------------------------------------
+# Piper model — resolved at import time
+# Order: env var → current.onnx symlink → faber → cadu
+# ---------------------------------------------------------------------------
+def _resolve_piper_model() -> str:
+    env = os.environ.get("KORA_PIPER_MODEL")
+    if env and Path(env).exists():
+        return env
+    for candidate in [
+        KORA_MODELS_DIR / "piper" / "current.onnx",
+        KORA_MODELS_DIR / "piper" / "pt_BR-faber-medium.onnx",
+        KORA_MODELS_DIR / "piper" / "pt_BR-cadu-medium.onnx",
+        Path("/var/lib/kryonix/kora/models/piper-pt_BR.onnx"),
+    ]:
+        if candidate.exists() and candidate.stat().st_size > 1_000:
+            return str(candidate)
+    return str(KORA_MODELS_DIR / "piper" / "pt_BR-faber-medium.onnx")
+
+def _resolve_piper_config() -> str:
+    env = os.environ.get("KORA_PIPER_CONFIG")
+    if env and Path(env).exists():
+        return env
+    for candidate in [
+        KORA_MODELS_DIR / "piper" / "current.onnx.json",
+        KORA_MODELS_DIR / "piper" / "pt_BR-faber-medium.onnx.json",
+        KORA_MODELS_DIR / "piper" / "pt_BR-cadu-medium.onnx.json",
+        Path("/var/lib/kryonix/kora/models/piper-pt_BR.onnx.json"),
+    ]:
+        if candidate.exists():
+            return str(candidate)
+    return str(KORA_MODELS_DIR / "piper" / "pt_BR-faber-medium.onnx.json")
+
+WHISPER_MODEL_PATH = _resolve_whisper_model()
+PIPER_MODEL_PATH   = _resolve_piper_model()
+PIPER_CONFIG_PATH  = _resolve_piper_config()
 
 # Safety & Privacy
 KORA_VOICE_SAVE_AUDIO = os.environ.get("KORA_VOICE_SAVE_AUDIO", "0") == "1"
@@ -28,3 +79,5 @@ def ensure_voice_dirs():
     KORA_VOICE_DATA_DIR.mkdir(parents=True, exist_ok=True)
     (KORA_VOICE_DATA_DIR / "profiles").mkdir(parents=True, exist_ok=True)
     (KORA_VOICE_DATA_DIR / "archive").mkdir(parents=True, exist_ok=True)
+    (KORA_MODELS_DIR / "whisper").mkdir(parents=True, exist_ok=True)
+    (KORA_MODELS_DIR / "piper").mkdir(parents=True, exist_ok=True)

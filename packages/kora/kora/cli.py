@@ -134,9 +134,11 @@ def handle_voice_devices(args: argparse.Namespace) -> None:
 
 def handle_voice_doctor(args: argparse.Namespace) -> None:
     import shutil
+    import os, pwd, grp
+    from . voice import models as voice_models
     print("\n=== KORA VOICE DOCTOR ===")
-    
-    print("\n[BINÁRIOS]")
+
+    print("\n[BIN\u00c1RIOS]")
     binaries = ["whisper-cli", "whisper-cpp", "whisper-cpp-cli", "piper-tts", "piper", "aplay", "arecord"]
     for b in binaries:
         path = shutil.which(b)
@@ -144,27 +146,66 @@ def handle_voice_doctor(args: argparse.Namespace) -> None:
             print(f"  {b}: FOUND ({path})")
         else:
             print(f"  {b}: MISSING")
-            
-    print("\n[DISPOSITIVOS DE ÁUDIO]")
+
+    print("\n[MODELOS]")
+    whisper = voice_models.resolve_whisper_model()
+    if whisper:
+        size_mb = round(whisper.stat().st_size / 1_048_576, 1)
+        print(f"  Whisper: FOUND {whisper}  ({size_mb} MB)")
+    else:
+        print("  Whisper: MISSING  \u2192 kora voice models install whisper base")
+    piper_m, piper_c = voice_models.resolve_piper_model()
+    if piper_m:
+        print(f"  Piper model:  FOUND {piper_m}")
+    else:
+        print("  Piper model:  MISSING  \u2192 kora voice models install piper faber")
+    if piper_c:
+        print(f"  Piper config: FOUND {piper_c}")
+    else:
+        print("  Piper config: MISSING")
+
+    print("\n[DISPOSITIVOS DE \u00c1UDIO]")
     handle_voice_devices(args)
-    
-    print("\n[DIRETÓRIOS E PERMISSÕES]")
-    import os
+
+    print("\n[DIRET\u00d3RIOS E PERMISS\u00d5ES]")
     dirs = [
         "/var/lib/kryonix/kora",
         "/var/lib/kryonix/kora/voice",
         "/var/lib/kryonix/kora/voice/profiles",
+        "/var/lib/kryonix/kora/voice/models/whisper",
+        "/var/lib/kryonix/kora/voice/models/piper",
     ]
     for d in dirs:
         if os.path.exists(d):
             st = os.stat(d)
-            import pwd, grp
             user = pwd.getpwuid(st.st_uid).pw_name
             group = grp.getgrgid(st.st_gid).gr_name
             perms = oct(st.st_mode)[-3:]
             print(f"  {d}: EXISTE ({user}:{group} {perms})")
         else:
             print(f"  {d}: MISSING")
+
+
+def handle_voice_models_status(args: argparse.Namespace) -> None:
+    from .voice import models as voice_models
+    voice_models.cmd_status()
+
+
+def handle_voice_models_list(args: argparse.Namespace) -> None:
+    from .voice import models as voice_models
+    voice_models.cmd_list()
+
+
+def handle_voice_models_install(args: argparse.Namespace) -> None:
+    from .voice import models as voice_models
+    kind = args.model_type.lower()
+    name = args.model_name.lower()
+    if kind == "whisper":
+        voice_models.cmd_install_whisper(name)
+    elif kind == "piper":
+        voice_models.cmd_install_piper(name)
+    else:
+        print(f"[ERRO] Tipo desconhecido: '{kind}'. Use 'whisper' ou 'piper'.")
 
 
 
@@ -357,6 +398,15 @@ def main() -> None:
     ww_subparsers = ww_parser.add_subparsers(dest="voice_ww_command", required=True)
     ww_subparsers.add_parser("status", help="Get wake-word engine status")
 
+    # voice models
+    models_parser = voice_subparsers.add_parser("models", help="Manage local voice models")
+    models_subparsers = models_parser.add_subparsers(dest="voice_models_command", required=True)
+    models_subparsers.add_parser("status", help="Show active model status")
+    models_subparsers.add_parser("list",   help="List available models for installation")
+    install_parser = models_subparsers.add_parser("install", help="Install a model (e.g. install whisper base)")
+    install_parser.add_argument("model_type", choices=["whisper", "piper"], help="Type of model")
+    install_parser.add_argument("model_name", help="Model name (e.g. base, small, faber, cadu)")
+
     # listen
     listen_parser = subparsers.add_parser("listen", help="Listen and respond (Voice Mode)")
     listen_parser.add_argument("--push-to-talk", action="store_true", default=True, help="Use push-to-talk mode")
@@ -411,6 +461,13 @@ def main() -> None:
             handle_voice_daemon(args)
         elif args.voice_command == "identity":
             handle_voice_identity(args)
+        elif args.voice_command == "models":
+            if args.voice_models_command == "status":
+                handle_voice_models_status(args)
+            elif args.voice_models_command == "list":
+                handle_voice_models_list(args)
+            elif args.voice_models_command == "install":
+                handle_voice_models_install(args)
         elif args.voice_command == "wake-word":
             if args.voice_ww_command == "status":
                 handle_voice_wakeword_status(args)

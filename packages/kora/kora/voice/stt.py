@@ -7,7 +7,6 @@ import shutil
 import subprocess
 import logging
 from pathlib import Path
-from .config import WHISPER_MODEL_PATH
 
 logger = logging.getLogger("kora.voice.stt")
 
@@ -32,18 +31,27 @@ def find_whisper_bin() -> str:
     )
 
 def transcribe_audio(audio_path: Path) -> str:
-    """Transcribe audio file using whisper-cpp."""
+    """Transcribe audio file using whisper-cli."""
     if not audio_path.exists():
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
-    # whisper-cpp -m <model> -f <file> -nt
-    # -nt = no timestamps
-    # -l pt = language portuguese (optional but good)
+    # Resolve model dynamically so post-install runs pick up the model
+    from .config import _resolve_whisper_model
+    model_path = _resolve_whisper_model()
+
+    if not Path(model_path).exists():
+        logger.error(
+            f"Modelo Whisper não encontrado: {model_path}\n"
+            "  → Execute: kora voice models install whisper base"
+        )
+        return "[Modelo Whisper não instalado — execute: kora voice models install whisper base]"
+
     try:
         whisper_bin = find_whisper_bin()
+        logger.debug(f"STT: usando {whisper_bin} com modelo {model_path}")
         res = subprocess.run([
             whisper_bin,
-            "-m", WHISPER_MODEL_PATH,
+            "-m", model_path,
             "-f", str(audio_path),
             "-nt",
             "-l", "pt",
@@ -56,3 +64,4 @@ def transcribe_audio(audio_path: Path) -> str:
     except Exception as e:
         logger.error(f"STT failed: {e}")
         return "[Erro na transcrição]"
+
