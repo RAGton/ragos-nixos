@@ -132,6 +132,42 @@ def handle_voice_devices(args: argparse.Namespace) -> None:
         print(f"  {d}")
 
 
+def handle_voice_doctor(args: argparse.Namespace) -> None:
+    import shutil
+    print("\n=== KORA VOICE DOCTOR ===")
+    
+    print("\n[BINÁRIOS]")
+    binaries = ["whisper-cli", "whisper-cpp", "whisper-cpp-cli", "piper-tts", "piper", "aplay", "arecord"]
+    for b in binaries:
+        path = shutil.which(b)
+        if path:
+            print(f"  {b}: FOUND ({path})")
+        else:
+            print(f"  {b}: MISSING")
+            
+    print("\n[DISPOSITIVOS DE ÁUDIO]")
+    handle_voice_devices(args)
+    
+    print("\n[DIRETÓRIOS E PERMISSÕES]")
+    import os
+    dirs = [
+        "/var/lib/kryonix/kora",
+        "/var/lib/kryonix/kora/voice",
+        "/var/lib/kryonix/kora/voice/profiles",
+    ]
+    for d in dirs:
+        if os.path.exists(d):
+            st = os.stat(d)
+            import pwd, grp
+            user = pwd.getpwuid(st.st_uid).pw_name
+            group = grp.getgrgid(st.st_gid).gr_name
+            perms = oct(st.st_mode)[-3:]
+            print(f"  {d}: EXISTE ({user}:{group} {perms})")
+        else:
+            print(f"  {d}: MISSING")
+
+
+
 def handle_voice_test_mic(args: argparse.Namespace) -> None:
     rec = recorder.KoraRecorder()
     path = rec.record_to_file("test_mic.wav", seconds=args.seconds)
@@ -152,7 +188,11 @@ def handle_voice_speak(args: argparse.Namespace) -> None:
 def handle_listen(args: argparse.Namespace) -> None:
     # Run the async pipeline
     import asyncio
-    asyncio.run(pipeline.listen_and_respond(push_to_talk=args.push_to_talk))
+    try:
+        asyncio.run(pipeline.listen_and_respond(push_to_talk=args.push_to_talk))
+    except KeyboardInterrupt:
+        print("\n[Encerrando modo voz]")
+        return
 
 
 def handle_voice_daemon(args: argparse.Namespace) -> None:
@@ -286,6 +326,7 @@ def main() -> None:
     voice_subparsers = voice_parser.add_subparsers(dest="voice_command", required=True)
 
     voice_subparsers.add_parser("devices", help="List audio devices")
+    voice_subparsers.add_parser("doctor", help="Run diagnostics for voice pipeline")
 
     mic_parser = voice_subparsers.add_parser("test-mic", help="Test microphone recording")
     mic_parser.add_argument("--seconds", type=int, default=5)
@@ -358,6 +399,8 @@ def main() -> None:
     elif args.command == "voice":
         if args.voice_command == "devices":
             handle_voice_devices(args)
+        elif args.voice_command == "doctor":
+            handle_voice_doctor(args)
         elif args.voice_command == "test-mic":
             handle_voice_test_mic(args)
         elif args.voice_command == "transcribe":

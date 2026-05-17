@@ -71,6 +71,8 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha"):
 
     except KeyboardInterrupt:
         print("\n[Encerrando modo voz]")
+    except asyncio.CancelledError:
+        print("\n[Operação cancelada (Ctrl+C)]")
     except Exception as e:
         logger.error(f"Pipeline error: {e}")
         print(f"\n[Erro fatal no pipeline de voz: {e}]")

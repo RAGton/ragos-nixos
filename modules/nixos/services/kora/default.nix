@@ -198,11 +198,13 @@ in
 
     # ── Diretórios Declarativos (tmpfiles) ──────────────────────
     systemd.tmpfiles.rules = [
+      "d /var/lib/kryonix 0755 root root - -"
       "d ${cfg.dataDir} 0770 ${cfg.user} ${cfg.group} - -"
       "d ${cfg.dataDir}/users 0770 ${cfg.user} ${cfg.group} - -"
       "d ${cfg.dataDir}/voice 0770 ${cfg.user} ${cfg.group} - -"
       "d ${cfg.dataDir}/voice/profiles 0770 ${cfg.user} ${cfg.group} - -"
       "d ${cfg.dataDir}/sessions 0770 ${cfg.user} ${cfg.group} - -"
+      "d ${cfg.dataDir}/reports 0770 ${cfg.user} ${cfg.group} - -"
     ];
 
     # ── kora-memory-worker.service (Flush Queue to Obsidian) ──

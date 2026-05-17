@@ -4,6 +4,7 @@
   whisper-cpp,
   piper-tts,
   alsa-utils,
+  ffmpeg,
   makeWrapper,
 }:
 
@@ -32,7 +33,8 @@ python3Packages.buildPythonApplication {
 
   postInstall = ''
     wrapProgram $out/bin/kora \
-      --prefix PATH : ${lib.makeBinPath [ whisper-cpp piper-tts alsa-utils ]}
+      --prefix PATH : ${lib.makeBinPath [ whisper-cpp piper-tts alsa-utils ffmpeg ]} \
+      --set-default KORA_WHISPER_BIN "whisper-cli"
   '';
 
   meta = {
