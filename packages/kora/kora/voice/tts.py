@@ -27,12 +27,35 @@ def _find_piper_bin() -> str | None:
 
 
 def speak_text(text: str) -> None:
-    """Sintetiza texto com Piper e reproduz via aplay."""
+    """Sintetiza texto com Piper usando o preset ativo."""
+    speak_text_with_preset(text, preset=None)  # None → carrega preset ativo automaticamente
+
+
+
+def _fallback_spd_say(text: str) -> None:
+    """Fallback via spd-say se disponível."""
+    spd = shutil.which("spd-say")
+    if spd:
+        try:
+            subprocess.run([spd, text], check=True, timeout=10)
+        except Exception:
+            pass
+
+
+def speak_text_with_preset(text: str, preset: dict | None = None) -> None:
+    """Sintetiza texto usando parâmetros de um preset de voz."""
     if not text:
         return
 
-    # Resolve modelo dinamicamente — import tardio para evitar ciclo
+    # Import tardio para evitar ciclo
     from .config import PIPER_MODEL_PATH, PIPER_CONFIG_PATH
+
+    if preset is None:
+        try:
+            from .voices import get_active_preset
+            preset = get_active_preset()
+        except Exception:
+            preset = {}
 
     piper_bin = _find_piper_bin()
     aplay_bin = shutil.which("aplay")
@@ -51,14 +74,21 @@ def speak_text(text: str) -> None:
         _fallback_spd_say(text)
         return
 
-    # Monta comando Piper
     piper_cmd = [piper_bin, "--model", str(model_path), "--output_raw"]
-    # Adiciona config se existir
+
+    # Config opcional
     config_path = Path(PIPER_CONFIG_PATH)
     if config_path.exists():
         piper_cmd += ["--config", str(config_path)]
 
-    # Pipeline: echo text | piper --output_raw | aplay -r 22050 -f S16_LE -t raw -
+    # Parâmetros de qualidade/naturalidade
+    if preset.get("length_scale"):
+        piper_cmd += ["--length_scale", str(preset["length_scale"])]
+    if preset.get("noise_scale"):
+        piper_cmd += ["--noise_scale", str(preset["noise_scale"])]
+    if preset.get("noise_w"):
+        piper_cmd += ["--noise_w", str(preset["noise_w"])]
+
     try:
         piper_proc = subprocess.Popen(
             piper_cmd,
@@ -78,7 +108,6 @@ def speak_text(text: str) -> None:
             piper_proc.stdin.close()
             aplay_proc.wait()
         else:
-            # Sem aplay, pelo menos tenta gerar (vai ser descartado)
             piper_proc.stdin.write(text.encode("utf-8"))
             piper_proc.stdin.close()
             piper_proc.wait()
@@ -87,13 +116,4 @@ def speak_text(text: str) -> None:
         logger.error(f"TTS falhou: {e}")
         _fallback_spd_say(text)
 
-
-def _fallback_spd_say(text: str) -> None:
-    """Fallback via spd-say se disponível."""
-    spd = shutil.which("spd-say")
-    if spd:
-        try:
-            subprocess.run([spd, text], check=True, timeout=10)
-        except Exception:
-            pass
 

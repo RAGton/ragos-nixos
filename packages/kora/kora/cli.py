@@ -222,8 +222,82 @@ def handle_voice_transcribe(args: argparse.Namespace) -> None:
     print(f"Transcrição: {text}")
 
 
+DEFAULT_SPEAK_TEXT = "Kora online, Ragton. Estou pronta para acompanhar você."
+
+
 def handle_voice_speak(args: argparse.Namespace) -> None:
-    tts.speak_text(args.text)
+    from .voice.voices import get_active_preset
+    preset = get_active_preset()
+    text = getattr(args, "text", None) or DEFAULT_SPEAK_TEXT
+    if getattr(args, "test", False):
+        text = "Kora online, Ragton. Testando voz atual com preset ativo."
+    tts.speak_text_with_preset(text, preset=preset)
+
+
+# ---------------------------------------------------------------------------
+# Voice Voices handlers
+# ---------------------------------------------------------------------------
+
+def handle_voice_voices(args: argparse.Namespace) -> None:
+    from .voice import voices as voice_voices
+    cmd = args.voice_voices_command
+    if cmd == "list":
+        voice_voices.cmd_list()
+    elif cmd == "current":
+        voice_voices.cmd_current()
+    elif cmd == "set":
+        voice_voices.cmd_set(args.preset_name)
+    elif cmd == "test":
+        voice_voices.cmd_test()
+
+
+# ---------------------------------------------------------------------------
+# Voice Service handlers (systemctl --user)
+# ---------------------------------------------------------------------------
+
+SERVICE_UNIT = "kora-voice-listener.service"
+
+
+def _systemctl_user(*subcmds: str, capture: bool = False) -> int | str:
+    import subprocess as _sp
+    cmd = ["systemctl", "--user"] + list(subcmds)
+    if capture:
+        result = _sp.run(cmd, capture_output=True, text=True)
+        return result.stdout + result.stderr
+    return _sp.run(cmd).returncode
+
+
+def handle_voice_service(args: argparse.Namespace) -> None:
+    import subprocess as _sp
+    cmd = args.voice_service_command
+    if cmd == "enable":
+        rc = _systemctl_user("enable", "--now", SERVICE_UNIT)
+        if rc == 0:
+            print(f"  ✓ {SERVICE_UNIT} habilitado e iniciado.")
+            print("  ⚠ Wake-word real 'Kora' ainda pendente de modelo custom.")
+        else:
+            print(f"  ✗ Falha ao habilitar. Crie o unit primeiro via 'kryonix switch all'.")
+    elif cmd == "disable":
+        _systemctl_user("disable", "--now", SERVICE_UNIT)
+        print(f"  ✓ {SERVICE_UNIT} desabilitado.")
+    elif cmd == "start":
+        _systemctl_user("start", SERVICE_UNIT)
+        print(f"  ✓ {SERVICE_UNIT} iniciado.")
+    elif cmd == "stop":
+        _systemctl_user("stop", SERVICE_UNIT)
+        print(f"  ✓ {SERVICE_UNIT} parado.")
+    elif cmd == "restart":
+        _systemctl_user("restart", SERVICE_UNIT)
+        print(f"  ✓ {SERVICE_UNIT} reiniciado.")
+    elif cmd == "status":
+        out = _systemctl_user("status", "--no-pager", "-l", SERVICE_UNIT, capture=True)
+        print(out or f"  {SERVICE_UNIT}: não encontrado ou não iniciado.")
+    elif cmd == "logs":
+        _sp.run([
+            "journalctl", "--user", "-u", SERVICE_UNIT,
+            "--no-pager", "-n", "50"
+        ])
+
 
 
 def handle_listen(args: argparse.Namespace) -> None:
@@ -376,7 +450,32 @@ def main() -> None:
     stt_parser.add_argument("--seconds", type=int, default=5)
 
     speak_parser = voice_subparsers.add_parser("speak", help="Speak text using TTS")
-    speak_parser.add_argument("text", help="Text to speak")
+    speak_parser.add_argument("text", nargs="?", default=None, help="Texto a falar (usa padrão se omitido)")
+    speak_parser.add_argument("--test", action="store_true", help="Fala frase de teste")
+    speak_parser.add_argument("--voice", default=None, help="Preset de voz (faber, cadu...)")
+
+    # voice voices
+    voices_parser = voice_subparsers.add_parser("voices", help="Manage voice presets")
+    voices_subparsers = voices_parser.add_subparsers(dest="voice_voices_command", required=True)
+    voices_subparsers.add_parser("list",    help="List voice presets")
+    voices_subparsers.add_parser("current", help="Show active preset")
+    voices_subparsers.add_parser("test",    help="Test active preset")
+    voices_set_parser = voices_subparsers.add_parser("set", help="Set active preset")
+    voices_set_parser.add_argument("preset_name", help="Preset name (default, soft, fast, expressive)")
+
+    # voice service
+    service_parser = voice_subparsers.add_parser("service", help="Manage Kora background voice service")
+    service_subparsers = service_parser.add_subparsers(dest="voice_service_command", required=True)
+    for svc_cmd, svc_help in [
+        ("enable",  "Enable and start background listener"),
+        ("disable", "Disable background listener"),
+        ("start",   "Start background listener"),
+        ("stop",    "Stop background listener"),
+        ("restart", "Restart background listener"),
+        ("status",  "Show service status"),
+        ("logs",    "Show recent service logs"),
+    ]:
+        service_subparsers.add_parser(svc_cmd, help=svc_help)
 
     # voice daemon
     daemon_parser = voice_subparsers.add_parser("daemon", help="Manage voice listener daemon")
@@ -457,6 +556,10 @@ def main() -> None:
             handle_voice_transcribe(args)
         elif args.voice_command == "speak":
             handle_voice_speak(args)
+        elif args.voice_command == "voices":
+            handle_voice_voices(args)
+        elif args.voice_command == "service":
+            handle_voice_service(args)
         elif args.voice_command == "daemon":
             handle_voice_daemon(args)
         elif args.voice_command == "identity":
