@@ -52,9 +52,8 @@ in
       nvtop.enable = false; # puxa CUDA toolkit completo — desnecessário com nvidia-smi
     };
 
-    # Garantia explícita: Ollama NÃO sobe automaticamente.
-    # O glacier-ai já seta autoStart=false, mas este mkForce é segurança adicional
-    # para garantir que GPU fica 100% livre para jogos no boot.
-    systemd.services.ollama.wantedBy = lib.mkForce [ ];
+    systemd.services.ollama = lib.mkIf config.services.ollama.enable {
+      wantedBy = lib.mkForce [ ];
+    };
   };
 }

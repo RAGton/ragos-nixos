@@ -636,8 +636,20 @@ case "$subcommand" in
       provider)
         kryonix_brain_provider "${extra_args[@]}"
         ;;
+      start)
+        kryonix_brain_stack_start "${extra_args[@]}"
+        ;;
+      stop)
+        kryonix_brain_stack_stop "${extra_args[@]}"
+        ;;
+      restart)
+        kryonix_brain_stack_restart "${extra_args[@]}"
+        ;;
+      status)
+        kryonix_brain_stack_status "${extra_args[@]}"
+        ;;
        *)
-         echo "Uso: kryonix brain <health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote|vram-audit|vram-check|vram-clear|vram-profile|llama-cpp|provider>"
+         echo "Uso: kryonix brain <start|stop|restart|status|health|doctor|stats|vault-scan|search|ask|storage-check|ollama-check|sync|watch|index|export|diagnostics|api|cag|api-key|preflight-secrets|rotate-api-key|deploy-safe|remote|vram-audit|vram-check|vram-clear|vram-profile|llama-cpp|provider>"
          exit 1
          ;;
     esac

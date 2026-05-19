@@ -2440,3 +2440,178 @@ kryonix_brain_llama_cpp() {
       ;;
   esac
 }
+
+# =============================================================================
+# Brain Stack Service Control
+#
+# Controla os serviços do stack Brain via systemctl (nunca enable/disable).
+# Ordem de start: ollama → neo4j → kryonix-brain-api → kora
+# Ordem de stop:  inversa
+# kryonix-lightrag é oneshot gerenciado automaticamente pelo systemd como
+# dependência de kryonix-brain-api — não precisa de controle manual.
+# =============================================================================
+
+_BRAIN_SVC_ORDER=(ollama neo4j kryonix-brain-api kora)
+
+_brain_need_glacier_ssh() {
+  [[ "$(hostname)" != "RVE-GLACIER" ]] && [[ "$(map_runtime_host)" == "glacier" ]]
+}
+
+_brain_glacier_ssh() {
+  ssh -p 2224 rocha@10.0.0.2 "kryonix brain $*"
+}
+
+_brain_svc_start() {
+  local svc="$1"
+
+  if ! systemctl cat "$svc" &>/dev/null; then
+    printf '  %-26s  não configurado (pulando)\n' "$svc"
+    return 0
+  fi
+
+  if systemctl is-active --quiet "$svc" 2>/dev/null; then
+    printf '  %-26s  já rodando\n' "$svc"
+    return 0
+  fi
+
+  printf '  %-26s  iniciando...' "$svc"
+  if sudo systemctl start "$svc" 2>/dev/null; then
+    printf ' OK\n'
+    if [[ "$svc" == "ollama" ]]; then
+      if command -v nvidia-smi &>/dev/null; then
+        local free; free=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader 2>/dev/null || printf '?')
+        printf '    VRAM livre: %s\n' "$free"
+      elif command -v rocm-smi &>/dev/null; then
+        rocm-smi --showmeminfo vram 2>/dev/null || true
+      fi
+    fi
+  else
+    printf ' FALHOU\n'
+    printf '  Detalhes: journalctl -u %s --no-pager -n 20\n' "$svc" >&2
+    return 1
+  fi
+}
+
+_brain_svc_stop() {
+  local svc="$1"
+
+  if ! systemctl cat "$svc" &>/dev/null; then
+    return 0
+  fi
+
+  if ! systemctl is-active --quiet "$svc" 2>/dev/null; then
+    printf '  %-26s  já parado\n' "$svc"
+    return 0
+  fi
+
+  printf '  %-26s  parando...' "$svc"
+  if sudo systemctl stop "$svc" 2>/dev/null; then
+    printf ' OK\n'
+  else
+    printf ' FALHOU (não-crítico)\n'
+  fi
+}
+
+kryonix_brain_stack_status() {
+  _brain_need_glacier_ssh && { _brain_glacier_ssh "status" "$@"; return $?; }
+
+  local -a services=("${_BRAIN_SVC_ORDER[@]}")
+  printf '%-26s  %-10s  %s\n' "SERVIÇO" "ESTADO" "DESDE"
+  printf '%-26s  %-10s  %s\n' "──────────────────────────" "──────────" "──────────────────────"
+
+  local svc
+  for svc in "${services[@]}"; do
+    if ! systemctl cat "$svc" &>/dev/null; then
+      printf '%-26s  %-10s  %s\n' "$svc" "n/a" "(não configurado)"
+      continue
+    fi
+
+    local state since
+    if systemctl is-active --quiet "$svc" 2>/dev/null; then
+      state="running"
+      since=$(systemctl show "$svc" --property=ActiveEnterTimestamp --value 2>/dev/null | sed 's/ [A-Z]*$//' || printf '')
+    elif systemctl is-failed --quiet "$svc" 2>/dev/null; then
+      state="FAILED"
+      since=$(systemctl show "$svc" --property=InactiveEnterTimestamp --value 2>/dev/null | sed 's/ [A-Z]*$//' || printf '')
+    else
+      state="dead"
+      since="—"
+    fi
+    printf '%-26s  %-10s  %s\n' "$svc" "$state" "$since"
+  done
+
+  if systemctl is-active --quiet ollama 2>/dev/null; then
+    printf '\n── GPU VRAM ──\n'
+    if command -v nvidia-smi &>/dev/null; then
+      nvidia-smi --query-gpu=name,memory.used,memory.free,memory.total --format=csv,noheader
+    elif command -v rocm-smi &>/dev/null; then
+      rocm-smi --showmeminfo vram 2>/dev/null || printf 'rocm-smi: formato não suportado\n'
+    fi
+  fi
+}
+
+kryonix_brain_stack_start() {
+  _brain_need_glacier_ssh && { _brain_glacier_ssh "start" "$@"; return $?; }
+
+  local target="${1:-}"
+
+  if [[ -n "$target" ]]; then
+    _brain_svc_start "$target"
+    return $?
+  fi
+
+  local svc
+  for svc in "${_BRAIN_SVC_ORDER[@]}"; do
+    if ! _brain_svc_start "$svc"; then
+      printf 'ERRO: Falha ao iniciar %s — abortando sequência.\n' "$svc" >&2
+      return 1
+    fi
+  done
+  printf '\nStack Brain iniciada. Verifique: kryonix brain status\n'
+}
+
+kryonix_brain_stack_stop() {
+  _brain_need_glacier_ssh && { _brain_glacier_ssh "stop" "$@"; return $?; }
+
+  local target="${1:-}"
+
+  if [[ -n "$target" ]]; then
+    _brain_svc_stop "$target"
+    return $?
+  fi
+
+  # Stop in reverse order
+  local -a rev=()
+  local svc
+  for svc in "${_BRAIN_SVC_ORDER[@]}"; do
+    rev=("$svc" "${rev[@]}")
+  done
+
+  for svc in "${rev[@]}"; do
+    _brain_svc_stop "$svc"
+  done
+
+  if command -v nvidia-smi &>/dev/null; then
+    printf '\nVRAM livre: '
+    nvidia-smi --query-gpu=memory.free --format=csv,noheader 2>/dev/null || printf '?\n'
+  fi
+  printf 'Stack Brain parada.\n'
+}
+
+kryonix_brain_stack_restart() {
+  _brain_need_glacier_ssh && { _brain_glacier_ssh "restart" "$@"; return $?; }
+
+  local target="${1:-}"
+
+  if [[ -n "$target" ]]; then
+    printf 'Reiniciando %s...\n' "$target"
+    _brain_svc_stop "$target"
+    _brain_svc_start "$target"
+    return $?
+  fi
+
+  printf 'Reiniciando stack Brain...\n'
+  kryonix_brain_stack_stop
+  printf '\n'
+  kryonix_brain_stack_start
+}

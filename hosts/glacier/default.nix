@@ -43,13 +43,13 @@
   # PROFILES — toda a lógica vive aqui
   # =========================
   kryonix.profiles.glacier-base.enable = true;
-  kryonix.profiles.glacier-ai.enable = false;
+  kryonix.profiles.glacier-ai.enable = true;
   kryonix.profiles.glacier-gamer.enable = true;
 
   # Perfis funcionais
   kryonix.profiles.dev.enable = true;
   kryonix.profiles.ti.enable = true;
-  kryonix.features.remoteDesktop.server.enable = false;
+  kryonix.features.remoteDesktop.server.enable = true;
 
   # =========================
   # EXPERIMENTAL — llama.cpp CUDA Sidecar (A/B Benchmark)
@@ -71,7 +71,7 @@
 
   # KORA — Assistente pessoal local (gateway/orchestrator)
   kryonix.services.kora = {
-    enable = false;
+    enable = true;
     # Bind em 0.0.0.0 é seguro aqui porque o firewall do módulo (kryonix.services.kora)
     # restringe explicitamente o acesso às interfaces tailscale0 e br0.
     host = "0.0.0.0";
@@ -83,14 +83,14 @@
   # N8N — Motor de automação visual (gateway/orchestrator)
   # =========================
   kryonix.services.n8n = {
-    enable = false;
+    enable = true;
   };
 
   # =========================
   # Home Assistant — Automação residencial
   # =========================
   kryonix.services.home-assistant = {
-    enable = false;
+    enable = true;
   };
 
   # =========================

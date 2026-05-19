@@ -26,6 +26,10 @@ KRYONIX_REGISTRY=(
 
   # --- Brain ---
   "brain|brain||Busca e diagnósticos RAG||kryonix brain --help|low|glacier|brain-api|false|ai|stable"
+  "brain|brain|start|Inicia stack Brain (ollama→neo4j→brain-api→kora)|[serviço]|kryonix brain start|medium|glacier|none|true|ai|stable"
+  "brain|brain|stop|Para stack Brain em ordem inversa|[serviço]|kryonix brain stop|medium|glacier|none|true|ai|stable"
+  "brain|brain|restart|Reinicia stack Brain (stop + start)|[serviço]|kryonix brain restart|medium|glacier|none|true|ai|stable"
+  "brain|brain|status|Estado de cada serviço do stack + VRAM||kryonix brain status|low|glacier|none|false|ai|stable"
   "brain|brain|health|Status da API Brain|--local --remote|kryonix brain health|low|glacier|brain-api|false|ai|stable"
   "brain|brain|doctor|Diagnóstico completo do Brain|--local --remote|kryonix brain doctor|low|glacier|brain-api|false|ai|stable"
   "brain|brain|stats|Estatísticas do índice/RAG|--local --remote|kryonix brain stats|low|glacier|brain-api|false|ai|stable"
