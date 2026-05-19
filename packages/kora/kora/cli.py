@@ -526,7 +526,7 @@ def main() -> None:
     parser.add_argument("--json", action="store_true", help="Output raw JSON")
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress metadata/diagnostics")
 
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command")
 
     # health
     subparsers.add_parser("health", help="Check API and dependencies health")
@@ -700,7 +700,18 @@ def main() -> None:
     bench_subparsers = bench_parser.add_subparsers(dest="bench_command", required=True)
     bench_subparsers.add_parser("quality", help="Run quality guard scenario tests")
 
-    args = parser.parse_args()
+    args, remaining = parser.parse_known_args()
+
+    # Plain-text shorthand: `kora oii` → treat as `kora ask "oii"`
+    if not args.command:
+        all_words = remaining or [a for a in sys.argv[1:] if not a.startswith("--")]
+        if all_words:
+            args.command = "ask"
+            args.question = " ".join(all_words)
+            args.mode = None
+        else:
+            parser.print_help()
+            sys.exit(0)
 
     if args.command == "health":
         handle_health(args)
