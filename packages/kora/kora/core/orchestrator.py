@@ -26,7 +26,6 @@ from ..llm import ollama as ollama_adapter
 from ..memory import MemoryCandidate, MemoryClassifier, MemoryQueue, MemoryType
 from .grounding import requires_rag, validate_command_hallucination
 from .tool_registry import get_registry_summary, find_tool
-from .conversation import format_history_for_prompt, build_followup_context
 from .conversation import get_recent_turns
 from .identity import (
     detect_runtime_identity,
@@ -173,13 +172,7 @@ async def _prepare_session_and_context(
     registry_summary = get_registry_summary()
     system_prompt += f"\n\n## Ferramentas Disponíveis (Tool Registry)\n{registry_summary}"
 
-    history_ctx = format_history_for_prompt(limit=4)
-    if history_ctx:
-        system_prompt += f"\n\n{history_ctx}"
 
-    followup_ctx = build_followup_context(message)
-    if followup_ctx:
-        system_prompt += followup_ctx
 
     active_mode = mode
     if mode == "auto":

@@ -218,39 +218,13 @@ Não inclua texto fora do JSON.
                 reason="Deterministic identity query"
             )
 
-        # Fallback to LLM for classification
-        try:
-            raw_answer = await self.llm.generate(
-                prompt=f"Entrada do usuário: '{text}'",
-                system_prompt=self.system_prompt
-            )
-            raw_answer = raw_answer.strip()
-            
-            # Extract JSON block if surrounded by markdown
-            match = re.search(r"```json\s*(\{.*?\})\s*```", raw_answer, re.DOTALL)
-            if match:
-                raw_answer = match.group(1)
-            elif raw_answer.startswith("```") and raw_answer.endswith("```"):
-                raw_answer = raw_answer.strip("`").strip()
-            
-            data = json.loads(raw_answer)
-            return RouteResult(
-                intent=data.get("intent", Intent.GENERAL_CHAT),
-                confidence=data.get("confidence", 0.5),
-                requires_rag=data.get("requires_rag", False),
-                requires_tool=data.get("requires_tool", False),
-                requires_status_check=data.get("requires_status_check", False),
-                risk=data.get("risk", "read_only"),
-                reason=data.get("reason", "Parsed from LLM")
-            )
-        except Exception as e:
-            logger.error(f"Routing failed, falling back to general_chat: {e}")
-            return RouteResult(
-                intent=Intent.GENERAL_CHAT,
-                confidence=0.1,
-                requires_rag=False,
-                requires_tool=False,
-                requires_status_check=False,
-                risk="read_only",
-                reason=f"Error in routing: {e}"
-            )
+        # Fallback immediately to avoid network call latency
+        return RouteResult(
+            intent=Intent.GENERAL_CHAT,
+            confidence=0.5,
+            requires_rag=False,
+            requires_tool=False,
+            requires_status_check=False,
+            risk="read_only",
+            reason="Fallback to general chat to reduce latency"
+        )

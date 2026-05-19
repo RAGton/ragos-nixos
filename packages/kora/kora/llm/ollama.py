@@ -202,6 +202,39 @@ async def generate_stream(
         yield f"\n[Erro na geração: {e}]"
 
 
+async def chat_with_turns(
+    user_message: str,
+    system_prompt: str,
+    conversation_turns: list[dict],
+    context: str | None = None,
+    model: str | None = None,
+    temperature: float = 0.45,
+) -> dict[str, Any]:
+    """
+    Multi-turn chat with proper message format.
+
+    Passes conversation history as real user/assistant messages — not injected
+    as text into the system prompt. Models understand this format natively,
+    which produces better context recall and natural follow-up answers.
+    """
+    messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
+
+    for turn in conversation_turns[-6:]:  # last 3 exchanges (6 half-turns)
+        user_text = str(turn.get("user") or "").strip()
+        kora_text = str(turn.get("kora") or "").strip()
+        if user_text:
+            messages.append({"role": "user", "content": user_text})
+        if kora_text:
+            messages.append({"role": "assistant", "content": kora_text})
+
+    final_message = user_message
+    if context:
+        final_message = f"Contexto:\n{context}\n\n---\n{user_message}"
+
+    messages.append({"role": "user", "content": final_message})
+    return await chat(messages=messages, model=model, temperature=temperature)
+
+
 class OllamaAdapter:
     """Class-based interface for Ollama provider."""
 

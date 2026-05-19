@@ -5,10 +5,11 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from kora.llm import ollama as ollama_adapter
+from kora.llm.ollama import chat_with_turns
 
 from .context import build_mind_context
 from .dialogue_policy import get_dialogue_policy
-from .persona import GOOD_CASUAL_CHECK_RESPONSE, KORA_PERSONA
+from .persona import GOOD_CASUAL_CHECK_RESPONSE
 from .reflection import KoraReflection
 
 logger = logging.getLogger("kora.mind")
@@ -26,6 +27,10 @@ class MindInput:
     profile_context: str
     system_state: dict[str, Any]
     safety_context: dict[str, Any]
+
+    @property
+    def message(self) -> str:
+        return self.user_text
 
 
 @dataclass
@@ -68,7 +73,7 @@ class KoraMind:
             identity_trust=mind_input.identity_trust,
             source=mind_input.source,
             intent=mind_input.intent,
-            conversation_history=mind_input.conversation_history,
+            conversation_history=[],
             profile_context=mind_input.profile_context,
             system_state=mind_input.system_state,
             safety_context=mind_input.safety_context,
@@ -76,28 +81,33 @@ class KoraMind:
             rag_context=rag_context,
         )
 
-        prompt = (
-            f"{KORA_PERSONA}\n\n"
-            "Responda ao usuario usando o contexto compacto. "
-            "Nao despeje estado interno se a pergunta for casual. "
-            "Nao invente runtime; marque como precisa validar quando nao houver dado real.\n\n"
-            f"{compact_context}\n\n"
-            f"Texto original: {mind_input.user_text}\n"
-            f"Texto normalizado: {mind_input.normalized_text}"
-        )
+        user_message = f"{compact_context}\n\n{mind_input.message}"
 
         try:
             if self.llm_provider:
-                raw_answer = await self.llm_provider.generate(
-                    prompt=prompt,
-                    system_prompt=system_prompt,
-                    context=rag_context,
-                )
-                model = getattr(self.llm_provider, "model", None)
+                if hasattr(self.llm_provider, "chat_with_turns"):
+                    result = await self.llm_provider.chat_with_turns(
+                        user_message=user_message,
+                        system_prompt=system_prompt,
+                        conversation_turns=mind_input.conversation_history,
+                        context=rag_context,
+                        temperature=0.45,
+                    )
+                else:
+                    result = await self.llm_provider.generate(
+                        prompt=user_message,
+                        system_prompt=system_prompt,
+                        context=rag_context,
+                    )
+                    if isinstance(result, str):
+                        result = {"answer": result, "model": getattr(self.llm_provider, "model", None)}
+                raw_answer = result.get("answer", "")
+                model = result.get("model")
             else:
-                result = await ollama_adapter.generate_completion(
-                    prompt=prompt,
+                result = await chat_with_turns(
+                    user_message=user_message,
                     system_prompt=system_prompt,
+                    conversation_turns=mind_input.conversation_history,
                     context=rag_context,
                     temperature=0.45,
                 )
@@ -117,8 +127,6 @@ class KoraMind:
         return MindOutput(answer=reflected.answer, tone=policy.get("style", "natural_direct"))
 
     def _fast_path(self, mind_input: MindInput) -> str | None:
-        text = mind_input.normalized_text.lower()
-
         if mind_input.intent == "casual_check":
             return GOOD_CASUAL_CHECK_RESPONSE
 
@@ -126,42 +134,6 @@ class KoraMind:
             summary = mind_input.system_state.get("capabilities_summary")
             if summary:
                 return summary
-
-        if mind_input.intent == "technical_diagnostic" and "kora" in text:
-            return (
-                "Sim. O pedido e um pente fino na Kora, nao uma conversa generica.\n\n"
-                "Diagnóstico: ela ainda estava tratando algumas frases naturais como status técnico e podia responder como programa.\n\n"
-                "Causa provavel: roteamento amplo demais para `voice_status`, normalizacao pessoal incompleta e ausencia de uma camada KoraMind obrigatoria antes da resposta final.\n\n"
-                "Correção: normalizar a fala do Ragton, rotear `voce esta me ouvindo?` como conversa casual, passar a resposta pela KoraMind e bloquear despejo de STT/TTS/openWakeWord quando a pergunta for humana.\n\n"
-                "Validação: rodar `kora benchmark quality` e testar `kora ask \"bom entao voce esta me ouvindo agora ne\"`."
-            )
-
-        if mind_input.intent in {"complaint_bad_answer", "followup_complaint"}:
-            return (
-                "Voce tem razao. A resposta anterior falhou em entender o ponto real.\n\n"
-                "Diagnóstico: a Kora provavelmente respondeu por um caminho generico ou tecnico demais.\n"
-                "Causa: faltou recuperar o historico recente e aplicar a politica de reparo.\n"
-                "Correção: vou usar a pergunta anterior como contexto, responder ao que ficou pendente e validar isso no benchmark de qualidade."
-            )
-
-        if mind_input.intent == "learning_request":
-            return (
-                "Entendi. Isso entra como aprendizado operacional da Kora.\n\n"
-                "Perfil: atualizar preferencias e termos recorrentes do Ragton sem salvar segredo.\n"
-                "Correcoes: registrar mapeamentos de fala, como `pentifino` para `pente fino`.\n"
-                "Memoria: manter tudo incremental e reversivel em `/var/lib/kryonix/kora/learning`.\n"
-                "Benchmark: transformar exemplos bons e ruins em cenarios de qualidade antes de qualquer treino."
-            )
-
-        if mind_input.intent == "voice_status":
-            return (
-                "Estado de voz real da Kora:\n\n"
-                "- Push-to-talk e VAD: caminhos operacionais do prototipo.\n"
-                "- STT/TTS: componentes do pipeline de voz, sujeitos aos modelos locais instalados.\n"
-                "- Wake-word Kora: nao declarar pronto enquanto `ready=false`.\n"
-                "- Speaker ID biometrico: foundation; nao autoriza comandos criticos.\n\n"
-                "Para validar de verdade, rode `kora voice doctor`, `kora voice models` e um teste de transcricao."
-            )
 
         return None
 
