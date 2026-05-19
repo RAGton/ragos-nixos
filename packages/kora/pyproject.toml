@@ -13,6 +13,9 @@ dependencies = [
     "pyaudio>=0.2.14",
     "edge-tts",
     "numpy",
+    "rich",
+    "pyopen-wakeword",
+    "faster-whisper",
 ]
 
 [project.scripts]

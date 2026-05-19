@@ -3,86 +3,79 @@
 # =============================================================================
 
 import os
-import shutil
-import subprocess
 import logging
 from pathlib import Path
+import numpy as np
 
 logger = logging.getLogger("kora.voice.stt")
 
-WHISPER_CANDIDATES = [
-    os.environ.get("KORA_WHISPER_BIN"),
-    "whisper-cli",
-    "whisper-cpp",
-    "whisper-cpp-cli",
-    "whisper",
-]
+# Singleton instance for the Whisper model
+_whisper_model_instance = None
 
-def find_whisper_bin() -> str:
-    for candidate in WHISPER_CANDIDATES:
-        if not candidate:
-            continue
-        path = shutil.which(candidate)
-        if path:
-            return path
-    raise RuntimeError(
-        "Whisper backend não encontrado. Instale/adicione whisper-cpp ao PATH "
-        "ou defina KORA_WHISPER_BIN."
-    )
+def get_whisper_model():
+    """
+    Singleton loader for faster-whisper WhisperModel.
+    Initializes model on CUDA with float16 to keep VRAM < 2GB (approx 400MB),
+    falling back to CPU int8 if CUDA is unavailable.
+    """
+    global _whisper_model_instance
+    if _whisper_model_instance is None:
+        try:
+            from faster_whisper import WhisperModel
+            # Attempt CUDA float16 first (fastest, lowest GPU memory footprint)
+            logger.info("Inicializando faster-whisper em CUDA (float16)...")
+            _whisper_model_instance = WhisperModel(
+                "base",
+                device="cuda",
+                compute_type="float16"
+            )
+            logger.info("faster-whisper carregado com sucesso em GPU CUDA.")
+        except Exception as e:
+            logger.warning(
+                f"Falha ao carregar faster-whisper com aceleração CUDA: {e}. "
+                "Tentando carregar em CPU (int8)..."
+            )
+            try:
+                from faster_whisper import WhisperModel
+                _whisper_model_instance = WhisperModel(
+                    "base",
+                    device="cpu",
+                    compute_type="int8"
+                )
+                logger.info("faster-whisper carregado com sucesso em CPU.")
+            except Exception as cpu_err:
+                logger.error(f"Erro fatal: não foi possível carregar o WhisperModel: {cpu_err}")
+                _whisper_model_instance = None
+    return _whisper_model_instance
 
-import re
 
-CLEAN_ANSI_RE = re.compile(
-    r"(?:\x1b|\\x1b|\\033|\\u001b)\[[0-9;?]*[A-Za-z]" # Standard ANSI codes
-    r"|\[[0-9]+(?:;[0-9]+)*m"                        # bracket + color codes (e.g. [0m, [38;5;114m)
-    r"|(?:\b|;)[0-9]+;[0-9]+(?:;[0-9]+)*m"            # color codes with semicolons (e.g. 38;5;114m, ;166m)
-)
-CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
-WHISPER_TS_RE = re.compile(r"\[[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}\s*-->\s*[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}\]")
+def transcribe_audio(audio_buffer, user: str = "rocha") -> str:
+    """
+    Transcribe audio from a buffer (bytes, numpy array, or file path/str) using faster-whisper.
+    """
+    model = get_whisper_model()
+    if model is None:
+        logger.error("WhisperModel não está disponível. Transcrição cancelada.")
+        return "[Erro: WhisperModel não carregado]"
 
-def clean_transcript(text: str) -> str:
-    text = CLEAN_ANSI_RE.sub("", text)
-    text = CONTROL_RE.sub("", text)
-    text = WHISPER_TS_RE.sub("", text)
-    lines = []
-    for line in text.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith("whisper_") or line.startswith("system_info"):
-            continue
-        if "processing" in line.lower():
-            continue
-        lines.append(line)
-    return " ".join(lines).strip()
-
-def transcribe_audio(audio_path: Path, user: str = "rocha") -> str:
-    """Transcribe audio file using whisper-cli."""
-    if not audio_path.exists():
-        raise FileNotFoundError(f"Audio file not found: {audio_path}")
-
-    # Resolve model dynamically so post-install runs pick up the model
-    from .config import _resolve_whisper_model
-    model_path = _resolve_whisper_model()
-
-    if not Path(model_path).exists():
-        logger.error(
-            f"Modelo Whisper não encontrado: {model_path}\n"
-            "  → Execute: kora voice models install whisper base"
-        )
-        return "[Modelo Whisper não instalado — execute: kora voice models install whisper base]"
+    # Resolve input audio
+    if isinstance(audio_buffer, (str, Path)):
+        audio_path = Path(audio_buffer)
+        if not audio_path.exists():
+            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+        audio_input = str(audio_path)
+    elif isinstance(audio_buffer, bytes):
+        # Convert raw 16-bit PCM bytes to normalized float32 numpy array
+        audio_input = np.frombuffer(audio_buffer, dtype=np.int16).astype(np.float32) / 32768.0
+    elif isinstance(audio_buffer, np.ndarray):
+        if audio_buffer.dtype == np.int16:
+            audio_input = audio_buffer.astype(np.float32) / 32768.0
+        else:
+            audio_input = audio_buffer
+    else:
+        raise TypeError("Tipo de buffer de áudio não suportado")
 
     try:
-        whisper_bin = find_whisper_bin()
-        logger.debug(f"STT: usando {whisper_bin} com modelo {model_path}")
-
-        output_base = "/tmp/kora-whisper-output"
-        output_txt = output_base + ".txt"
-
-        # Ensure previous file is removed
-        if os.path.exists(output_txt):
-            os.remove(output_txt)
-
         # Prime Whisper's vocabulary dynamically using user's active learning profile
         prompt_words = [
             "Kora", "Kryonix", "Hyprland", "NixOS", "Inspiron", "Glacier", "Ragton",
@@ -98,7 +91,6 @@ def transcribe_audio(audio_path: Path, user: str = "rocha") -> str:
                 if profile.get("active_projects"):
                     prompt_words.extend(profile["active_projects"])
                 if profile.get("spelling_mappings"):
-                    # Add corrected/target terms to prime Whisper
                     prompt_words.extend(profile["spelling_mappings"].values())
             except Exception as pe:
                 logger.warning(f"Erro ao ler perfil para Whisper prompt: {pe}")
@@ -110,35 +102,27 @@ def transcribe_audio(audio_path: Path, user: str = "rocha") -> str:
                 unique_words.append(w)
         prompt_str = ", ".join(unique_words) + "."
 
-        subprocess.run([
-            whisper_bin,
-            "-m", model_path,
-            "-f", str(audio_path),
-            "-nt",
-            "-l", "pt",
-            "-t", "6",
-            "-sns",
-            "--prompt", prompt_str,
-            "-otxt",
-            "-of", output_base
-        ], capture_output=True, text=True, check=True)
+        # Transcribe with faster-whisper
+        # Using beam_size=5 for accuracy, language='pt' for Portuguese
+        segments, info = model.transcribe(
+            audio_input,
+            language="pt",
+            beam_size=5,
+            initial_prompt=prompt_str
+        )
 
-        if os.path.exists(output_txt):
-            with open(output_txt, "r", encoding="utf-8") as f:
-                raw_text = f.read()
-            text = clean_transcript(raw_text)
-        else:
-            logger.warning("STT output file not created. Falling back to empty.")
-            text = ""
+        text = " ".join([segment.text for segment in segments]).strip()
 
+        # Apply normalizer
         try:
             from kora.core.normalizer import normalize_text
             text = normalize_text(text, user).normalized
         except Exception as norm_err:
-            logger.warning("Erro ao normalizar transcricao: %s", norm_err)
+            logger.warning(f"Erro ao normalizar transcricao: {norm_err}")
 
         logger.info(f"STT: {text}")
         return text
+
     except Exception as e:
         logger.error(f"STT failed: {e}")
         return "[Erro na transcrição]"

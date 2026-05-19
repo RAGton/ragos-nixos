@@ -47,8 +47,6 @@ logger = logging.getLogger("kora.core.orchestrator")
 
 import collections
 import hashlib
-import httpx
-from ..llm.ollama import OLLAMA_URL
 
 class SimpleLRUCache:
     def __init__(self, capacity: int = 256):
@@ -88,20 +86,6 @@ def _check_and_invalidate_cache():
                 _LAST_GRAPH_MTIME = mtime
         except Exception as e:
             logger.warning(f"Error checking graph file modification time: {e}")
-
-async def get_query_embedding(text: str) -> list[float] | None:
-    try:
-        payload = {
-            "model": "nomic-embed-text",
-            "prompt": text
-        }
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            resp = await client.post(f"{OLLAMA_URL}/api/embeddings", json=payload)
-            if resp.status_code == 200:
-                return resp.json().get("embedding")
-    except Exception as e:
-        logger.warning(f"Error fetching query embedding: {e}")
-    return None
 
 ACTION_PROPOSAL_RE = re.compile(r"```json\s*(\{.*?" + re.escape('"type": "action_proposal"') + r".*?\})\s*```", re.DOTALL)
 SESSION_METADATA: Dict[str, Any] = {}
@@ -357,11 +341,7 @@ async def process_message(
 
     # Cache Augmented Generation (CAG) Lookup
     _check_and_invalidate_cache()
-    embedding = await get_query_embedding(message)
-    if embedding:
-        cache_key = hashlib.sha256(json.dumps(embedding).encode()).hexdigest()
-    else:
-        cache_key = hashlib.sha256(message.encode()).hexdigest()
+    cache_key = hashlib.sha256(message.encode()).hexdigest()
 
     cached_entry = _CAG_CACHE.get(cache_key)
     if cached_entry:

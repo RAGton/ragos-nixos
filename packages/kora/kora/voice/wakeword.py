@@ -98,3 +98,100 @@ def get_wakeword_status():
         "ready": OPENWAKEWORD_AVAILABLE and custom_model_present,
         "note": "Wake-word configurado como alvo. Usando fallback se kora não for encontrado."
     }
+
+
+import os
+import pyaudio
+from pathlib import Path
+
+class PyAudioStreamWrapper:
+    """Wrapper that exposes start() and close() methods to match constraints."""
+    def __init__(self, engine: "WakeWordEngine") -> None:
+        self.engine = engine
+
+    def start(self) -> bool:
+        return self.engine.start_stream()
+
+    def close(self) -> None:
+        self.engine.close_stream()
+
+
+class WakeWordEngine:
+    """
+    Wake-word engine that reads from PyAudio and handles hardware lock checks.
+    """
+    def __init__(self, model: str = "kora") -> None:
+        self.detector = KoraWakeWord(model)
+        self.detector.start()
+        self.lock_path = Path(f"/run/user/{os.getuid()}/kryonix/voice.lock")
+        self.pyaudio = None
+        self.active_stream = None
+        self.stream = PyAudioStreamWrapper(self)
+        
+        # Audio configuration
+        self.chunk_size = 1280  # ~80ms at 16kHz
+        self.rate = 16000
+        self.channels = 1
+        self.format = pyaudio.paInt16
+
+    def is_locked(self) -> bool:
+        return self.lock_path.exists()
+
+    def start_stream(self) -> bool:
+        if self.active_stream is not None:
+            return True
+        if self.pyaudio is None:
+            self.pyaudio = pyaudio.PyAudio()
+        try:
+            self.active_stream = self.pyaudio.open(
+                format=self.format,
+                channels=self.channels,
+                rate=self.rate,
+                input=True,
+                frames_per_buffer=self.chunk_size
+            )
+            logger.info("WakeWordEngine: PyAudio stream opened and active.")
+            return True
+        except Exception as e:
+            logger.warning(f"WakeWordEngine: Device busy or failed to open stream: {e}")
+            self.active_stream = None
+            return False
+
+    def close_stream(self) -> None:
+        if self.active_stream is not None:
+            try:
+                self.active_stream.stop_stream()
+                self.active_stream.close()
+            except Exception as e:
+                logger.warning(f"WakeWordEngine: Error closing stream: {e}")
+            finally:
+                self.active_stream = None
+                logger.info("WakeWordEngine: PyAudio stream closed.")
+
+    def listen(self) -> bool:
+        """
+        Periodically check lock file.
+        If file exists, call stream.close() if stream is open.
+        If it does not exist, call stream.start().
+        Processes PyAudio chunks and returns True if 'Kora' is detected.
+        """
+        if self.is_locked():
+            if self.active_stream is not None:
+                self.stream.close()
+            return False
+
+        if self.active_stream is None:
+            success = self.stream.start()
+            if not success:
+                return False
+
+        try:
+            data = self.active_stream.read(self.chunk_size, exception_on_overflow=False)
+            if self.detector.detect(data):
+                return True
+        except Exception as e:
+            logger.error(f"WakeWordEngine: Error reading chunk: {e}")
+            self.stream.close()
+
+        return False
+

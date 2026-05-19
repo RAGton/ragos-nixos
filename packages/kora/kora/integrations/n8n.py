@@ -59,3 +59,13 @@ class N8nClient:
                 "error": "Não foi possível conectar ao n8n local. Verifique se o serviço está ativo.",
                 "details": str(e)
             }
+
+
+async def trigger_n8n(webhook_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """
+    Função bridge que aciona um webhook no n8n de forma assíncrona.
+    """
+    logger.info(f"Triggering n8n webhook '{webhook_id}' with payload: {payload}")
+    client = N8nClient()
+    return await client.trigger_webhook(webhook_id, payload)
+

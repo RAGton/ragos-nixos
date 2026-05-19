@@ -2,7 +2,7 @@
 # Kora — CLI
 #
 # Interface de linha de comando oficial para a assistente Kora.
-# Permite acesso direto à API local ou remota.
+# Permite acesso direto à API local ou remota e despacho de tarefas.
 # =============================================================================
 
 import argparse
@@ -10,14 +10,99 @@ import json
 import logging
 import os
 import sys
+import subprocess
+import getpass
+import asyncio
 from pathlib import Path
 from typing import Any
 
-from .client import KoraClient, KoraClientError
-from .voice import devices, recorder, stt, tts, pipeline, daemon, identity, wakeword
-from .voice import vad as voice_vad
-from .voice import signals as voice_signals
-from .core import users
+from rich.console import Console
+
+from ..client import KoraClient, KoraClientError
+from ..voice import devices, recorder, stt, tts, pipeline, daemon, identity, wakeword
+from ..voice import vad as voice_vad
+from ..voice import signals as voice_signals
+from ..core import users
+from ..integrations.n8n import trigger_n8n
+from ..integrations.ha import call_ha
+
+
+class CommandDispatcher:
+    """
+    Dispatcher inteligente de comandos do sistema com suporte a sudo seguro e auditoria de log.
+    """
+    def __init__(self):
+        self.log_path = Path.home() / ".kryonix" / "logs" / "cli.log"
+        self.log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def log_command(self, cmd: list[str], success: bool):
+        import datetime
+        timestamp = datetime.datetime.now().isoformat()
+        status = "SUCCESS" if success else "FAILED"
+        try:
+            with open(self.log_path, "a") as f:
+                f.write(f"[{timestamp}] [{status}] {' '.join(cmd)}\n")
+        except Exception as e:
+            sys.stderr.write(f"Warning: Failed to write to log file: {e}\n")
+
+    def needs_sudo(self, cmd: list[str]) -> bool:
+        privileged_binaries = ["nixos-rebuild", "systemctl"]
+        if os.geteuid() == 0:
+            return False
+        
+        # Verifica se algum elemento do comando requer privilégios
+        for word in cmd:
+            if any(binary in word for binary in privileged_binaries):
+                if "systemctl" in word and "--user" in cmd:
+                    continue
+                return True
+        return False
+
+    def execute(self, cmd: list[str], cwd: str = None) -> bool:
+        from ..utils.lock import HardwareLock
+
+        need_s = self.needs_sudo(cmd)
+        
+        run_cmd = cmd.copy()
+        if need_s:
+            if run_cmd[0] != "sudo":
+                run_cmd = ["sudo", "-S"] + run_cmd
+            elif "-S" not in run_cmd:
+                run_cmd.insert(1, "-S")
+                
+        password = None
+        if need_s:
+            # getpass solicita a senha com echo desabilitado
+            password = getpass.getpass(prompt="[sudo] senha: ")
+
+        with HardwareLock():
+            try:
+                proc = subprocess.Popen(
+                    run_cmd,
+                    stdin=subprocess.PIPE if need_s else None,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    cwd=cwd
+                )
+                
+                if need_s and password is not None:
+                    stdout, stderr = proc.communicate(input=f"{password}\n")
+                else:
+                    stdout, stderr = proc.communicate()
+                    
+                if stdout:
+                    sys.stdout.write(stdout)
+                if stderr:
+                    sys.stderr.write(stderr)
+                    
+                success = (proc.returncode == 0)
+                self.log_command(cmd, success)
+                return success
+            except Exception as e:
+                sys.stderr.write(f"Erro ao executar comando: {e}\n")
+                self.log_command(cmd, False)
+                return False
 
 
 def print_json(data: Any) -> None:
@@ -61,6 +146,17 @@ def handle_health(args: argparse.Namespace) -> None:
 
 
 def handle_status(args: argparse.Namespace) -> None:
+    # Se um target foi passado e não for 'kora', lidamos aqui
+    target = getattr(args, "target", "kora")
+    if target == "nixos":
+        dispatcher = CommandDispatcher()
+        dispatcher.execute(["systemctl", "status"])
+        return
+    elif target == "brain":
+        dispatcher = CommandDispatcher()
+        dispatcher.execute(["systemctl", "status", "kryonix-brain-api.service"])
+        return
+
     client = get_client(args)
     try:
         res = client.status()
@@ -87,7 +183,6 @@ def handle_capabilities(args: argparse.Namespace) -> None:
 
 
 def handle_ask(args: argparse.Namespace) -> None:
-    import os
     current_user = os.environ.get("USER") or "unknown"
     client = get_client(args)
     try:
@@ -110,7 +205,6 @@ def handle_ask(args: argparse.Namespace) -> None:
 
 
 def handle_chat(args: argparse.Namespace) -> None:
-    # Future: interactive loop. For now, works like ask if message provided.
     print("Chat mode is partial in CLI. Use 'ask' for single messages or wait for Phase 3 CLI updates.", file=sys.stderr)
     sys.exit(1)
 
@@ -139,11 +233,11 @@ def handle_voice_devices(args: argparse.Namespace) -> None:
 
 def handle_voice_doctor(args: argparse.Namespace) -> None:
     import shutil
-    import os, pwd, grp
-    from . voice import models as voice_models
+    import pwd, grp
+    from ..voice import models as voice_models
     print("\n=== KORA VOICE DOCTOR ===")
 
-    print("\n[BIN\u00c1RIOS]")
+    print("\n[BINÁRIOS]")
     binaries = ["whisper-cli", "whisper-cpp", "whisper-cpp-cli", "piper-tts", "piper", "aplay", "arecord"]
     for b in binaries:
         path = shutil.which(b)
@@ -158,21 +252,21 @@ def handle_voice_doctor(args: argparse.Namespace) -> None:
         size_mb = round(whisper.stat().st_size / 1_048_576, 1)
         print(f"  Whisper: FOUND {whisper}  ({size_mb} MB)")
     else:
-        print("  Whisper: MISSING  \u2192 kora voice models install whisper base")
+        print("  Whisper: MISSING  → kora voice models install whisper base")
     piper_m, piper_c = voice_models.resolve_piper_model()
     if piper_m:
         print(f"  Piper model:  FOUND {piper_m}")
     else:
-        print("  Piper model:  MISSING  \u2192 kora voice models install piper faber")
+        print("  Piper model:  MISSING  → kora voice models install piper faber")
     if piper_c:
         print(f"  Piper config: FOUND {piper_c}")
     else:
         print("  Piper config: MISSING")
 
-    print("\n[DISPOSITIVOS DE \u00c1UDIO]")
+    print("\n[DISPOSITIVOS DE ÁUDIO]")
     handle_voice_devices(args)
 
-    print("\n[DIRET\u00d3RIOS E PERMISS\u00d5ES]")
+    print("\n[DIRETÓRIOS E PERMISSÕES]")
     dirs = [
         "/var/lib/kryonix/kora",
         "/var/lib/kryonix/kora/voice",
@@ -192,17 +286,17 @@ def handle_voice_doctor(args: argparse.Namespace) -> None:
 
 
 def handle_voice_models_status(args: argparse.Namespace) -> None:
-    from .voice import models as voice_models
+    from ..voice import models as voice_models
     voice_models.cmd_status()
 
 
 def handle_voice_models_list(args: argparse.Namespace) -> None:
-    from .voice import models as voice_models
+    from ..voice import models as voice_models
     voice_models.cmd_list()
 
 
 def handle_voice_models_install(args: argparse.Namespace) -> None:
-    from .voice import models as voice_models
+    from ..voice import models as voice_models
     kind = args.model_type.lower()
     name = args.model_name.lower()
     if kind == "whisper":
@@ -211,7 +305,6 @@ def handle_voice_models_install(args: argparse.Namespace) -> None:
         voice_models.cmd_install_piper(name)
     else:
         print(f"[ERRO] Tipo desconhecido: '{kind}'. Use 'whisper' ou 'piper'.")
-
 
 
 def handle_voice_test_mic(args: argparse.Namespace) -> None:
@@ -231,20 +324,16 @@ DEFAULT_SPEAK_TEXT = "Kora online, Ragton. Estou pronta para acompanhar você."
 
 
 def handle_voice_speak(args: argparse.Namespace) -> None:
-    from .voice.voices import get_active_preset
+    from ..voice.voices import get_active_preset
     preset = get_active_preset()
     text = getattr(args, "text", None) or DEFAULT_SPEAK_TEXT
     if getattr(args, "test", False):
-        text = "Kora online, Ragton. Testando voz atual com preset ativo."
+        text = "Kora online, Ragton. Testando voice atual com preset ativo."
     tts.speak_text_with_preset(text, preset=preset)
 
 
-# ---------------------------------------------------------------------------
-# Voice Voices handlers
-# ---------------------------------------------------------------------------
-
 def handle_voice_voices(args: argparse.Namespace) -> None:
-    from .voice import voices as voice_voices
+    from ..voice import voices as voice_voices
     cmd = args.voice_voices_command
     if cmd == "list":
         voice_voices.cmd_list()
@@ -256,24 +345,18 @@ def handle_voice_voices(args: argparse.Namespace) -> None:
         voice_voices.cmd_test()
 
 
-# ---------------------------------------------------------------------------
-# Voice Service handlers (systemctl --user)
-# ---------------------------------------------------------------------------
-
 SERVICE_UNIT = "kora-voice-listener.service"
 
 
 def _systemctl_user(*subcmds: str, capture: bool = False) -> int | str:
-    import subprocess as _sp
     cmd = ["systemctl", "--user"] + list(subcmds)
     if capture:
-        result = _sp.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True)
         return result.stdout + result.stderr
-    return _sp.run(cmd).returncode
+    return subprocess.run(cmd).returncode
 
 
 def handle_voice_service(args: argparse.Namespace) -> None:
-    import subprocess as _sp
     cmd = args.voice_service_command
     if cmd == "enable":
         rc = _systemctl_user("enable", "--now", SERVICE_UNIT)
@@ -298,16 +381,13 @@ def handle_voice_service(args: argparse.Namespace) -> None:
         out = _systemctl_user("status", "--no-pager", "-l", SERVICE_UNIT, capture=True)
         print(out or f"  {SERVICE_UNIT}: não encontrado ou não iniciado.")
     elif cmd == "logs":
-        _sp.run([
+        subprocess.run([
             "journalctl", "--user", "-u", SERVICE_UNIT,
             "--no-pager", "-n", "50"
         ])
 
 
-
 def handle_listen(args: argparse.Namespace) -> None:
-    # Run the async pipeline
-    import asyncio
     ptt = getattr(args, "push_to_talk", False) or not getattr(args, "vad", False)
     try:
         asyncio.run(pipeline.listen_and_respond(push_to_talk=ptt))
@@ -324,11 +404,8 @@ def handle_voice_daemon(args: argparse.Namespace) -> None:
         })
     elif args.voice_daemon_command == "start":
         print("Starting Kora Voice Daemon (Foundation)...")
-        import asyncio
         asyncio.run(daemon.run_daemon())
     elif args.voice_daemon_command == "run":
-        # Foreground mode for systemd — no output decorations
-        import asyncio
         logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
         logger = logging.getLogger("kora.voice.daemon")
         logger.info("Kora Voice Daemon starting in foreground (systemd mode)...")
@@ -344,19 +421,18 @@ def handle_voice_mute(args: argparse.Namespace) -> None:
     mute_file = Path("/var/lib/kryonix/kora/voice/muted")
     mute_file.parent.mkdir(parents=True, exist_ok=True)
     mute_file.touch()
-    print("  \u2713 Microfone silenciado (Kora n\u00e3o processar\u00e1 \u00e1udio).")
+    print("  ✓ Microfone silenciado (Kora não processará áudio).")
 
 
 def handle_voice_unmute(args: argparse.Namespace) -> None:
     mute_file = Path("/var/lib/kryonix/kora/voice/muted")
     if mute_file.exists():
         mute_file.unlink()
-    print("  \u2713 Microfone ativo novamente.")
+    print("  ✓ Microfone ativo novamente.")
 
 
 def handle_voice_status(args: argparse.Namespace) -> None:
     import shutil
-    from pathlib import Path
     muted = Path("/var/lib/kryonix/kora/voice/muted").exists()
     session_file = Path("/var/lib/kryonix/kora/sessions/voice-current.json")
     has_session = session_file.exists()
@@ -364,11 +440,11 @@ def handle_voice_status(args: argparse.Namespace) -> None:
     whisper_ok = shutil.which("whisper-cli") is not None
     piper_ok = shutil.which("piper") is not None or shutil.which("piper-tts") is not None
 
-    from .voice import models as voice_models
+    from ..voice import models as voice_models
     whisper_model = voice_models.resolve_whisper_model()
     piper_model, _ = voice_models.resolve_piper_model()
 
-    from .voice.voices import get_active_preset_name
+    from ..voice.voices import get_active_preset_name
     preset = get_active_preset_name()
 
     status = {
@@ -388,7 +464,6 @@ def handle_user(args: argparse.Namespace) -> None:
     registry = users.UserRegistry()
 
     if args.user_command == "init":
-        # Create initial users
         ragton = users.KoraUser(
             id="ragton",
             display_name="Ragton",
@@ -519,6 +594,89 @@ def handle_voice_wakeword_status(args: argparse.Namespace) -> None:
     print_json(wakeword.get_wakeword_status())
 
 
+# ---------------------------------------------------------------------------
+# New Action Command Handlers
+# ---------------------------------------------------------------------------
+
+def handle_atualizar(args: argparse.Namespace) -> None:
+    dispatcher = CommandDispatcher()
+    console = Console()
+    
+    if args.target == "nixos":
+        cmd = ["nixos-rebuild", "switch", "--flake", ".#glacier"]
+        cwd = "/etc/kryonix"
+    elif args.target == "kora":
+        cmd = ["systemctl", "--user", "restart", "kora-api.service", "kora-voice-listener.service", "kora-memory-worker.service"]
+        cwd = None
+    else:
+        console.print(f"[bold red]Alvo inválido: {args.target}")
+        sys.exit(1)
+
+    with console.status("Kora está pensando...") as status:
+        success = dispatcher.execute(cmd, cwd=cwd)
+
+    if success:
+        console.print(f"Prontinho, Ragton. atualizar {args.target} finalizada com sucesso.")
+    else:
+        console.print(f"[bold red]Erro ao executar atualizar {args.target}.")
+        sys.exit(1)
+
+
+def handle_rodar(args: argparse.Namespace) -> None:
+    dispatcher = CommandDispatcher()
+    console = Console()
+    
+    if args.target == "api":
+        cmd = ["systemctl", "--user", "restart", "kora-api.service"]
+        with console.status("Kora está pensando...") as status:
+            success = dispatcher.execute(cmd)
+        if success:
+            console.print("Prontinho, Ragton. rodar api finalizada com sucesso.")
+        else:
+            console.print("[bold red]Erro ao executar rodar api.")
+            sys.exit(1)
+            
+    elif args.target == "doctor":
+        with console.status("Kora está pensando...") as status:
+            handle_voice_doctor(args)
+        console.print("Prontinho, Ragton. rodar doctor finalizada com sucesso.")
+        
+    elif args.target == "assistant":
+        # starts the listener
+        console.print("[bold yellow]Iniciando assistente de voz...")
+        handle_listen(args)
+        console.print("Prontinho, Ragton. rodar assistant finalizada com sucesso.")
+
+
+def handle_fazer(args: argparse.Namespace) -> None:
+    dispatcher = CommandDispatcher()
+    console = Console()
+    tarefa = args.tarefa
+    
+    # Log the dispatched task in cli.log
+    dispatcher.log_command(["fazer", tarefa], True)
+    
+    with console.status("Kora está pensando...") as status:
+        try:
+            if "luz" in tarefa.lower() or "home assistant" in tarefa.lower() or "ha" in tarefa.lower():
+                # Route to Home Assistant
+                res = asyncio.run(call_ha("light.living_room", "on" if "liga" in tarefa.lower() else "off"))
+            else:
+                # Default: route to n8n workflow
+                res = asyncio.run(trigger_n8n("kora-task", {"task": tarefa}))
+                
+            success = (res.get("status") in ("success", "stub_success"))
+        except Exception as e:
+            console.print(f"[bold red]Erro no dispatcher: {e}")
+            success = False
+
+    if success:
+        console.print(f"Prontinho, Ragton. {tarefa} finalizada com sucesso.")
+    else:
+        console.print(f"[bold red]Falha ao executar tarefa: {tarefa}.")
+        sys.exit(1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Kora Personal Assistant CLI")
     parser.add_argument("--url", help="Override KORA_API_URL")
@@ -532,7 +690,8 @@ def main() -> None:
     subparsers.add_parser("health", help="Check API and dependencies health")
 
     # status
-    subparsers.add_parser("status", help="Get service metadata and uptime")
+    status_parser = subparsers.add_parser("status", help="Get service metadata and uptime or system status")
+    status_parser.add_argument("target", nargs="?", default="kora", choices=["kora", "nixos", "brain"], help="Alvo do status")
 
     # capabilities
     subparsers.add_parser("capabilities", help="List active and planned capabilities")
@@ -634,8 +793,8 @@ def main() -> None:
 
     # voice vad
     vad_parser = voice_subparsers.add_parser("vad", help="Voice Activity Detection")
-    vad_subparsers = vad_parser.add_subparsers(dest="voice_vad_command", required=True)
-    vad_subparsers.add_parser("test", help="Test VAD (record until silence)")
+    subparsers_vad = vad_parser.add_subparsers(dest="voice_vad_command", required=True)
+    subparsers_vad.add_parser("test", help="Test VAD (record until silence)")
 
     # voice signal
     signal_parser = voice_subparsers.add_parser("signal", help="Play a signal sound")
@@ -700,6 +859,18 @@ def main() -> None:
     bench_subparsers = bench_parser.add_subparsers(dest="bench_command", required=True)
     bench_subparsers.add_parser("quality", help="Run quality guard scenario tests")
 
+    # -----------------------------------------------------------------------
+    # New Action Subcommands
+    # -----------------------------------------------------------------------
+    atualizar_parser = subparsers.add_parser("atualizar", help="Atualizar componentes do sistema ou assistente")
+    atualizar_parser.add_argument("target", choices=["nixos", "kora"], help="Alvo a atualizar")
+
+    rodar_parser = subparsers.add_parser("rodar", help="Executar/gerenciar serviços da Kora")
+    rodar_parser.add_argument("target", choices=["api", "doctor", "assistant"], help="Alvo a rodar")
+
+    fazer_parser = subparsers.add_parser("fazer", help="Enviar tarefa para o dispatcher")
+    fazer_parser.add_argument("tarefa", help="Descrição da tarefa a executar")
+
     args, remaining = parser.parse_known_args()
 
     # Plain-text shorthand: `kora oii` → treat as `kora ask "oii"`
@@ -745,7 +916,7 @@ def main() -> None:
             handle_voice_speak(args)
         elif args.voice_command == "voices":
             handle_voice_voices(args)
-        elif args.voice_command == "service":
+        elif args.command == "service":
             handle_voice_service(args)
         elif args.voice_command == "daemon":
             handle_voice_daemon(args)
@@ -759,7 +930,7 @@ def main() -> None:
             elif args.voice_models_command == "install":
                 handle_voice_models_install(args)
             elif args.voice_models_command == "import":
-                from .voice import models as voice_models
+                from ..voice import models as voice_models
                 voice_models.cmd_import_piper(args.import_name, args.model, args.config)
         elif args.voice_command == "vad":
             if args.voice_vad_command == "test":
@@ -781,8 +952,14 @@ def main() -> None:
         handle_training(args)
     elif args.command == "benchmark":
         if args.bench_command == "quality":
-            from .eval import quality_eval
+            from ..eval import quality_eval
             quality_eval.run_benchmarks()
+    elif args.command == "atualizar":
+        handle_atualizar(args)
+    elif args.command == "rodar":
+        handle_rodar(args)
+    elif args.command == "fazer":
+        handle_fazer(args)
 
 
 if __name__ == "__main__":

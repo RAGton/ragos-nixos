@@ -29,7 +29,98 @@ def _find_piper_bin() -> str | None:
 
 def speak_text(text: str) -> None:
     """Sintetiza texto com Piper usando o preset ativo."""
-    speak_text_with_preset(text, preset=None)  # None → carrega preset ativo automaticamente
+    synthesize_text(text)
+
+
+def synthesize_text(text: str) -> None:
+    """
+    Sintetiza texto usando piper-tts para um arquivo WAV temporário
+    e o reproduz usando ffplay ou aplay.
+    """
+    if not text:
+        return
+
+    # Import tardio para evitar ciclo
+    from .config import PIPER_MODEL_PATH, PIPER_CONFIG_PATH
+
+    piper_bin = _find_piper_bin()
+    if not piper_bin:
+        logger.warning("piper-tts não encontrado no PATH — executando fallback spd-say.")
+        _fallback_spd_say(text)
+        return
+
+    model_path = Path(PIPER_MODEL_PATH)
+    if not model_path.exists():
+        logger.warning(
+            f"Modelo Piper não encontrado em {model_path} — executando fallback spd-say.\n"
+            "  → Execute: kora voice models install piper faber"
+        )
+        _fallback_spd_say(text)
+        return
+
+    # Create temporary WAV file
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+        temp_wav_path = f.name
+
+    try:
+        # Construct piper-tts command
+        piper_cmd = [
+            piper_bin,
+            "--model", str(model_path),
+            "--output_file", temp_wav_path
+        ]
+
+        # Config opcional
+        config_path = Path(PIPER_CONFIG_PATH)
+        if config_path.exists():
+            piper_cmd += ["--config", str(config_path)]
+
+        logger.info(f"TTS: Sintetizando em {temp_wav_path}...")
+        
+        # Execute piper-tts writing text to stdin
+        piper_proc = subprocess.Popen(
+            piper_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+        piper_proc.communicate(input=text.encode("utf-8"))
+        piper_proc.wait()
+
+        # Check if the temporary WAV file was written successfully
+        if os.path.exists(temp_wav_path) and os.path.getsize(temp_wav_path) > 0:
+            ffplay_bin = shutil.which("ffplay")
+            aplay_bin = shutil.which("aplay")
+
+            if ffplay_bin:
+                logger.info("TTS: Reproduzindo via ffplay...")
+                subprocess.run([
+                    ffplay_bin,
+                    "-nodisp",
+                    "-autoexit",
+                    "-loglevel", "quiet",
+                    temp_wav_path
+                ], check=True)
+            elif aplay_bin:
+                logger.info("TTS: Reproduzindo via aplay...")
+                subprocess.run([aplay_bin, temp_wav_path], check=True)
+            else:
+                logger.warning("Nenhum reprodutor de áudio (ffplay ou aplay) encontrado no PATH.")
+        else:
+            logger.error("Arquivo temporário WAV não foi gerado pelo piper-tts.")
+            _fallback_spd_say(text)
+
+    except Exception as e:
+        logger.error(f"Erro em synthesize_text: {e}")
+        _fallback_spd_say(text)
+    finally:
+        try:
+            if os.path.exists(temp_wav_path):
+                os.unlink(temp_wav_path)
+        except Exception as cleanup_err:
+            logger.warning(f"Erro ao limpar arquivo de áudio temporário {temp_wav_path}: {cleanup_err}")
+
 
 
 

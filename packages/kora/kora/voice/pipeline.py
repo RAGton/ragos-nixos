@@ -152,19 +152,20 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha", sin
     try:
         while True:
             if push_to_talk:
-                print(f"\n  \033[2m[Pressione ENTER para falar ou Ctrl+C para sair]\033[0m")
-                input()
-                print("  \033[33m🎙 Gravando... (ENTER para parar)\033[0m")
-                audio_path = recorder.record_until_keypress("last_input.wav")
+                from ..utils.lock import HardwareLock
+                with HardwareLock():
+                    print(f"\n  \033[2m[Pressione ENTER para falar ou Ctrl+C para sair]\033[0m")
+                    input()
+                    print("  \033[33m🎙 Gravando... (ENTER para parar)\033[0m")
+                    audio_path = recorder.record_until_keypress("last_input.wav")
             else:
-                # VAD mode — records until 1s of silence
-                if not single_turn:
-                    print(f"\n  \033[2m[Fale a qualquer momento ou Ctrl+C para sair]\033[0m")
-                play_wake()
-                print("  \033[33m🎙 Ouvindo...\033[0m")
-                audio_path, duration = record_with_vad(
-                    KORA_VOICE_TMP_DIR / "last_input.wav"
-                )
+                from ..utils.lock import HardwareLock
+                with HardwareLock():
+                    if not single_turn:
+                        print(f"\n  \033[2m[Fale a qualquer momento ou Ctrl+C para sair]\033[0m")
+                    play_wake()
+                    print("  \033[33m🎙 Ouvindo (gravando 5s)...\033[0m")
+                    audio_path = recorder.record_to_file("last_input.wav", seconds=5)
 
             print("  \033[2m... processando áudio ...\033[0m")
             text = transcribe_audio(audio_path, user=user)
@@ -232,3 +233,62 @@ async def listen_and_respond(push_to_talk: bool = True, user: str = "rocha", sin
         play_error()
         logger.error(f"Pipeline error: {e}")
         print(f"\n  \033[31m[Erro fatal no pipeline de voz: {e}]\033[0m\n")
+
+
+async def run_voice_pipeline(user: str = "rocha") -> None:
+    """
+    Standalone main voice orchestration pipeline:
+    1. Waits for WakeWordEngine trigger.
+    2. Uses HardwareLock to record 5 seconds of audio.
+    3. Transcribes using faster-whisper.
+    4. Submits to orchestrator.py (GraphRAG).
+    5. Receives response.
+    6. Synthesizes response using piper-tts (TTS).
+    """
+    from .wakeword import WakeWordEngine
+    from ..utils.lock import HardwareLock
+    from .tts import synthesize_text
+
+    engine = WakeWordEngine()
+    recorder = KoraRecorder()
+    loop = asyncio.get_running_loop()
+
+    logger.info("Pipeline de voz iniciado. Aguardando wake-word...")
+    try:
+        while True:
+            # 1. Wait for wake-word engine trigger
+            detected = await loop.run_in_executor(None, engine.listen)
+            if detected:
+                logger.info("Wake-word detectada no pipeline principal!")
+                # 4. Exclusividade: Use HardwareLock to protect microphone recording
+                with HardwareLock():
+                    engine.stream.close()
+                    play_wake()
+                    # 2. Record 5 seconds of audio
+                    audio_path = recorder.record_to_file("last_input.wav", seconds=5)
+                
+                # 3. Transcribe audio (STT)
+                text = transcribe_audio(audio_path, user=user)
+                if not text or len(text.strip()) < 3:
+                    continue
+
+                play_thinking()
+                # 4. Send to orchestrator.py (GraphRAG) and 5. Receive response
+                resp = await process_message(
+                    text,
+                    session_id="voice-current",
+                    user=user,
+                    mode="auto",
+                    is_voice=True
+                )
+                answer = resp.get("answer", "Sem resposta.")
+                play_done()
+
+                # 6. Synthesize response (TTS)
+                synthesize_text(answer)
+            await asyncio.sleep(0.02)
+    except KeyboardInterrupt:
+        logger.info("Pipeline de voz interrompido pelo usuário.")
+    except Exception as e:
+        logger.error(f"Erro fatal no pipeline de voz: {e}")
+
