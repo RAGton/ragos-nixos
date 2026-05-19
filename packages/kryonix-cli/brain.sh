@@ -2464,7 +2464,7 @@ _brain_glacier_ssh() {
 _brain_svc_start() {
   local svc="$1"
 
-  if ! systemctl cat "$svc" &>/dev/null; then
+  if ! systemctl cat "$svc" --no-pager &>/dev/null; then
     printf '  %-26s  não configurado (pulando)\n' "$svc"
     return 0
   fi
@@ -2495,7 +2495,7 @@ _brain_svc_start() {
 _brain_svc_stop() {
   local svc="$1"
 
-  if ! systemctl cat "$svc" &>/dev/null; then
+  if ! systemctl cat "$svc" --no-pager &>/dev/null; then
     return 0
   fi
 
@@ -2521,7 +2521,7 @@ kryonix_brain_stack_status() {
 
   local svc
   for svc in "${services[@]}"; do
-    if ! systemctl cat "$svc" &>/dev/null; then
+    if ! systemctl cat "$svc" --no-pager &>/dev/null; then
       printf '%-26s  %-10s  %s\n' "$svc" "n/a" "(não configurado)"
       continue
     fi
