@@ -76,6 +76,24 @@ class QualityGuard:
                     repaired_answer="Você tem razão. Faltou responder uma parte da sua pergunta. Como posso complementar as informações que faltaram de forma direta?"
                 )
 
+        # 5. GraphRAG Grounding & Citation Check
+        if context.get("active_mode") == "rag":
+            from kora.core.grounding import requires_rag
+            if plan.intent == "PROJECT_KNOWLEDGE" or requires_rag(user_text):
+                has_citation = "[" in answer and "]" in answer
+                is_refusal = (
+                    "não encontrei grounding" in lower_answer
+                    or "não tenho certeza" in lower_answer
+                    or "síntese falhou" in lower_answer
+                    or "sintese falhou" in lower_answer
+                )
+                if not has_citation or is_refusal:
+                    return QualityResult(
+                        passed=False,
+                        reason="A resposta para uma query técnica não contém citações do grafo ou indica falta de grounding.",
+                        repaired_answer="Não tenho conhecimento estruturado sobre isso no momento. Por favor, ingira a documentação ou notas correspondentes no meu Obsidian Vault ou registre uma proposta de aprendizado para que eu possa aprender."
+                    )
+
         # Check if must_answer items are somewhat represented (basic heuristic)
         # We won't strictly fail this via regex because LLMs rephrase, but we can log.
         if len(answer.strip()) < 10:

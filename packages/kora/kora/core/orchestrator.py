@@ -238,10 +238,24 @@ async def _prepare_session_and_context(
 
     context_text = ""
     brain_used = False
+    searched_files = []
     if active_mode == "rag":
         brain_result = await brain_adapter.search(query=message)
-        if brain_result.get("status") != "error" and brain_result.get("answer"):
-            context_text = brain_result["answer"]
+        status = brain_result.get("status")
+        answer_text = brain_result.get("answer", "")
+        
+        is_no_grounding = (
+            status in ["no_grounding", "low_confidence"]
+            or "não encontrei grounding suficiente" in answer_text.lower()
+            or "grounding recuperado, mas" in answer_text.lower()
+        )
+        
+        sources = brain_result.get("sources", [])
+        if sources:
+            searched_files = list(dict.fromkeys(s.get("file") for s in sources if s.get("file")))
+            
+        if not is_no_grounding and answer_text:
+            context_text = answer_text
             brain_used = True
 
     # Injecting capabilities/status awareness to avoid hallucination
@@ -253,6 +267,7 @@ async def _prepare_session_and_context(
         "context_text": context_text,
         "active_mode": active_mode,
         "brain_used": brain_used,
+        "searched_files": searched_files,
         "start_time": t0,
         "trust_level": identity_trust,
         "wake_word_ready": False,
@@ -390,6 +405,28 @@ async def process_message(
             }
 
     ctx = await _prepare_session_and_context(message, session_id, normalized.user_id, speaker, is_voice, mode, intent=route.intent)
+
+    if ctx["active_mode"] == "rag" and not ctx["brain_used"]:
+        from kora.core.grounding import requires_rag
+        if requires_rag(message) or route.intent == Intent.PROJECT_KNOWLEDGE:
+            files_str = ""
+            if ctx.get("searched_files"):
+                files_str = "\n\nArquivos consultados no índice:\n" + "\n".join(f"- {f}" for f in ctx["searched_files"][:5])
+            
+            refusal_msg = (
+                "Não encontrei informações suficientes no meu cérebro técnico (GraphRAG/Vault) para responder sobre isso com segurança.\n\n"
+                "Por favor, ingira a documentação ou notas correspondentes no meu Obsidian Vault ou registre uma proposta de aprendizado para que eu possa aprender."
+                f"{files_str}"
+            )
+            
+            return {
+                "answer": refusal_msg,
+                "action": None,
+                "mode": "rag",
+                "brain_used": False,
+                "elapsed_sec": time.monotonic() - t0,
+                "model": "kora-anti-hallucination",
+            }
     planner = AnswerPlanner()
     plan = await planner.plan(message, route.intent, ctx["trust_level"])
 

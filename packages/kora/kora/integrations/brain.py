@@ -62,24 +62,56 @@ async def search(
     """
     Search the Brain knowledge base via RAG/GraphRAG.
 
-    Returns search results with grounding info, or error dict if unavailable.
+    Tries GraphTraversal (hybrid/global mode) first, falling back to VectorSearch (naive) if score is low.
     """
+    # 1. Tentar GraphTraversal (modo híbrido/grafo por padrão)
+    graph_mode = mode if mode in ["hybrid", "global", "local"] else "hybrid"
     payload = {
         "query": query,
-        "mode": mode,
+        "mode": graph_mode,
         "intent": intent,
         "lang": lang,
     }
 
     try:
         async with httpx.AsyncClient(timeout=BRAIN_TIMEOUT) as client:
+            logger.info("Tentando GraphTraversal (mode=%s)...", graph_mode)
             resp = await client.post(
                 f"{BRAIN_URL}/search",
                 json=payload,
                 headers=_headers(),
             )
             resp.raise_for_status()
-            return resp.json()
+            res = resp.json()
+
+            # Verificar se a pontuação é baixa (retrieval_score < 0.5)
+            retrieval_score = res.get("retrieval_score") or res.get("grounding", {}).get("retrieval_score", 0.0)
+            grounding_label = res.get("grounding", {}).get("grounding_label", "")
+
+            if retrieval_score < 0.5 or grounding_label == "Baixa" or res.get("status") == "no_grounding":
+                logger.info(
+                    "GraphTraversal pontuação baixa (score=%.3f, label=%s). Seguindo para VectorSearch (naive)...",
+                    retrieval_score,
+                    grounding_label,
+                )
+                # 2. Seguir para VectorSearch (naive mode)
+                payload["mode"] = "naive"
+                try:
+                    resp_fallback = await client.post(
+                        f"{BRAIN_URL}/search",
+                        json=payload,
+                        headers=_headers(),
+                    )
+                    if resp_fallback.status_code == 200:
+                        fallback_res = resp_fallback.json()
+                        fallback_score = fallback_res.get("retrieval_score") or fallback_res.get("grounding", {}).get("retrieval_score", 0.0)
+                        if fallback_score > retrieval_score:
+                            logger.info("VectorSearch (naive) retornou pontuação melhor (score=%.3f). Usando fallback.", fallback_score)
+                            return fallback_res
+                except Exception as fe:
+                    logger.warning("Erro ao tentar fallback de VectorSearch: %s", fe)
+
+            return res
     except httpx.ConnectError:
         logger.warning("Brain API offline — search unavailable")
         return {
