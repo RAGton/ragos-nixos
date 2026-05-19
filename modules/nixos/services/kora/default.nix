@@ -40,6 +40,10 @@ let
 
 in
 {
+  imports = [
+    ./voice.nix
+  ];
+
   options.kryonix.services.kora = {
     enable = mkEnableOption "Kora Personal Assistant (gateway/orchestrator)";
 

@@ -18,12 +18,13 @@ from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from ..audit.events import log_event
-from ..core.config import load_system_prompt
+from ..core.config import load_system_prompt, NEO4J_URI
 from ..core.policy import AUTHORIZED_ADMINS, PolicyContext, RiskLevel, classify_command
 from ..integrations import brain as brain_adapter
 from ..integrations.n8n import N8nClient
 from ..llm import ollama as ollama_adapter
 from ..memory import MemoryCandidate, MemoryClassifier, MemoryQueue, MemoryType
+from ..memory.graph import Neo4jGraphProvider
 from .grounding import requires_rag, validate_command_hallucination
 from .tool_registry import get_registry_summary, find_tool
 from .conversation import get_recent_turns
@@ -40,7 +41,7 @@ from .capabilities import get_deterministic_capabilities_response
 from .answer_planner import AnswerPlanner
 from .quality import QualityGuard
 from .normalizer import normalize_text
-from ..mind import KoraMind, MindInput
+from ..mind import KoraMind, MindInput, MindConstructor, MindResult
 from ..training import record_interaction
 
 logger = logging.getLogger("kora.core.orchestrator")
@@ -89,6 +90,59 @@ def _check_and_invalidate_cache():
 
 ACTION_PROPOSAL_RE = re.compile(r"```json\s*(\{.*?" + re.escape('"type": "action_proposal"') + r".*?\})\s*```", re.DOTALL)
 SESSION_METADATA: Dict[str, Any] = {}
+
+# Shared async Neo4j driver — created lazily, never recreated within the process.
+_neo4j_driver: Any = None
+
+
+def _get_neo4j_driver() -> Any | None:
+    """Return the module-level async Neo4j driver, creating it on first call."""
+    global _neo4j_driver
+    if _neo4j_driver is not None:
+        return _neo4j_driver
+    try:
+        from neo4j import AsyncGraphDatabase
+        _neo4j_driver = AsyncGraphDatabase.driver(NEO4J_URI)
+        logger.info("Neo4j async driver initialised (uri=%s)", NEO4J_URI)
+    except Exception as exc:
+        logger.warning("Neo4j driver unavailable — graph context disabled: %s", exc)
+        _neo4j_driver = None
+    return _neo4j_driver
+
+
+async def _query_graph_context(
+    query: str, top_k: int = 3
+) -> tuple[str, str, str | None]:
+    """
+    Query the Neo4j knowledge graph for nodes related to *query*.
+
+    Returns
+    -------
+    (prompt_block, raw_json, graph_node_id)
+        *prompt_block*   — markdown block ready for system prompt injection.
+        *raw_json*       — bare JSON string for MindConstructor reasoning.
+        *graph_node_id*  — first node id for audit (None if no results).
+    All three are empty/None when the driver is unavailable or no nodes found.
+    """
+    driver = _get_neo4j_driver()
+    if driver is None:
+        return "", "", None
+
+    provider = Neo4jGraphProvider(driver)
+    nodes = await provider.retrieve_context(query, top_k=top_k)
+
+    if not nodes:
+        logger.debug("GraphRAG: no nodes found for query=%r", query)
+        return "", "", None
+
+    graph_node_id: str | None = nodes[0].get("id")
+    raw_json = Neo4jGraphProvider.format_for_prompt(nodes)
+    prompt_block = (
+        "\n\n## Memória de Longo Prazo (GraphRAG — Neo4j)\n"
+        "Os seguintes nós do grafo de conhecimento são relevantes para esta query:\n"
+        f"```json\n{raw_json}\n```"
+    )
+    return prompt_block, raw_json, graph_node_id
 
 async def _prepare_session_and_context(
     message: str,
@@ -432,25 +486,83 @@ async def process_message(
         profile = identity_ctx["resolved_identity"]
         system_state["capabilities_summary"] = get_deterministic_capabilities_response(normalized.user_id, profile)
 
-    mind = KoraMind()
-    mind_output = await mind.respond(
-        MindInput(
-            user_text=original_message,
-            normalized_text=message,
-            user_id=normalized.user_id,
-            identity_trust=ctx["identity_trust"],
-            source="voice" if is_voice else "text",
-            intent=route.intent,
-            conversation_history=get_recent_turns(limit=6),
-            profile_context=ctx.get("profile_context", ""),
-            system_state=system_state,
-            safety_context=ctx.get("safety_context", {}),
-        ),
-        system_prompt=ctx["system_prompt"],
-        rag_context=ctx["context_text"],
+    # ── GraphRAG: query Neo4j knowledge graph ─────────────────────────────
+    graph_prompt_block, graph_raw_json, graph_node_id = await _query_graph_context(
+        message, top_k=3
     )
 
-    raw_answer = mind_output.answer
+    # Keep the base prompt so fallback can restore it (no RAG on failure).
+    system_prompt_base = ctx["system_prompt"]
+    raw_answer = ""
+    mind_result: MindResult | None = None
+
+    # ── MindConstructor: Plan → Critique → Synthesize ─────────────────────
+    if graph_raw_json:
+        ctx["system_prompt"] = system_prompt_base + graph_prompt_block
+        log_event(
+            event_type="graph_retrieval",
+            description="GraphRAG context retrieved for MindConstructor",
+            metadata={
+                "session_id": session_id,
+                "user": user,
+                "query": message[:200],
+                "graph_node_id": graph_node_id,
+            },
+            risk="read_only",
+        )
+        try:
+            constructor = MindConstructor(session_id=session_id)
+            mind_result = await constructor.execute(
+                query=message,
+                graph_context=graph_raw_json,
+                system_prompt=ctx["system_prompt"],
+            )
+            raw_answer = mind_result.answer
+            logger.info(
+                "MindConstructor chain completed | session=%s confidence=%.2f approved=%s",
+                session_id,
+                mind_result.confidence,
+                mind_result.critique_approved,
+            )
+        except Exception as exc:
+            logger.warning(
+                "MindConstructor failed, falling back to KoraMind (no RAG): %s",
+                exc,
+            )
+            log_event(
+                event_type="mind_constructor_fallback",
+                description="MindConstructor failed; KoraMind will answer without RAG",
+                metadata={
+                    "session_id": session_id,
+                    "user": user,
+                    "reason": str(exc)[:300],
+                },
+                risk="read_only",
+            )
+            # Restore original prompt — fallback must NOT include RAG context.
+            ctx["system_prompt"] = system_prompt_base
+            raw_answer = ""
+
+    # ── KoraMind: fallback or no-graph path ───────────────────────────────
+    if not raw_answer:
+        mind = KoraMind()
+        mind_output = await mind.respond(
+            MindInput(
+                user_text=original_message,
+                normalized_text=message,
+                user_id=normalized.user_id,
+                identity_trust=ctx["identity_trust"],
+                source="voice" if is_voice else "text",
+                intent=route.intent,
+                conversation_history=get_recent_turns(limit=6),
+                profile_context=ctx.get("profile_context", ""),
+                system_state=system_state,
+                safety_context=ctx.get("safety_context", {}),
+            ),
+            system_prompt=ctx["system_prompt"],
+            rag_context=ctx["context_text"],
+        )
+        raw_answer = mind_output.answer
     answer, action = await _handle_action_proposal(raw_answer, user, session_id)
 
     guard = QualityGuard()
@@ -460,6 +572,13 @@ async def process_message(
         answer = q_result.repaired_answer
 
     asyncio.create_task(_process_background_memory(message, answer, normalized.user_id))
+
+    # ── Self-heal: trigger knowledge audit when MindConstructor was uncertain ──
+    if mind_result is not None and (
+        mind_result.is_low_confidence or not mind_result.critique_approved
+    ):
+        asyncio.create_task(_background_self_heal(session_id, message, mind_result))
+
     from .conversation import append_turn
     append_turn(user_text=message, assistant_text=answer, intent=route.intent)
 
@@ -560,6 +679,62 @@ async def _process_background_memory(message: str, answer: str, user: str):
                 queue.push(c)
     except Exception as e:
         logger.error("Background memory processing failed: %s", e)
+
+async def _background_self_heal(
+    session_id: str,
+    query: str,
+    result: "MindResult",
+) -> None:
+    """
+    Background task: audit thought history for the failing query and stage
+    a knowledge-graph triple for human review via KnowledgeResearcher.
+
+    Never writes to Neo4j directly — all proposed changes go through
+    the HitL staging pipeline (status=pending_review).
+    Exceptions are logged and swallowed so callers are never affected.
+    """
+    try:
+        from ..mind.auditor import ThoughtAuditor
+        from ..agents.researcher import KnowledgeResearcher
+
+        auditor = ThoughtAuditor()
+        failures = auditor.get_frequent_failures(confidence_threshold=0.65)
+
+        target = next(
+            (f for f in failures if f.query.startswith(query[:50])),
+            None,
+        )
+        if target is None:
+            logger.debug("Self-heal: no frequent failure recorded for query=%s", query[:60])
+            return
+
+        researcher = KnowledgeResearcher()
+        staged = await researcher.research_and_stage(target)
+        if staged:
+            log_event(
+                event_type="self_heal_staged",
+                description="KnowledgeResearcher staged a triple for human review",
+                metadata={
+                    "session_id":  session_id,
+                    "query":       query[:200],
+                    "triple_id":   staged.triple_id,
+                    "subject":     staged.triple.subject_id,
+                    "predicate":   staged.triple.predicate,
+                    "object":      staged.triple.object_id,
+                },
+                risk="read_only",
+            )
+            logger.info(
+                "Self-heal staged triple %s | session=%s confidence=%.2f",
+                staged.triple_id, session_id, result.confidence,
+            )
+        else:
+            logger.debug(
+                "Self-heal: no evidence found for query=%s", query[:60]
+            )
+    except Exception as exc:
+        logger.warning("_background_self_heal failed silently: %s", exc)
+
 
 async def confirm_pending_action(session_id: str = "default") -> dict[str, Any]:
     state_file = Path.home() / ".local/state/kryonix/kora/pending_action.json"

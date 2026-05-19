@@ -1,20 +1,20 @@
-# =============================================================================
-# Kora Voice — Daemon
-# =============================================================================
-
-import os
-import time
-import json
 import asyncio
+import contextlib
+import json
 import logging
+import os
 import signal
+import time
 from enum import Enum
 from pathlib import Path
 
-from .wakeword import WakeWordEngine
+from .exceptions import HardwareAccessError, ServiceUnreachable
+from .monitor import ping_orchestrator, retry_connection
 from .pipeline import listen_and_respond
+from .wakeword import WakeWordEngine
 
 logger = logging.getLogger("kora.voice.daemon")
+
 
 class KoraVoiceState(Enum):
     IDLE = "idle"
@@ -24,91 +24,141 @@ class KoraVoiceState(Enum):
     MUTED = "muted"
     BLOCKED = "blocked"
     CONFIRMING = "confirming"
+    RECONNECTING = "reconnecting"
 
 
 def setup_voice_logging() -> None:
-    """Configures daemon logging to write specifically to ~/.kryonix/logs/voice.log"""
     log_dir = Path.home() / ".kryonix" / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / "voice.log"
 
-    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    
-    file_handler = logging.FileHandler(log_file, encoding="utf-8")
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.INFO)
-    
-    # Configure the logger for 'kora' package
-    root_logger = logging.getLogger("kora")
-    root_logger.setLevel(logging.INFO)
-    root_logger.addHandler(file_handler)
-    
-    # Console logging as fallback
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.INFO)
-    root_logger.addHandler(console_handler)
+    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    fh = logging.FileHandler(log_dir / "voice.log", encoding="utf-8")
+    fh.setFormatter(fmt)
+    fh.setLevel(logging.INFO)
+
+    ch = logging.StreamHandler()
+    ch.setFormatter(fmt)
+    ch.setLevel(logging.INFO)
+
+    root = logging.getLogger("kora")
+    root.setLevel(logging.INFO)
+    root.addHandler(fh)
+    root.addHandler(ch)
 
 
 class KoraVoiceDaemon:
+    _HEARTBEAT_INTERVAL = 30.0
+
     def __init__(self) -> None:
         self.state = KoraVoiceState.IDLE
         self.muted = False
         self.running = False
         self.wakeword_engine = WakeWordEngine()
-        self._loop = None
+        self._loop: asyncio.AbstractEventLoop | None = None
         self.state_file = Path(f"/run/user/{os.getuid()}/kryonix/voice_state.json")
+        self._reconnect_ok: asyncio.Event = asyncio.Event()
+        self._heartbeat_task: asyncio.Task | None = None
+
+    # ── State management ────────────────────────────────────────────────────
 
     def update_state(self, state: KoraVoiceState) -> None:
-        if self.state != state:
-            self.state = state
-            logger.info(f"State transition to: {state.value}")
+        if self.state == state:
+            return
+        self.state = state
+        logger.info("State → %s", state.value)
+        try:
+            self.state_file.parent.mkdir(parents=True, exist_ok=True)
+            self.state_file.write_text(json.dumps({
+                "state": state.value,
+                "muted": self.muted,
+                "running": self.running,
+                "timestamp": time.time(),
+            }))
+        except Exception as e:
+            logger.warning("Failed to write state file: %s", e)
+
+    # ── Heartbeat ────────────────────────────────────────────────────────────
+
+    async def _heartbeat_cycle(self) -> None:
+        """Single health probe. Extracted for testability."""
+        healthy = await ping_orchestrator()
+        if healthy:
+            if self.state == KoraVoiceState.RECONNECTING:
+                logger.info("Orchestrator reachable again — resuming normal operation.")
+                self._reconnect_ok.set()
+                self.update_state(KoraVoiceState.IDLE)
+        else:
+            if self.state != KoraVoiceState.RECONNECTING:
+                logger.warning(
+                    "Orchestrator unreachable — entering RECONNECTING state."
+                )
+            self._reconnect_ok.clear()
+            self.update_state(KoraVoiceState.RECONNECTING)
+
+    @retry_connection
+    async def _reconnect_probe(self) -> None:
+        """Called during RECONNECTING. Retries with exponential backoff until healthy."""
+        healthy = await ping_orchestrator()
+        if not healthy:
+            raise ServiceUnreachable("Orchestrator still unreachable")
+        logger.info("Reconnected to orchestrator after outage.")
+        self._reconnect_ok.set()
+        self.update_state(KoraVoiceState.IDLE)
+
+    async def _heartbeat_loop(self) -> None:
+        """Background task: probes every HEARTBEAT_INTERVAL; uses backoff in RECONNECTING."""
+        while self.running:
             try:
-                self.state_file.parent.mkdir(parents=True, exist_ok=True)
-                state_data = {
-                    "state": state.value,
-                    "muted": self.muted,
-                    "running": self.running,
-                    "timestamp": time.time()
-                }
-                self.state_file.write_text(json.dumps(state_data))
+                if self.state == KoraVoiceState.RECONNECTING:
+                    await self._reconnect_probe()
+                else:
+                    await asyncio.sleep(self._HEARTBEAT_INTERVAL)
+                    await self._heartbeat_cycle()
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
-                logger.warning(f"Failed to write state file: {e}")
+                logger.error("Heartbeat loop error: %s", e)
+                await asyncio.sleep(5.0)
+
+    # ── Interaction trigger ──────────────────────────────────────────────────
 
     async def handle_trigger(self) -> None:
-        """Handle wake-word detection trigger."""
-        self.update_state(KoraVoiceState.LISTENING)
-        logger.info("Wake-word triggered! Starting interaction...")
+        if self.state == KoraVoiceState.RECONNECTING:
+            logger.warning("Wake-word trigger skipped — daemon in RECONNECTING state.")
+            return
 
+        self.update_state(KoraVoiceState.LISTENING)
+        logger.info("Wake-word triggered — starting interaction.")
         try:
-            # Safely close the engine's stream so the recorder can open it
             self.wakeword_engine.stream.close()
-            
-            # We call the pipeline, ensuring it runs one interaction loop
             await listen_and_respond(push_to_talk=False, single_turn=True)
+        except (OSError, IOError) as e:
+            logger.error("Audio hardware error: %s", e)
+            raise HardwareAccessError(str(e)) from e
         except Exception as e:
-            logger.error(f"Error in triggered interaction: {e}")
+            logger.error("Interaction error: %s", e)
         finally:
-            self.update_state(KoraVoiceState.IDLE)
+            if self.state != KoraVoiceState.RECONNECTING:
+                self.update_state(KoraVoiceState.IDLE)
+
+    # ── Main loop ────────────────────────────────────────────────────────────
 
     async def start(self) -> None:
-        """Start the background listener daemon."""
         self.running = True
         self._loop = asyncio.get_running_loop()
-        
-        self.update_state(KoraVoiceState.IDLE)
-        logger.info("Kora Voice Daemon: Loop started.")
-        
-        last_log_time = 0.0
+        self._reconnect_ok.set()  # Assume healthy at startup
 
+        self._heartbeat_task = asyncio.create_task(
+            self._heartbeat_loop(), name="kora-voice-heartbeat"
+        )
+        self.update_state(KoraVoiceState.IDLE)
+        logger.info("Kora Voice Daemon: loop started.")
+
+        last_log_time = 0.0
         try:
             while self.running:
-                # Check for mute status file `/var/lib/kryonix/kora/voice/muted`
                 mute_file = Path("/var/lib/kryonix/kora/voice/muted")
-                if mute_file.exists():
-                    self.muted = True
-                else:
-                    self.muted = False
+                self.muted = mute_file.exists()
 
                 if self.muted:
                     self.update_state(KoraVoiceState.MUTED)
@@ -122,37 +172,53 @@ class KoraVoiceDaemon:
                     await asyncio.sleep(0.5)
                     continue
 
+                if self.state == KoraVoiceState.RECONNECTING:
+                    # Audio processing paused — heartbeat task handles reconnection.
+                    self.wakeword_engine.stream.close()
+                    await asyncio.sleep(1.0)
+                    continue
+
                 if self.state == KoraVoiceState.IDLE:
-                    self.update_state(KoraVoiceState.IDLE)
-                    
-                    # Log periodic status
                     now = time.monotonic()
                     if now - last_log_time > 15.0:
                         logger.info("Kora aguardando ativação...")
                         last_log_time = now
 
-                    # Run blocking listen in executor to keep CPU usage low and avoid starvation
                     detected = await self._loop.run_in_executor(
                         None, self.wakeword_engine.listen
                     )
-
                     if detected:
                         asyncio.create_task(self.handle_trigger())
 
-                # Small sleep to prevent tight-loop CPU spike
                 await asyncio.sleep(0.02)
+
+        except asyncio.CancelledError:
+            logger.info("Daemon main loop cancelled.")
         finally:
-            self.wakeword_engine.stream.close()
-            logger.info("Kora Voice Daemon: Stopped.")
+            await self._shutdown()
+
+    async def _shutdown(self) -> None:
+        """Cancel background tasks and release audio hardware."""
+        if self._heartbeat_task and not self._heartbeat_task.done():
+            self._heartbeat_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._heartbeat_task
+        self.wakeword_engine.stream.close()
+        logger.info("Kora Voice Daemon: stopped.")
 
     def stop(self, *args) -> None:
+        """Signal-safe stop: schedules cleanup without blocking the loop."""
+        logger.info("Stop requested (signal received).")
         self.running = False
+        if self._heartbeat_task and not self._heartbeat_task.done():
+            self._heartbeat_task.cancel()
+        self.wakeword_engine.stream.close()
 
     def get_status(self) -> dict:
         return {
             "state": self.state.value,
             "muted": self.muted,
-            "running": self.running
+            "running": self.running,
         }
 
 
@@ -160,13 +226,11 @@ async def run_daemon() -> None:
     setup_voice_logging()
     daemon = KoraVoiceDaemon()
 
-    # Handle signals
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         try:
             loop.add_signal_handler(sig, daemon.stop)
         except NotImplementedError:
-            # Fallback for platforms where signal handlers aren't fully supported in asyncio
             pass
 
     await daemon.start()

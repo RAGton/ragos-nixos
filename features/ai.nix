@@ -61,6 +61,9 @@ in
         OLLAMA_HOST = "http://${cfg.brain.serverHost}:${toString cfg.brain.ollamaPort}";
         KRYONIX_BRAIN_URL = "http://${cfg.brain.serverHost}:${toString cfg.brain.brainPort}";
         KRYONIX_VAULT_MODE = "remote-readonly";
+        KORA_OLLAMA_URL = "http://${cfg.brain.serverHost}:${toString cfg.brain.ollamaPort}";
+        KORA_BRAIN_URL = "http://${cfg.brain.serverHost}:${toString cfg.brain.brainPort}";
+        KORA_API_URL = "http://${cfg.brain.serverHost}:8787";
       };
 
       environment.systemPackages = [

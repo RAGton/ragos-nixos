@@ -33,6 +33,9 @@ python3Packages.buildPythonApplication {
     edge-tts
     rich
     faster-whisper
+    neo4j
+    tenacity
+    pyyaml
   ];
 
   postInstall = ''

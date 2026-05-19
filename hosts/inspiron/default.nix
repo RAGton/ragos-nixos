@@ -110,6 +110,12 @@
     serverHost = "rve-glacier"; # GLACIER (Tailscale Hostname)
   };
 
+  # Kora voice daemon for voice-activated assistant
+  kryonix.services.kora.voice = {
+    enable = true;
+    alwaysOn = true;
+  };
+
   networking.hostName = hostname;
 
   # =========================

@@ -916,7 +916,7 @@ def main() -> None:
             handle_voice_speak(args)
         elif args.voice_command == "voices":
             handle_voice_voices(args)
-        elif args.command == "service":
+        elif args.voice_command == "service":
             handle_voice_service(args)
         elif args.voice_command == "daemon":
             handle_voice_daemon(args)
