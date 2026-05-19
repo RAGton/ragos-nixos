@@ -45,6 +45,64 @@ from ..training import record_interaction
 
 logger = logging.getLogger("kora.core.orchestrator")
 
+import collections
+import hashlib
+import httpx
+from ..llm.ollama import OLLAMA_URL
+
+class SimpleLRUCache:
+    def __init__(self, capacity: int = 256):
+        self.capacity = capacity
+        self.cache = collections.OrderedDict()
+
+    def get(self, key: str) -> Any | None:
+        if key not in self.cache:
+            return None
+        self.cache.move_to_end(key)
+        return self.cache[key]
+
+    def put(self, key: str, value: Any):
+        if key in self.cache:
+            self.cache.move_to_end(key)
+        self.cache[key] = value
+        if len(self.cache) > self.capacity:
+            self.cache.popitem(last=False)
+
+    def clear(self):
+        self.cache.clear()
+
+_CAG_CACHE = SimpleLRUCache(capacity=256)
+_LAST_GRAPH_MTIME = 0.0
+
+def _check_and_invalidate_cache():
+    global _LAST_GRAPH_MTIME
+    graph_path = Path("/var/lib/kryonix/brain/storage/graph_chunk_entity_relation.graphml")
+    if graph_path.exists():
+        try:
+            mtime = graph_path.stat().st_mtime
+            if _LAST_GRAPH_MTIME == 0.0:
+                _LAST_GRAPH_MTIME = mtime
+            elif mtime > _LAST_GRAPH_MTIME:
+                logger.info("GraphRAG index rebuild detected. Clearing CAG cache.")
+                _CAG_CACHE.clear()
+                _LAST_GRAPH_MTIME = mtime
+        except Exception as e:
+            logger.warning(f"Error checking graph file modification time: {e}")
+
+async def get_query_embedding(text: str) -> list[float] | None:
+    try:
+        payload = {
+            "model": "nomic-embed-text",
+            "prompt": text
+        }
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.post(f"{OLLAMA_URL}/api/embeddings", json=payload)
+            if resp.status_code == 200:
+                return resp.json().get("embedding")
+    except Exception as e:
+        logger.warning(f"Error fetching query embedding: {e}")
+    return None
+
 ACTION_PROPOSAL_RE = re.compile(r"```json\s*(\{.*?" + re.escape('"type": "action_proposal"') + r".*?\})\s*```", re.DOTALL)
 SESSION_METADATA: Dict[str, Any] = {}
 
@@ -282,6 +340,22 @@ async def process_message(
     normalized = normalize_text(message, user)
     message = normalized.normalized
 
+    # Cache Augmented Generation (CAG) Lookup
+    _check_and_invalidate_cache()
+    embedding = await get_query_embedding(message)
+    if embedding:
+        cache_key = hashlib.sha256(json.dumps(embedding).encode()).hexdigest()
+    else:
+        cache_key = hashlib.sha256(message.encode()).hexdigest()
+
+    cached_entry = _CAG_CACHE.get(cache_key)
+    if cached_entry:
+        logger.info(f"CAG Cache HIT for query: '{message}'")
+        cached_result = dict(cached_entry)
+        cached_result["elapsed_sec"] = time.monotonic() - t0
+        cached_result["model"] = "kora-cag-cache"
+        return cached_result
+
     router = CognitiveRouter()
     route = await router.route(message)
 
@@ -383,7 +457,7 @@ async def process_message(
         used_tool=bool(action),
     )
 
-    return {
+    response_dict = {
         "answer": answer.strip(),
         "action": action,
         "mode": ctx["active_mode"],
@@ -391,6 +465,11 @@ async def process_message(
         "elapsed_sec": time.monotonic() - t0,
         "model": "kora-mind",
     }
+
+    if response_dict["brain_used"]:
+        _CAG_CACHE.put(cache_key, response_dict)
+
+    return response_dict
 
 
 def _record_training_event(
