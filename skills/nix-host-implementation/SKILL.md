@@ -1,3 +1,8 @@
+---
+name: nix-host-implementation
+description: Aplica mudanças de host NixOS respeitando a arquitetura kryonix — alterações em hosts/, profiles/, features/ ou modules/, ajuste de host existente e validação de build por host. Use quando a tarefa envolver modificar glacier, inspiron ou qualquer host kryonix, adicionar módulo, ajustar perfil ou validar build de host específico.
+---
+
 # Skill: Nix Host Implementation
 
 ## Objetivo

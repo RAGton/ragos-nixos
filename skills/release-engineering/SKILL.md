@@ -1,3 +1,8 @@
+---
+name: release-engineering
+description: Fecha entregas kryonix com relatório curto, auditável e alinhado ao estado validado — release notes, resumo de mudança, fechamento operacional e resposta final para patches grandes. Use quando o usuário precisar documentar o que mudou, separar validações executadas de pendentes, escrever release note ou fechar uma entrega de forma verificável.
+---
+
 # Skill: Release Engineering
 
 ## Objetivo

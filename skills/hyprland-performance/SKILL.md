@@ -1,4 +1,9 @@
-# Skill: Hyprland Performance
+---
+name: hyprland-performance
+description: Diagnostica e reduz lentidão percebida em Hyprland/Caelestia no kryonix — launches lentos, animações excessivas, custo de blur/transparência e problemas de shell. Use quando o usuário reportar lentidão visual, animações pesadas, blur caro, travadas no Caelestia ou dúvida entre bug de launcher e custo gráfico do rice no glacier ou inspiron.
+---
+
+  # Skill: Hyprland Performance
 
 ## Objetivo
 

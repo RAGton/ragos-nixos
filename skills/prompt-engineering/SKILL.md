@@ -1,3 +1,8 @@
+---
+name: prompt-engineering
+description: Cria prompts seguros e completos para agentes que operam ou modificam o kryonix — define contexto do repositório, escopo, arquivos obrigatórios de leitura, regras operacionais, validações, riscos e rollback. Use quando precisar criar um prompt para qualquer agente (Copilot, Codex, Gemini, Antigravity) que vá modificar código, NixOS, Brain, RAG, modules, packages, scripts ou documentação do kryonix.
+---
+
 # Skill: Prompt Engineering para Agentes Kryonix
 
 ## Objetivo

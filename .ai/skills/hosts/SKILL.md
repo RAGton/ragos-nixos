@@ -1,3 +1,8 @@
+---
+name: hosts
+description: Mantém responsabilidades claras entre hosts kryonix (glacier, inspiron, inspiron-nina) e alinha decisões ao papel real de cada máquina. Use quando a tarefa envolver múltiplos hosts, risco de mudança global quando o problema é local, ou necessidade de documentar diferenças operacionais entre glacier e inspiron.
+---
+
 # Skill: Hosts
 
 ## Regra geral

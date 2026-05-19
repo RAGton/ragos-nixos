@@ -1,3 +1,8 @@
+---
+name: docs
+description: Atualiza documentação canônica do kryonix sem criar divergência com o código — docs curtas, técnicas e diretas, sempre alinhadas à fonte de verdade real (o código). Use quando a tarefa envolver atualizar docs/ AGENTS.md, README, runbooks ou qualquer documentação do kryonix após mudança de comportamento, mas nunca para reescrever por estilo.
+---
+
 # Skill: Docs
 
 ## Objetivo

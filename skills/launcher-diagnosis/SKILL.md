@@ -1,3 +1,8 @@
+---
+name: launcher-diagnosis
+description: Encontra e corrige a causa real de apps abrindo errado, lentos ou não abrindo pelo launcher Caelestia no kryonix — problemas com desktop entries, uwsm, app2unit, wrappers e cache. Use quando o usuário reportar regressão no launcher, app abrindo pelo binário errado, falha em uwsm app --, ou dúvida entre desktop entry, wrapper e cache no glacier ou inspiron.
+---
+
 # Skill: Launcher Diagnosis
 
 ## Objetivo

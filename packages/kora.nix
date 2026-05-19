@@ -31,6 +31,8 @@ python3Packages.buildPythonApplication {
     pyopen-wakeword
     numpy
     edge-tts
+    rich
+    faster-whisper
   ];
 
   postInstall = ''

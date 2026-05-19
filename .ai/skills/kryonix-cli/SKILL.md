@@ -1,3 +1,8 @@
+---
+name: kryonix-cli
+description: Consolida o comando kryonix como entrada única para operação diária do sistema — switch, boot, home, doctor, snapshot, generations, rollback, brain, mcp. Use quando a tarefa envolver adicionar subcomando à CLI kryonix, corrigir comportamento de comando existente, ou garantir que operações pertencentes à CLI não criem entrypoints paralelos.
+---
+
 # Skill: Kryonix CLI
 
 ## Escopo

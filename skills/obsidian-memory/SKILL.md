@@ -1,3 +1,8 @@
+---
+name: obsidian-memory
+description: Opera a camada de memória local do usuário no kryonix via Obsidian — gerenciamento de vault, integração com repositório e documentação de fluxos para agentes. Use quando a tarefa envolver notas locais, operação de vault Obsidian, integração entre o repositório kryonix e conhecimento externo do usuário, ou configuração de sync entre desktop, CLI e headless.
+---
+
 # Skill: Obsidian Memory
 
 ## Objetivo
@@ -28,9 +33,9 @@ Documentar e operar a camada de memória local do usuário sem confundir app des
 ## Comandos de validação
 
 ```bash
-obsidian://choose-vault
-obsidian read path="<arquivo>"
-ob sync-status --path <vault>
+pgrep -af obsidian
+ls ~/.config/obsidian/
+find ~/ -name "*.md" -path "*obsidian*" -maxdepth 6
 ```
 
 ## Critérios de saída

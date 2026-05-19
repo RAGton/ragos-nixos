@@ -1,3 +1,8 @@
+---
+name: operations
+description: Orienta mudanças operacionais no kryonix com risco controlado — valida antes de aplicar, separa erro novo de erro antigo e mantém rollback viável. Use quando a tarefa envolver nixos-rebuild switch/test, kryonix switch/boot, aplicar mudanças em produção no glacier ou inspiron, ou qualquer operação com risco de quebrar o sistema em uso.
+---
+
 # Skill: Operations
 
 ## Objetivo
